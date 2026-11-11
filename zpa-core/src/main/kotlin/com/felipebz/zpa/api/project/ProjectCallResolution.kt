@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 import com.felipebz.zpa.project.ProjectCallResolution as InternalCallResolution
 import com.felipebz.zpa.project.ProjectCallUncertainty as InternalCallUncertainty
@@ -39,16 +40,16 @@ class ProjectCallResolution private constructor(
     }
 
     /** Every discovered public candidate with its evaluation, in discovery order; never ranked. */
-    val candidates: List<ProjectCallCandidate> = Collections.unmodifiableList(ArrayList(candidates))
+    val candidates: List<ProjectCallCandidate> = immutableList(candidates)
 
     /** As in [ProjectCallCandidates.uncertainties]. */
     val uncertainties: Set<ProjectCallUncertainty> =
         Collections.unmodifiableSet(EnumSet.noneOf(ProjectCallUncertainty::class.java).apply { addAll(uncertainties) })
 
-    val packageSpecifications: List<ProjectDeclarationView> = Collections.unmodifiableList(ArrayList(packageSpecifications))
+    val packageSpecifications: List<ProjectDeclarationView> = immutableList(packageSpecifications)
 
     /** Nonempty exactly for [Status.INCOMPLETE_INDEX]. */
-    val failures: List<ProjectPreparationFailure> = Collections.unmodifiableList(ArrayList(failures))
+    val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
     /** Present only for [Status.RESOLVED]. */
     val selected: Optional<ProjectCallCandidate> get() = Optional.ofNullable(selectedCandidate)

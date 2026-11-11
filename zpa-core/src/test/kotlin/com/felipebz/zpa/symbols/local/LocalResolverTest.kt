@@ -489,9 +489,10 @@ class LocalResolverTest {
         // The prototype's `pkg EXCEPTION` shape: an item the model does not extract (here a declaration whose datatype was
         // Grafted away) leaves its region PARTIAL, so `pkg` is not proven absent.
         val source = "declare\n  pkg number;\n  v date;\nbegin\n  pkg.processar(v);\nend;\n/\n"
-        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
-        val item = root.getDescendants(com.felipebz.zpa.api.PlSqlGrammar.VARIABLE_DECLARATION).first()
-        item.children.remove(item.getFirstChild(com.felipebz.zpa.api.PlSqlGrammar.DATATYPE))
+        val parsed = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
+        val item = parsed.getDescendants(com.felipebz.zpa.api.PlSqlGrammar.VARIABLE_DECLARATION).first()
+        val datatype = item.getFirstChild(com.felipebz.zpa.api.PlSqlGrammar.DATATYPE)
+        val root = parsed.withChildren(item, item.children.filter { it !== datatype })
         val model = LocalSemanticModelBuilder.build(root, FileId("r.sql"), source)
         val analysis = Analysis(model, LocalReferenceCollector.collect(root, model))
         val outcome = LocalResolver.resolve(model, reference(analysis, "pkg", 0, QUALIFIER)) as LocalResolution.Incomplete

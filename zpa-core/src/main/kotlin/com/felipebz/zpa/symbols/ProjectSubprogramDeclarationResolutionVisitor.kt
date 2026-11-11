@@ -8,7 +8,7 @@ package com.felipebz.zpa.symbols
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.project.*
 
 /**
@@ -40,7 +40,7 @@ internal class ProjectSubprogramDeclarationResolutionVisitor(
         val range = node.sourceRange() ?: return
         val candidates = bodyDeclarationsByKindAndRange[kind to range].orEmpty()
         if (candidates.size == 1) {
-            (node as SemanticAstNode).projectSubprogramDeclaration = candidates.single()
+            SemanticFileNode.of(node)?.setProjectSubprogramDeclaration(node, candidates.single())
         }
     }
 

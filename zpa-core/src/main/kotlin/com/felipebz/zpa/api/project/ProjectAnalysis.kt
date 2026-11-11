@@ -8,7 +8,7 @@ package com.felipebz.zpa.api.project
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.packageNameOf
 
@@ -45,9 +45,7 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
         if (projectAnalysisContext.state.kind == ProjectAnalysisContext.State.Kind.NOT_PREPARED) {
             return PackageSpecificationResolution.notPrepared()
         }
-        val semanticNode = node as? SemanticAstNode
-            ?: return PackageSpecificationResolution.notApplicable()
-        val body = semanticNode.projectSubprogramDeclaration
+        val body = SemanticFileNode.of(node)?.projectSubprogramDeclaration(node)
             ?: return PackageSpecificationResolution.notApplicable()
 
         return when (val resolution = specificationResolver.resolve(body)) {

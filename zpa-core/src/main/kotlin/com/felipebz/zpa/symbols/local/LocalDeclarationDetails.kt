@@ -31,8 +31,10 @@ internal class LocalTypeUse(
      * The range of each segment of the written type's name, in order: the tokens of its leading `name(.name)*`. Empty
      * when [typeRef] is null or its name is not written that way (a multi-word built-in type).
      */
-    val segmentRanges: List<SourceRange> = emptyList()
+    segmentRanges: List<SourceRange> = emptyList()
 ) {
+    val segmentRanges: List<SourceRange> = immutableList(segmentRanges)
+
     override fun toString() = "${typeRef?.name ?: "?"} from $lookupRegion"
 }
 

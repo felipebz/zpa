@@ -18,9 +18,10 @@ class ProjectBindingCompatibility private constructor(
     /** The structural binding, the same object as in [ProjectCallCandidate.bindings]. */
     val binding: ProjectArgumentBinding,
     val outcome: Outcome,
-    actualFamily: ProjectDatatypeFamily?,
-    formalFamily: ProjectDatatypeFamily?,
-    unknownReason: UnknownReason?
+    /** The actual's family, when classified; kept as a value, [actualFamily] wraps it on access. */
+    @get:JvmSynthetic internal val actualFamilyOrNull: ProjectDatatypeFamily?,
+    @get:JvmSynthetic internal val formalFamilyOrNull: ProjectDatatypeFamily?,
+    @get:JvmSynthetic internal val unknownReasonOrNull: UnknownReason?
 ) {
     enum class Outcome { COMPATIBLE, INCOMPATIBLE, UNKNOWN }
 
@@ -45,21 +46,21 @@ class ProjectBindingCompatibility private constructor(
     }
 
     /** The actual's family, when classified. */
-    val actualFamily: Optional<ProjectDatatypeFamily> = Optional.ofNullable(actualFamily)
+    val actualFamily: Optional<ProjectDatatypeFamily> get() = Optional.ofNullable(actualFamilyOrNull)
 
     /** The formal's family, when classified. */
-    val formalFamily: Optional<ProjectDatatypeFamily> = Optional.ofNullable(formalFamily)
+    val formalFamily: Optional<ProjectDatatypeFamily> get() = Optional.ofNullable(formalFamilyOrNull)
 
     /** Present exactly for [Outcome.UNKNOWN]. */
-    val unknownReason: Optional<UnknownReason> = Optional.ofNullable(unknownReason)
+    val unknownReason: Optional<UnknownReason> get() = Optional.ofNullable(unknownReasonOrNull)
 
     init {
-        require((outcome == Outcome.UNKNOWN) == (unknownReason != null)) { "An unknown reason is present exactly for UNKNOWN" }
-        require(outcome == Outcome.UNKNOWN || (actualFamily != null && formalFamily != null)) { "A decided outcome needs both families" }
+        require((outcome == Outcome.UNKNOWN) == (unknownReasonOrNull != null)) { "An unknown reason is present exactly for UNKNOWN" }
+        require(outcome == Outcome.UNKNOWN || (actualFamilyOrNull != null && formalFamilyOrNull != null)) { "A decided outcome needs both families" }
     }
 
     override fun toString(): String =
-        "$binding: $outcome${unknownReason.map { " ($it)" }.orElse("")} ${actualFamily.orElse(null)} -> ${formalFamily.orElse(null)}"
+        "$binding: $outcome${unknownReasonOrNull?.let { " ($it)" } ?: ""} $actualFamilyOrNull -> $formalFamilyOrNull"
 
     internal companion object {
         @JvmSynthetic

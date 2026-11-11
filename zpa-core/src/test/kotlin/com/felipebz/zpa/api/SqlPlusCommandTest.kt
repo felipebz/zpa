@@ -59,14 +59,10 @@ class SqlPlusCommandTest : RuleTest() {
         val node = p.parse("rUn script.sql\n")
 
         assertThatAst(node.type).isEqualTo(SqlPlusGrammar.SQLPLUS_COMMAND)
-        assertThatAst(node.fromIndex).isEqualTo(0)
-        assertThatAst(node.toIndex).isEqualTo(4)
         assertThatAst(node.tokenOriginalValue).isEqualTo("rUn")
         assertThatAst(node.children).hasSize(4)
         assertThatAst(node.children.map(AstNode::tokenOriginalValue))
             .containsExactly("rUn", "script", ".", "sql")
-        assertThatAst(node.children.map { it.fromIndex to it.toIndex })
-            .containsExactly(0 to 1, 1 to 2, 2 to 3, 3 to 4)
     }
 
     private fun inputFor(command: String): String = when (command) {

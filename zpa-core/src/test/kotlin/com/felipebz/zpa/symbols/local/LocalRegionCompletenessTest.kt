@@ -216,14 +216,12 @@ class LocalRegionCompletenessTest {
     fun recoveryBelowTheFileLevelTaintsEveryRegion() {
         // The grammar only recovers at the file level; a deeper RECOVERY node is grafted to pin the rule.
         val source = "BEGIN NULL; END;\n/\nBEGIN NULL; END;\n/\n"
-        val root = parse(source)
-        val statements = root.getDescendants(PlSqlGrammar.STATEMENTS).first()
+        val parsed = parse(source)
+        val statements = parsed.getDescendants(PlSqlGrammar.STATEMENTS).first()
         val original = statements.children.toList()
-        statements.children.clear()
         val recovery = AstNode(PlSqlGrammar.RECOVERY, "RECOVERY", original.first().token)
         recovery.addChild(original.first())
-        statements.addChild(recovery)
-        original.drop(1).forEach(statements::addChild)
+        val root = parsed.withChildren(statements, listOf(recovery) + original.drop(1))
         val model = LocalSemanticModelBuilder.build(root, FileId("f.sql"), source)
         assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).contains(PARSE_RECOVERY) }
     }
@@ -275,12 +273,10 @@ class LocalRegionCompletenessTest {
     fun tokensOutOfOrderLocateNothing() {
         // Swapping two units breaks the token order the bounds rely on: nothing is located, every region is unverified.
         val source = "BEGIN NULL; END;\n/\nDECLARE x NUMBER; BEGIN NULL; END;\n/\n"
-        val root = parse(source)
-        val units = root.children.filter { it.type !== com.felipebz.flr.api.GenericTokenType.EOF }
-        val eof = root.children.last()
-        root.children.clear()
-        units.reversed().forEach(root::addChild)
-        root.addChild(eof)
+        val parsed = parse(source)
+        val units = parsed.children.filter { it.type !== com.felipebz.flr.api.GenericTokenType.EOF }
+        val eof = parsed.children.last()
+        val root = parsed.withChildren(parsed, units.reversed() + eof)
         val model = LocalSemanticModelBuilder.build(root, FileId("f.sql"), source)
         assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).containsExactly(UNVERIFIED_SOURCE_POSITIONS) }
     }
@@ -289,14 +285,12 @@ class LocalRegionCompletenessTest {
     fun aRecoveryNodeWhoseStartIsUnknownTaintsEveryRegion() {
         // A file-level RECOVERY node whose own token is not one of the tree's tokens.
         val source = "BEGIN NULL; END;\n/\nBEGIN NULL; END;\n/\n"
-        val root = parse(source)
+        val parsed = parse(source)
         val foreign = parse("BEGIN NULL; END;").tokens.first()
-        val original = root.children.toList()
-        root.children.clear()
+        val original = parsed.children.toList()
         val recovery = AstNode(PlSqlGrammar.RECOVERY, "RECOVERY", foreign)
         recovery.addChild(original.first())
-        root.addChild(recovery)
-        original.drop(1).forEach(root::addChild)
+        val root = parsed.withChildren(parsed, listOf(recovery) + original.drop(1))
         val model = LocalSemanticModelBuilder.build(root, FileId("f.sql"), source)
         assertThat(model.regions).allSatisfy { assertThat(it.completeness.reasons).contains(PARSE_RECOVERY) }
     }

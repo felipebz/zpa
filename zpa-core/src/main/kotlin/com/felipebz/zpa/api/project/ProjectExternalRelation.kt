@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -30,12 +31,10 @@ class ProjectExternalRelation private constructor(
     val qualifiedName: ProjectQualifiedName = ProjectQualifiedName.ofIdentifiers(listOf(schema, name))
 
     /** Positioned columns in ascending `COLUMN_ID`, then unpositioned (invisible) columns in supplied order. Runtime-unmodifiable. */
-    val columns: List<ProjectExternalColumn> = Collections.unmodifiableList(
-        columns.filter { it.position.isPresent }.sortedBy { it.position.asInt } + columns.filter { !it.position.isPresent }
-    )
+    val columns: List<ProjectExternalColumn> = immutableList(columns.filter { it.position.isPresent }.sortedBy { it.position.asInt } + columns.filter { !it.position.isPresent })
 
     /** The `%ROWTYPE` fields: positioned columns only, in ascending `COLUMN_ID`. Runtime-unmodifiable. */
-    val rowFields: List<ProjectExternalColumn> = Collections.unmodifiableList(this.columns.filter { it.position.isPresent })
+    val rowFields: List<ProjectExternalColumn> = immutableList(this.columns.filter { it.position.isPresent })
 
     /**
      * Present only for an object table or an object view (including an `XMLTYPE` view), whose `%ROWTYPE` is an instance

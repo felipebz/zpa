@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -72,13 +73,13 @@ class ProjectTypeDescription private constructor(
     }
 
     /** The followed package values and subtypes in traversal order, each occurrence once. Runtime-unmodifiable. */
-    val steps: List<ProjectDeclarationView> = Collections.unmodifiableList(ArrayList(steps))
+    val steps: List<ProjectDeclarationView> = immutableList(steps)
 
     /** The value steps of [steps], in order. Runtime-unmodifiable. */
-    val values: List<ProjectPackageValueView> = Collections.unmodifiableList(steps.filterIsInstance<ProjectPackageValueView>())
+    val values: List<ProjectPackageValueView> = immutableList(steps.filterIsInstance<ProjectPackageValueView>())
 
     /** The subtype steps of [steps], in order. Runtime-unmodifiable. */
-    val subtypes: List<ProjectSubtypeView> = Collections.unmodifiableList(steps.filterIsInstance<ProjectSubtypeView>())
+    val subtypes: List<ProjectSubtypeView> = immutableList(steps.filterIsInstance<ProjectSubtypeView>())
 
     /** Present only for [Status.DECLARED_TYPE]. */
     val declaration: Optional<ProjectTypeDeclarationView> = Optional.ofNullable(declaration)

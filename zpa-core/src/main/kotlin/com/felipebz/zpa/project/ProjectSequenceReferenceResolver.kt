@@ -13,7 +13,7 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectTypeDescription
 import com.felipebz.zpa.api.project.ProjectValueResolution
-import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.symbols.local.LocalFileAnalysis
 import com.felipebz.zpa.symbols.local.LocalTypeEvidence
 
@@ -32,7 +32,7 @@ internal class ProjectSequenceReferenceResolver(
     fun resolve(node: AstNode): ProjectSequenceReferenceResolution {
         val candidate = sequenceCandidate(node) ?: return ProjectSequenceReferenceResolution.UNKNOWN
         // Without the local resolution, nothing proves the name is not a local one.
-        val analysis = (rootOf(node) as? SemanticAstNode)?.localAnalysis ?: return ProjectSequenceReferenceResolution.UNKNOWN
+        val analysis = SemanticFileNode.of(node)?.localAnalysis ?: return ProjectSequenceReferenceResolution.UNKNOWN
         if (hasAuthoritativeNonSequenceResolution(node, analysis)) {
             return ProjectSequenceReferenceResolution.RESOLVED_NON_SEQUENCE
         }
@@ -110,11 +110,6 @@ internal class ProjectSequenceReferenceResolver(
     private fun prefixUndecided(node: AstNode, analysis: LocalFileAnalysis): Boolean {
         val (_, value) = analysis.categories?.memberBase(node.lastChild) ?: return false
         return value.terminal == LocalTypeEvidence.Terminal.UNKNOWN && value.incomplete?.regionReasons?.isNotEmpty() == true
-    }
-
-    private fun rootOf(node: AstNode): AstNode {
-        var current = node
-        while (true) current = current.parentOrNull ?: return current
     }
 
     private fun hasLocalQualifierConflict(node: AstNode, prefix: List<OracleIdentifier>): Boolean {

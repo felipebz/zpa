@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 import com.felipebz.zpa.project.ProjectCallCandidates as InternalCallCandidates
 import com.felipebz.zpa.project.ProjectCallUncertainty as InternalCallUncertainty
@@ -37,17 +38,17 @@ class ProjectCallCandidates private constructor(
     }
 
     /** Package SPECIFICATION and STANDALONE procedures/functions in index order, never deduplicated or ranked. */
-    val candidates: List<ProjectSubprogramView> = Collections.unmodifiableList(ArrayList(candidates))
+    val candidates: List<ProjectSubprogramView> = immutableList(candidates)
 
     val uncertainties: Set<ProjectCallUncertainty> =
         Collections.unmodifiableSet(EnumSet.noneOf(ProjectCallUncertainty::class.java).apply { addAll(uncertainties) })
 
     /** Retained specifications of every package interpretation considered, in index order. */
     val packageSpecifications: List<ProjectDeclarationView> =
-        Collections.unmodifiableList(ArrayList(packageSpecifications))
+        immutableList(packageSpecifications)
 
     /** Nonempty exactly for [Status.INCOMPLETE_INDEX]. */
-    val failures: List<ProjectPreparationFailure> = Collections.unmodifiableList(ArrayList(failures))
+    val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
     init {
         require(this.failures.isEmpty() != (status == Status.INCOMPLETE_INDEX)) {

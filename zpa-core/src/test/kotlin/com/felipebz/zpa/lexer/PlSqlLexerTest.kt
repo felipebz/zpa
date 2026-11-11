@@ -586,4 +586,25 @@ class PlSqlLexerTest {
 
         assertThat(node.getDescendants(PlSqlGrammar.NULL_STATEMENT)).hasSize(1)
     }
+
+    @Test
+    fun tokensOfOneLexShareEqualStrings() {
+        val unit = "begin foo := Foo + 10; -- note\n x := 'text'; \"Q\" := \"q\"; \$IF 1 \$THEN y; \$END ¤ end;\n"
+        val wrapped = java.io.File("src/test/resources/wrapped/proc.plb").readText()
+        listOf(unit + unit + unit.uppercase(), wrapped + "\n" + wrapped).forEach { source ->
+            val tokens = lexer.lex(source)
+            val strings = tokens.flatMap { token ->
+                listOf(token.value, token.originalValue) + token.trivia.flatMap { trivia -> trivia.tokens.flatMap { listOf(it.value, it.originalValue) } }
+            }
+            assertThat(strings.groupBy { it }.values).describedAs(source).allSatisfy { equal ->
+                assertThat(equal).allMatch { it === equal[0] }
+            }
+        }
+
+        // Identifiers get new strings in each lex; a keyword's value is the same string in every lex.
+        val tokens = lexer.lex(unit)
+        val again = lexer.lex(unit)
+        assertThat(tokens[1].originalValue).isEqualTo("foo").isNotSameAs(again[1].originalValue)
+        assertThat(tokens[0].value).isEqualTo("BEGIN").isSameAs(again[0].value)
+    }
 }

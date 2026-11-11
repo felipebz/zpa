@@ -31,7 +31,8 @@ import java.util.*
 @ZpaExperimentalApi
 class ProjectArgumentType private constructor(
     val kind: Kind,
-    family: ProjectDatatypeFamily?,
+    /** The family, when identified; kept as a value, [family] wraps it on access. */
+    @get:JvmSynthetic internal val familyOrNull: ProjectDatatypeFamily?,
     /** True when the evidence was conclusive but names a type outside the supported families. */
     @get:JvmSynthetic internal val unclassified: Boolean,
     /** Built-in name whose predefined meaning a package member could shadow, with the package that resolved it. */
@@ -60,9 +61,9 @@ class ProjectArgumentType private constructor(
     }
 
     /** The datatype family, when the evidence identifies a supported one. */
-    val family: Optional<ProjectDatatypeFamily> = Optional.ofNullable(family)
+    val family: Optional<ProjectDatatypeFamily> get() = Optional.ofNullable(familyOrNull)
 
-    override fun toString(): String = "$kind${family.map { " $it" }.orElse("")}"
+    override fun toString(): String = "$kind${familyOrNull?.let { " $it" } ?: ""}"
 
     companion object {
         private val UNKNOWN = ProjectArgumentType(Kind.UNKNOWN, null, false, null, null)

@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -93,10 +94,10 @@ class ProjectExternalTypeDescription private constructor(
      * the followed values for [Status.CONFLICT], and otherwise the possible captors (declarations named like the
      * anchor's prefixes) and conditionally compiled declarations the answer would rest on. Runtime-unmodifiable.
      */
-    val sourceCandidates: List<ProjectDeclarationView> = Collections.unmodifiableList(ArrayList(sourceCandidates))
+    val sourceCandidates: List<ProjectDeclarationView> = immutableList(sourceCandidates)
 
     /** Competing or capturing external relations (see [Status.CONFLICT], [Status.AMBIGUOUS]). Runtime-unmodifiable. */
-    val externalCandidates: List<ProjectExternalRelation> = Collections.unmodifiableList(ArrayList(externalCandidates))
+    val externalCandidates: List<ProjectExternalRelation> = immutableList(externalCandidates)
 
     init {
         require((anchor == null) == (anchorName == null)) { "Anchor kind and name come together" }

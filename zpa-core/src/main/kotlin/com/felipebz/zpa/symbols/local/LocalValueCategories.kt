@@ -24,9 +24,7 @@ import java.util.*
  */
 internal class LocalValueCategories(private val facts: LocalSemanticFacts, private val walk: LocalTypeWalk) {
     private val model = facts.model
-    private val referencesByStart = facts.references.indices
-        .filter { facts.references[it].lastSegmentContext in CONTEXTS }
-        .associateBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
+    private val referencesByStart = referenceStarts(facts.references) { it.lastSegmentContext in CONTEXTS }
 
     fun category(name: AstNode): ValueCategory = valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
 
@@ -53,7 +51,8 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
             return walked.evidence[name]?.let { walked.region to it }
         }
         val written = writtenSegments(name) ?: return null
-        val index = referencesByStart[name.token.line to name.token.column] ?: return null
+        val index = referencesByStart[name.token.line, name.token.column]
+        if (index < 0) return null
         val reference = facts.references[index]
         if (reference.segments.size != written || reference.segments.any { it.isAttribute }) return null
         if (sqlFunctionMayTake(reference, facts.resolutions[index].last())) return null
@@ -71,11 +70,9 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     /** The receivers walked with those in SQL, by their `OBJECT_REFERENCE`. */
     private val sqlReceivers = IdentityHashMap<AstNode, Walked?>()
 
-    /** The segments after the first of every qualified name, by the start of their name: the reference and the segment's position (1 for the second). */
-    private val segmentsByStart: Map<Pair<Int, Int>, Pair<Int, Int>> by lazy(LazyThreadSafetyMode.NONE) {
-        facts.references.indices.filter { facts.references[it].segments.isNotEmpty() }.flatMap { index ->
-            facts.references[index].segments.mapIndexed { position, segment -> (segment.range.startLine to segment.range.startColumn) to (index to position + 1) }
-        }.toMap()
+    /** The segments after the first of every qualified name, by the start of their name: the reference ([segmentPosition] tells which segment). */
+    private val segmentsByStart: LocalPositionInts by lazy(LazyThreadSafetyMode.NONE) {
+        segmentStarts(facts.references) { it.segments.isNotEmpty() }
     }
 
     /**
@@ -84,8 +81,10 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
      * precedes it in the receiver. Null when [segment] is no such name, or the receiver is one this does not walk.
      */
     fun memberBase(segment: AstNode): Pair<LocalRegionId, LocalTypeEvidence>? {
-        segmentsByStart[segment.token.line to segment.token.column]?.let { (index, position) ->
+        val index = segmentsByStart[segment.token.line, segment.token.column]
+        if (index >= 0) {
             val reference = facts.references[index]
+            val position = segmentPosition(reference, segment.token.line, segment.token.column)
             if (reference.segments.take(position).any { it.isAttribute }) return null
             return reference.region to ownerEvidence(reference, facts.resolutions[index].map(::fieldStep), position - 1)
         }
@@ -132,7 +131,8 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         val head = receiver.firstChild.takeIf { it.type === PlSqlGrammar.METHOD_CALL } ?: return null
         val (callee, lists) = callParts(head)
         if (callee.type !== PlSqlGrammar.VARIABLE_NAME && callee.type !== PlSqlGrammar.MEMBER_EXPRESSION) return null
-        val index = referencesByStart[callee.token.line to callee.token.column] ?: return null
+        val index = referencesByStart[callee.token.line, callee.token.column]
+        if (index < 0) return null
         val reference = facts.references[index]
         if (!walksHead(reference, callee, index, inSql)) return null
         val region = reference.region
@@ -380,7 +380,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     private fun terminal(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory = when (evidence.terminal) {
         LocalTypeEvidence.Terminal.COMPOSITE -> composite(region, evidence)
         LocalTypeEvidence.Terminal.BUILT_IN ->
-            evidence.argumentType.family.orElse(null)?.let { ValueCategory.Scalar(scalarFamily(it)) } ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            evidence.argumentType.familyOrNull?.let { ValueCategory.Scalar(scalarFamily(it)) } ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
         LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { described(region, it) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         LocalTypeEvidence.Terminal.LITERAL -> unavailable()
         LocalTypeEvidence.Terminal.UNKNOWN -> evidence.incomplete?.let { ValueCategory.Unknown(reasons(it)) }

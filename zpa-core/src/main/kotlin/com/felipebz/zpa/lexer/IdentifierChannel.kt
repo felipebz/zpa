@@ -16,7 +16,22 @@ import java.util.*
 
 class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutput> {
 
-    private val keywordsMap = keywordTypes.associateBy { it.value.uppercase(Locale.getDefault()) }
+    /** Each keyword by its uppercase text, with that text as one string that the lexes of every file can share. */
+    private val keywordsMap = keywordTypes.associate { it.value.uppercase(Locale.getDefault()).let { value -> value to Keyword(it, value) } }
+
+    private class Keyword(val type: TokenType, val value: String)
+
+    private class Word(val originalValue: String, val value: String, val type: TokenType)
+
+    /** The value and type of a word from its shared original value; computed once per distinct word in a lex. */
+    private val resolveWord: LexerOutput.(String) -> Word = { originalValue ->
+        val normalizedValue = originalValue.uppercase(Locale.getDefault())
+        val keyword = keywordsMap[normalizedValue]
+        // Written in uppercase, the value is the original value. Otherwise a keyword's value is its constant, unless
+        // that text already has a string in this lex.
+        val value = if (normalizedValue === originalValue) originalValue else sharedString(keyword?.value ?: normalizedValue)
+        Word(originalValue, value, keyword?.type ?: GenericTokenType.IDENTIFIER)
+    }
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
         if (!UnquotedIdentifier.isStart(code.peek())) {
@@ -25,7 +40,7 @@ class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutpu
 
         val line = code.getLinePosition()
         val column = code.getColumnPosition()
-        val valueBuilder = StringBuilder()
+        val valueBuilder = output.tokenText()
         var characterLength = identifierCharacterLength(code)
         while (characterLength > 0) {
             repeat(characterLength) {
@@ -34,11 +49,10 @@ class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutpu
             characterLength = identifierCharacterLength(code)
         }
 
-        val originalValue = valueBuilder.toString()
-        val normalizedValue = originalValue.uppercase(Locale.getDefault())
+        val word = output.sharedResult(valueBuilder, this, resolveWord)
         val token = Token.builder()
-            .setType(keywordsMap[normalizedValue] ?: GenericTokenType.IDENTIFIER)
-            .setValueAndOriginalValue(normalizedValue, originalValue)
+            .setType(word.type)
+            .setValueAndOriginalValue(word.value, word.originalValue)
             .setLine(line)
             .setColumn(column)
             .build()

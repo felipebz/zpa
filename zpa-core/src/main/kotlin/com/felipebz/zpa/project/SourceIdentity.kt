@@ -5,8 +5,6 @@
 
 package com.felipebz.zpa.project
 
-import java.util.*
-
 /** Stable source identity retained by project-level semantic data. */
 @JvmInline
 value class FileId(val value: String) {
@@ -36,6 +34,10 @@ data class SourceRange(
     }
 }
 
-/** Copies a collection into a list whose mutation methods are disabled. */
-internal fun <T> immutableList(values: Collection<T>): List<T> =
-    Collections.unmodifiableList(values.toList())
+/**
+ * Copies a collection into a list of its exact size whose mutation methods throw, with no wrapper around the copy:
+ * the shared empty list when empty, no array for one or two elements, and an already copied list is returned as is.
+ * The elements must not be null.
+ */
+internal fun <T : Any> immutableList(values: Collection<T>): List<T> =
+    java.util.List.copyOf(values)

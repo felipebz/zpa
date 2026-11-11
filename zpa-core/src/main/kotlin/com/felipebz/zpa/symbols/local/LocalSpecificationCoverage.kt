@@ -412,7 +412,7 @@ internal class LocalReferenceOutcomes(private val model: LocalSemanticModel, pri
 
     fun steps(reference: LocalReference): List<LocalResolution> = steps.getOrPut(reference) {
         val resolved = LocalResolver.resolveQualified(model, reference)
-        coverage?.refine(reference, resolved) ?: resolved
+        immutableList(coverage?.refine(reference, resolved) ?: resolved)
     }
 
     fun first(reference: LocalReference): LocalResolution = steps(reference).first()

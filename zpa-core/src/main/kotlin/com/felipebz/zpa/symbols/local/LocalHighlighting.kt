@@ -172,6 +172,32 @@ internal class LocalHighlighting(
             LocalHighlighting(facts, index, text?.let(::lineLengths)).build().pairs
 
         /** The lengths of the lines of [text], split as the lexer counts lines. */
-        fun lineLengths(text: String): IntArray = text.split("\r\n", "\n", "\r").map { it.length }.toIntArray()
+        fun lineLengths(text: String): IntArray {
+            var lengths = IntArray(16)
+            var line = 0
+            var start = 0
+            var i = 0
+            while (i < text.length) {
+                val next = afterLineBreak(text, i)
+                if (next == i) {
+                    i++
+                    continue
+                }
+                if (line == lengths.size) lengths = lengths.copyOf(line * 2)
+                lengths[line++] = i - start
+                start = next
+                i = next
+            }
+            if (line == lengths.size) lengths = lengths.copyOf(line + 1)
+            lengths[line++] = text.length - start
+            return lengths.copyOf(line)
+        }
+
+        /** The index after the line break at [i] of [text] (`\r\n` counts once), or [i] when none starts there. */
+        private fun afterLineBreak(text: String, i: Int): Int = when (text[i]) {
+            '\n' -> i + 1
+            '\r' -> if (i + 1 < text.length && text[i + 1] == '\n') i + 2 else i + 1
+            else -> i
+        }
     }
 }

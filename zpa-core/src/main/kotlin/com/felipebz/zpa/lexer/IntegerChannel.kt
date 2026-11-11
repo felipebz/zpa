@@ -14,21 +14,19 @@ import com.felipebz.zpa.api.PlSqlTokenType
 class IntegerChannel : Channel<LexerOutput>  {
 
     override fun consume(code: CodeReader, output: LexerOutput): Boolean {
-        var tmpBuilder: StringBuilder? = null
-
         var pos = 0
         var nextChar = code.intAt(pos++).toChar()
+        if (!nextChar.isDigit()) {
+            return false
+        }
+
+        val tmpBuilder = output.tokenText()
         while (nextChar.isDigit()) {
-            tmpBuilder = tmpBuilder ?: StringBuilder(5)
             tmpBuilder.append(nextChar)
             nextChar = code.intAt(pos++).toChar()
         }
 
-        if (tmpBuilder.isNullOrEmpty()) {
-            return false
-        }
-
-        val value = tmpBuilder.toString()
+        val value = output.sharedString(tmpBuilder)
         val token = Token.builder()
             .setType(PlSqlTokenType.INTEGER_LITERAL)
             .setValueAndOriginalValue(value)

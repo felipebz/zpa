@@ -222,4 +222,20 @@ class OracleIdentifierIdentityTest {
         assertThat(shape(snapshot(*files.toTypedArray(), concurrent = true))).isEqualTo(serial)
         assertThat(shape(snapshot(*files.reversed().toTypedArray(), concurrent = true))).isEqualTo(serial)
     }
+
+    @Test
+    fun aTokenHasTheSameLookupNameAsItsSourceSpelling() {
+        // The value a lexer gives, right or not: the lookup name is always the spelling's, as fromSource gives it.
+        listOf(
+            "abc" to "ABC", "Abc_1\$#" to "ABC_1\$#", "ABC" to "ABC", "\"Abc\"" to "Abc", "\"ABC\"" to "ABC",
+            // A Turkish default locale uppercases `i` to `İ`; Oracle names keep `I`.
+            "item" to "İTEM", "straße" to "STRASSE", "çé" to "ÇÉ", "abc" to "abc", "\"Abc\"" to "\"Abc\"", "abc" to "ABCD"
+        ).forEach { (spelling, value) ->
+            val token = OracleIdentifier.fromToken(spelling, value)
+            val source = id(spelling)
+            assertThat(token.lookupName).describedAs("$spelling / $value").isEqualTo(source.lookupName)
+            assertThat(token.quoted).isEqualTo(source.quoted)
+            assertThat(token.originalSpelling).isEqualTo(spelling)
+        }
+    }
 }

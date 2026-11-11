@@ -40,31 +40,31 @@ internal class LocalFields(
     private val memberResolver = projectAnalysisContext?.let(::ProjectRecordMemberResolver)
     private val model = facts.model
 
-    /** The segments after the first of every qualified name, by the start of their name: the reference and the segment's position (1 for the second). */
-    private val segmentsByStart: Map<Pair<Int, Int>, Pair<Int, Int>> by lazy(LazyThreadSafetyMode.NONE) { facts.references.indices
-        .filter { facts.references[it].segments.isNotEmpty() && facts.references[it].context == LocalReferenceContext.QUALIFIER }
-        .flatMap { index ->
-            facts.references[index].segments.mapIndexed { position, segment -> (segment.range.startLine to segment.range.startColumn) to (index to position + 1) }
-        }.toMap() }
+    /** The segments after the first of every qualified name, by the start of their name: the reference ([segmentPosition] tells which segment). */
+    private val segmentsByStart: LocalPositionInts by lazy(LazyThreadSafetyMode.NONE) {
+        segmentStarts(facts.references) { it.segments.isNotEmpty() && it.context == LocalReferenceContext.QUALIFIER }
+    }
 
     fun binding(node: AstNode): FieldBinding {
         val segment = if (node.type == PlSqlGrammar.IDENTIFIER_NAME && node.parentOrNull?.type == PlSqlGrammar.VARIABLE_NAME) node.parent else node
         if (segment.type != PlSqlGrammar.IDENTIFIER_NAME && segment.type != PlSqlGrammar.VARIABLE_NAME) return NOT_A_FIELD
-        val located = segmentsByStart[segment.token.line to segment.token.column]
-        if (located == null && segment.type == PlSqlGrammar.VARIABLE_NAME) implicitSelf(segment)?.let { return it }
-        val answer = answer(segment, located)
+        // The reference whose segment this is and the segment's position (1 for the second name), or -1 and 0.
+        val index = segmentsByStart[segment.token.line, segment.token.column]
+        val position = if (index >= 0) segmentPosition(facts.references[index], segment.token.line, segment.token.column) else 0
+        if (index < 0 && segment.type == PlSqlGrammar.VARIABLE_NAME) implicitSelf(segment)?.let { return it }
+        val answer = answer(segment, index, position)
         if (answer !is FieldBinding.Field) return answer
         // A field is never more certain than the name its chain starts from.
-        val start = located?.let { (index, position) -> facts.resolutions[index].take(position) } ?: startSteps(segment)
+        val start = if (index >= 0) facts.resolutions[index].take(position) else startSteps(segment)
         return start?.let(::uncertainStart) ?: answer
     }
 
-    private fun answer(segment: AstNode, located: Pair<Int, Int>?): FieldBinding {
-        val local = located?.let { (index, position) -> local(index, position) }
+    private fun answer(segment: AstNode, index: Int, position: Int): FieldBinding {
+        val local = if (index >= 0) local(index, position) else null
         if (local != null && local !is Pending) return local.answer
         project(segment)?.let { return it }
         if (local is Pending) return local.answer
-        return located?.let { (index, position) -> residual(index, position) } ?: afterReceiver(segment)
+        return if (index >= 0) residual(index, position) else afterReceiver(segment)
     }
 
     /** The local record type [evidence] ends at, or null. */
@@ -76,11 +76,13 @@ internal class LocalFields(
         return (model.declaration(record).details as LocalRecordType).fields.indexOfFirst { it.name == identifier }.takeIf { it >= 0 }
     }
 
-    /** The non-type references by the start of their first name: a plain name or the first name of a qualified one. */
-    private val namesByStart: Map<Pair<Int, Int>, Int> by lazy(LazyThreadSafetyMode.NONE) {
-        facts.references.indices.filter { facts.references[it].context !in NOT_VALUES }
-            .groupBy { facts.references[it].range.let { range -> range.startLine to range.startColumn } }
-            .mapNotNull { (start, indices) -> indices.singleOrNull()?.let { start to it } }.toMap()
+    /** The non-type references by the start of their first name: a plain name or the first name of a qualified one, alone at its start. */
+    private val namesByStart: LocalPositionInts by lazy(LazyThreadSafetyMode.NONE) {
+        val builder = LocalPositionInts.Builder()
+        for ((index, reference) in facts.references.withIndex()) {
+            if (reference.context !in NOT_VALUES) builder.put(reference.range.startLine, reference.range.startColumn, index)
+        }
+        builder.build(LocalPositionDuplicates.NONE)
     }
 
     /**
@@ -93,7 +95,8 @@ internal class LocalFields(
      */
     private fun implicitSelf(segment: AstNode): FieldBinding? {
         if (segment.previousSiblingOrNull?.type == PlSqlPunctuator.DOT) return null
-        val index = namesByStart[segment.token.line to segment.token.column] ?: return null
+        val index = namesByStart[segment.token.line, segment.token.column]
+        if (index < 0) return null
         val reference = facts.references[index]
         val chain = LocalResolver.chain(model, reference.region)
         val typeRegion = chain.firstOrNull { it.kind == LocalRegionKind.TYPE_BODY } ?: return null

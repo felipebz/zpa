@@ -6,7 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import java.util.*
+import com.felipebz.zpa.project.immutableList
 
 /**
  * Inventory of known declarations, not a resolution. Declarations are never ranked or
@@ -36,8 +36,8 @@ class ProjectInventory<T : ProjectDeclarationView> private constructor(
             Status.NOT_PREPARED ->
                 require(declarations.isEmpty() && failures.isEmpty()) { "NOT_PREPARED inventories are empty" }
         }
-        this.declarations = Collections.unmodifiableList(ArrayList(declarations))
-        this.failures = Collections.unmodifiableList(ArrayList(failures))
+        this.declarations = immutableList(declarations)
+        this.failures = immutableList(failures)
     }
 
     internal companion object {

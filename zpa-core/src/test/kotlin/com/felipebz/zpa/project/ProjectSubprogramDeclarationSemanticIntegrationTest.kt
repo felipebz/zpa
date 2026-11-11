@@ -10,6 +10,7 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.squid.SemanticAstNode
+import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -257,7 +258,7 @@ class ProjectSubprogramDeclarationSemanticIntegrationTest {
 
         override fun visitNode(node: AstNode) {
             val semanticNode = node as SemanticAstNode
-            observations += Observation(semanticNode, semanticNode.projectSubprogramDeclaration)
+            observations += Observation(semanticNode, SemanticFileNode.of(semanticNode)?.projectSubprogramDeclaration(semanticNode))
         }
 
         data class Observation(

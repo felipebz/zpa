@@ -7,7 +7,7 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.QualifiedName
-import java.util.*
+import com.felipebz.zpa.project.immutableList
 
 /** Ordered, non-empty identifier segments. Equality compares the segments in order. */
 @ZpaExperimentalApi
@@ -16,7 +16,7 @@ class ProjectQualifiedName private constructor(
     segments: List<ProjectIdentifier>
 ) {
     /** Runtime-unmodifiable segments in source order. */
-    val segments: List<ProjectIdentifier> = Collections.unmodifiableList(segments)
+    val segments: List<ProjectIdentifier> = immutableList(segments)
 
     val last: ProjectIdentifier get() = segments.last()
 

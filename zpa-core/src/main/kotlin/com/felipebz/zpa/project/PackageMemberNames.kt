@@ -74,7 +74,7 @@ class PackageMemberNameCoverage(
      */
     val conditionalMentions: Set<String>? = conditionalMentions?.let { Collections.unmodifiableSet(HashSet(it)) }
 
-    val unretained: List<PackageMemberName> = Collections.unmodifiableList(ArrayList(unretained))
+    val unretained: List<PackageMemberName> = immutableList(unretained)
 
     val gaps: Set<MemberNameGap> =
         Collections.unmodifiableSet(if (gaps.isEmpty()) EnumSet.noneOf(MemberNameGap::class.java) else EnumSet.copyOf(gaps))
@@ -140,7 +140,7 @@ enum class MemberNameStatus {
 /** The members matched for a name, and the resulting status. */
 class MemberNameEvidence(val status: MemberNameStatus, members: List<SourceRange>) {
     /** Declaration ranges of the matching members (facts and unretained names), in source order. */
-    val members: List<SourceRange> = Collections.unmodifiableList(ArrayList(members))
+    val members: List<SourceRange> = immutableList(members)
 }
 
 /** Member-name evidence of one package specification occurrence; positions are compared only within that occurrence. */

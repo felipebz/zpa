@@ -6,7 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import java.util.*
+import com.felipebz.zpa.project.immutableList
 
 /**
  * Datatype evaluation of one structurally applicable candidate: one entry per structural binding, in written order.
@@ -21,7 +21,7 @@ class ProjectCandidateCompatibility private constructor(
     enum class Outcome { RETAINED, REJECTED }
 
     /** One per [ProjectCallCandidate.bindings] element, same order and binding objects. Runtime-unmodifiable. */
-    val bindings: List<ProjectBindingCompatibility> = Collections.unmodifiableList(ArrayList(bindings))
+    val bindings: List<ProjectBindingCompatibility> = immutableList(bindings)
 
     val outcome: Outcome =
         if (this.bindings.any { it.outcome == ProjectBindingCompatibility.Outcome.INCOMPATIBLE }) Outcome.REJECTED else Outcome.RETAINED

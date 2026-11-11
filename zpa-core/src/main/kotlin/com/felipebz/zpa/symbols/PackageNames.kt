@@ -13,7 +13,7 @@ import com.felipebz.zpa.project.QualifiedName
 /** The name of a `CREATE PACKAGE` or `CREATE PACKAGE BODY` node, as written. */
 internal fun packageNameOf(packageNode: AstNode): QualifiedName? {
     val unitName = packageNode.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME) ?: return null
-    val identifiers = unitName.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).map { OracleIdentifier.fromSource(it.tokenOriginalValue) }
+    val identifiers = unitName.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).map { OracleIdentifier.fromToken(it.token.originalValue, it.token.value) }
     return identifiers.takeIf { it.isNotEmpty() }?.let(::QualifiedName)
 }
 

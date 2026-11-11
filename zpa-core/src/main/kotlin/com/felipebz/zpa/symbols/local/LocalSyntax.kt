@@ -95,7 +95,7 @@ internal object LocalSyntax {
      * that spells the first segment (after `REF`, for example). Empty when the tokens do not spell it so.
      */
     private fun segmentRanges(fileId: FileId, tokens: List<Token>, segments: List<OracleIdentifier>): List<SourceRange> {
-        var index = tokens.indexOfFirst { OracleIdentifier.fromSource(it.originalValue) == segments.first() }
+        var index = tokens.indexOfFirst { OracleIdentifier.fromToken(it.originalValue, it.value) == segments.first() }
         if (index < 0) return emptyList()
         val result = ArrayList<SourceRange>(segments.size)
         for ((position, segment) in segments.withIndex()) {
@@ -104,7 +104,7 @@ internal object LocalSyntax {
                 index++
             }
             val token = tokens[index++]
-            if (OracleIdentifier.fromSource(token.originalValue) != segment) return emptyList()
+            if (OracleIdentifier.fromToken(token.originalValue, token.value) != segment) return emptyList()
             result += SourceRange(fileId, token.line, token.column, token.endLine, token.endColumn)
         }
         return result
@@ -116,16 +116,18 @@ internal object LocalSyntax {
      */
     fun descendants(root: AstNode, vararg types: AstNodeType): List<AstNode> {
         val result = ArrayList<AstNode>()
-        for (child in root.children) collect(child, types, result)
+        val children = root.children
+        for (i in 0 until children.size) collect(children[i], types, result)
         return result
     }
 
     private fun collect(node: AstNode, types: Array<out AstNodeType>, result: MutableList<AstNode>) {
         for (type in types) if (node.type === type) result += node
-        for (child in node.children) collect(child, types, result)
+        val children = node.children
+        for (i in 0 until children.size) collect(children[i], types, result)
     }
 
-    fun identifier(node: AstNode): OracleIdentifier = OracleIdentifier.fromSource(node.token.originalValue)
+    fun identifier(node: AstNode): OracleIdentifier = OracleIdentifier.fromToken(node.token.originalValue, node.token.value)
 
     fun range(fileId: FileId, node: AstNode): SourceRange =
         SourceRange(fileId, node.token.line, node.token.column, node.lastToken.endLine, node.lastToken.endColumn)

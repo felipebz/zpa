@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.util.*
 
 /**
@@ -40,7 +41,7 @@ class ProjectTypedCallResolution private constructor(
     enum class Status { RESOLVED, AMBIGUOUS, NO_COMPATIBLE_CANDIDATE, NOT_NARROWED }
 
     /** One per structurally applicable candidate, in structural order. Runtime-unmodifiable. */
-    val evaluations: List<ProjectCandidateCompatibility> = Collections.unmodifiableList(ArrayList(evaluations))
+    val evaluations: List<ProjectCandidateCompatibility> = immutableList(evaluations)
 
     /** Present only for [Status.RESOLVED]: a retained candidate, the same object as in the structural result. */
     val selected: Optional<ProjectCallCandidate> get() = Optional.ofNullable(selectedCandidate)

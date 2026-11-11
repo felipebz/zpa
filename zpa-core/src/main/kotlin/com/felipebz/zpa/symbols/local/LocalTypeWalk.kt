@@ -286,7 +286,7 @@ internal class LocalTypeWalk(
         inSpecification: Boolean
     ): LocalTypeEvidence {
         val argumentType = ProjectArgumentType.described(described, owner)
-        val name = typeRef?.takeIf { argumentType.family.isEmpty && inSpecification && it.kind == ProjectTypeReference.Kind.NAMED && it.writtenIdentity == null }
+        val name = typeRef?.takeIf { argumentType.familyOrNull == null && inSpecification && it.kind == ProjectTypeReference.Kind.NAMED && it.writtenIdentity == null }
             ?.name?.name?.segments?.singleOrNull()
         val kind = name?.let { DatatypeFamilies.undeclaredTypeKind(it) }
         if (kind != null && (owner == null || !shadowed(owner.name, name))) {
@@ -505,7 +505,7 @@ internal class LocalTypeWalk(
                 if (LocalReferenceOutcomes.isSpecificationMember(first)) {
                     // A cursor of the specification in another file: a row only when the project describes one.
                     val row = specificationMember(listOf(control.name), enclosing)?.let { name -> project(name, TypeAnchor.ROWTYPE, enclosing) }
-                    if (row?.argumentType?.family?.orElse(null) == ProjectDatatypeFamily.COMPOSITE) row else unknown("a specification name the project does not describe as a row")
+                    if (row?.argumentType?.familyOrNull == ProjectDatatypeFamily.COMPOSITE) row else unknown("a specification name the project does not describe as a row")
                 } else {
                     val cursor = (covered(first) as? LocalResolution.Bound)?.let { model.declaration(it.declaration) }
                     if (cursor?.kind == CURSOR) { followed += cursor.id; composite(followed.toList()) } else unknown("iterates over a value")
@@ -604,7 +604,7 @@ internal class LocalTypeWalk(
                 val described = snapshot?.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
                 val argumentType = described?.let { ProjectArgumentType.described(it, null) }
                 // A schema object the project does not describe is still composite: it rejects every scalar formal.
-                if (kind == CompositeKind.SCHEMA_OBJECT && argumentType?.family?.isPresent != true) {
+                if (kind == CompositeKind.SCHEMA_OBJECT && argumentType?.familyOrNull == null) {
                     return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
                 }
                 return LocalTypeEvidence(argumentType!!, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
@@ -633,9 +633,9 @@ internal class LocalTypeWalk(
          */
         private fun packageValue(declaration: LocalDeclaration, local: LocalTypeEvidence): LocalTypeEvidence {
             val project = projectFact(declaration) ?: return local
-            val localFamily = local.argumentType.family.orElse(null) ?: return project
+            val localFamily = local.argumentType.familyOrNull ?: return project
             // A built-in name the project reached may still be shadowed by a package member: not conclusive.
-            val projectFamily = project.argumentType.family.orElse(null)?.takeIf { project.argumentType.shadowName == null }
+            val projectFamily = project.argumentType.familyOrNull?.takeIf { project.argumentType.shadowName == null }
             return if (projectFamily == null || projectFamily == localFamily) local
             else unknown("the local walk gives $localFamily, the project fact $projectFamily")
         }

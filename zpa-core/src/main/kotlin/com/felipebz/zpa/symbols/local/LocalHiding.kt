@@ -28,7 +28,7 @@ import java.util.*
  */
 internal class LocalHiding(private val facts: LocalSemanticFacts) {
     private val model = facts.model
-    private val declarationsByName = model.declarations.associateBy { it.nameRange.startLine to it.nameRange.startColumn }
+    private val declarationsByName = declarationStarts(model)
 
     fun evidence(declarationNode: AstNode): HidingEvidence {
         val declaration = declarationOf(declarationNode) ?: return HidingEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION)
@@ -49,8 +49,9 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
     private fun declarationOf(node: AstNode): LocalDeclaration? {
         if (node.type != PlSqlGrammar.VARIABLE_DECLARATION && node.type != PlSqlGrammar.EXCEPTION_DECLARATION) return null
         val name = node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
-        return declarationsByName[name.token.line to name.token.column]
-            ?.takeIf { it.kind == LocalDeclarationKind.VARIABLE || it.kind == LocalDeclarationKind.EXCEPTION }
+        val index = declarationsByName[name.token.line, name.token.column]
+        if (index < 0) return null
+        return model.declarations[index].takeIf { it.kind == LocalDeclarationKind.VARIABLE || it.kind == LocalDeclarationKind.EXCEPTION }
     }
 
     /** What the enclosing regions declare of the name, and what the analysis could not see in them. */
@@ -85,7 +86,7 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
         region.completeness.reasonsFor(name).mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
 
     /** The name nodes of the file, by the start of their token: collected once, when a first hidden declaration is found. */
-    private var namesByStart: Map<Pair<Int, Int>, AstNode>? = null
+    private var namesByStart: LocalPositionMap<AstNode>? = null
 
     /** The declaration name node at [range] in the tree of [anyNode]. */
     private fun node(anyNode: AstNode, range: SourceRange): AstNode? {
@@ -93,11 +94,11 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
             var root = anyNode
             while (root.parentOrNull != null) root = root.parent
             // The first name node of each start, as a search in tree order finds it.
-            val found = HashMap<Pair<Int, Int>, AstNode>()
-            root.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).forEach { found.putIfAbsent(it.token.line to it.token.column, it) }
-            found.also { namesByStart = it }
+            val found = LocalPositionMap.Builder<AstNode>()
+            root.getDescendants(PlSqlGrammar.IDENTIFIER_NAME).forEach { found.put(it.token.line, it.token.column, it) }
+            found.build(LocalPositionDuplicates.FIRST).also { namesByStart = it }
         }
-        return names[range.startLine to range.startColumn]
+        return names[range.startLine, range.startColumn]
     }
 
     private fun endsBefore(declaration: SourceRange, reference: SourceRange) =

@@ -10,6 +10,7 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectArgumentType
 import com.felipebz.zpa.project.SourceRange
+import com.felipebz.zpa.project.immutableList
 
 /**
  * The local semantic resolution of one file, computed by the pipeline's pre-pass: the model, the references with their
@@ -17,13 +18,13 @@ import com.felipebz.zpa.project.SourceRange
  */
 internal class LocalSemanticFacts(
     val model: LocalSemanticModel,
-    val references: List<LocalReference>,
+    references: List<LocalReference>,
     /**
      * For each reference, in the same order, its outcomes as [LocalResolver.resolveQualified] gives them, refined with
      * the project's specification coverage ([LocalSpecificationCoverage]) when the project is prepared.
      */
-    val resolutions: List<List<LocalResolution>>,
-    val calls: List<LocalCallAnalysis>,
+    resolutions: List<List<LocalResolution>>,
+    calls: List<LocalCallAnalysis>,
     /**
      * For each variable or exception name declared inside a package body whose specification is in another file, keyed
      * by the body region and the name's lookup form: the specification's variable or exception of that name, or
@@ -33,10 +34,16 @@ internal class LocalSemanticFacts(
     /** See [LocalSpecificationCoverage.sqlSpecificationMembers]. */
     val sqlSpecificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap(),
     /** The names written as members of a value (after a call, an element access or a parenthesized expression). */
-    val members: List<LocalMember> = emptyList(),
+    members: List<LocalMember> = emptyList(),
     /** See [LocalForwardCalls.itemActualTypes]. */
     val itemActualTypes: Map<Pair<Int, Int>, List<ProjectArgumentType>> = emptyMap()
 ) {
+    // Kept for the life of the tree: copies of the exact size.
+    val references: List<LocalReference> = immutableList(references)
+    val resolutions: List<List<LocalResolution>> = immutableList(resolutions.map { immutableList(it) })
+    val calls: List<LocalCallAnalysis> = immutableList(calls)
+    val members: List<LocalMember> = immutableList(members)
+
     /** The usage evidence of the file's declarations, computed when first asked. */
     val usages: LocalUsages by lazy { LocalUsages(this) }
 
@@ -85,15 +92,13 @@ internal class LocalSemanticFacts(
         return call.selected.takeIf { call.status == LocalCallResolution.Status.RESOLVED }
     }
 
-    /** The single non-type reference starting at line, column, with its outcomes; null when none or several start there. */
-    private fun referenceAt(line: Int, column: Int): Int? = byStart[Triple(false, line, column)]?.singleOrNull()
-
     /**
      * The declaration the first segment of the name starting at line, column names, by [declarationOf]; null when no
      * single reference starts there or its outcome names no one declaration.
      */
     fun nameDeclaration(line: Int, column: Int): LocalDeclaration? {
-        val index = referenceAt(line, column) ?: return null
+        val index = nonTypeByStart[line, column]
+        if (index < 0) return null
         val reference = references[index]
         return declarationOf(reference, resolutions[index].first(), reference.segments.isEmpty())?.first?.let(model::declaration)
     }
@@ -105,7 +110,8 @@ internal class LocalSemanticFacts(
      * attribute, or a segment naming no one declaration.
      */
     fun qualifiedDeclaration(line: Int, column: Int): LocalDeclaration? {
-        val index = referenceAt(line, column) ?: return null
+        val index = nonTypeByStart[line, column]
+        if (index < 0) return null
         val reference = references[index]
         val steps = resolutions[index]
         if (reference.segments.isEmpty() || steps.size != reference.segments.size + 1 || reference.segments.any { it.isAttribute }) return null
@@ -117,15 +123,18 @@ internal class LocalSemanticFacts(
     }
 
     /** Every step of the name starting at line, column, when a single non-type reference starts there. */
-    fun steps(line: Int, column: Int): List<LocalResolution>? =
-        byStart[Triple(false, line, column)]?.singleOrNull()?.let { resolutions[it] }
+    fun steps(line: Int, column: Int): List<LocalResolution>? {
+        val index = nonTypeByStart[line, column]
+        return if (index >= 0) resolutions[index] else null
+    }
 
-    private val byStart: Map<Triple<Boolean, Int, Int>, List<Int>> by lazy {
-        val map = HashMap<Triple<Boolean, Int, Int>, MutableList<Int>>()
+    /** The non-type references alone at their start, by that start. */
+    private val nonTypeByStart: LocalPositionInts by lazy {
+        val builder = LocalPositionInts.Builder()
         for ((index, reference) in references.withIndex()) {
-            map.getOrPut(Triple(isTypeName(reference), reference.range.startLine, reference.range.startColumn)) { ArrayList(1) } += index
+            if (!isTypeName(reference)) builder.put(reference.range.startLine, reference.range.startColumn, index)
         }
-        map
+        builder.build(LocalPositionDuplicates.NONE)
     }
 
 }

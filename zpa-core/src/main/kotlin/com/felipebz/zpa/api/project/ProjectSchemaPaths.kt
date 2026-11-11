@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.immutableList
 import java.nio.file.Path
 import java.util.*
 
@@ -27,7 +28,7 @@ class ProjectSchemaPaths private constructor(
         override fun toString() = "$pattern=$schema"
     }
 
-    val entries: List<Entry> = Collections.unmodifiableList(ArrayList(entries))
+    val entries: List<Entry> = immutableList(entries)
 
     /** The schema of the first pattern matching the file [fileId] (a path or a `file:` URI); empty when none matches. */
     fun schemaOf(fileId: String): Optional<ProjectIdentifier> {
