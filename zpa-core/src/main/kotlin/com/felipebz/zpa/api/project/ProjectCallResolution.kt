@@ -27,17 +27,29 @@ class ProjectCallResolution private constructor(
     uncertainties: Collection<ProjectCallUncertainty>,
     packageSpecifications: List<ProjectDeclarationView>,
     private val selectedCandidate: ProjectCallCandidate?,
-    failures: List<ProjectPreparationFailure>
+    failures: List<ProjectPreparationFailure>,
+    synonyms: List<ProjectExternalSynonym> = emptyList(),
+    synonymTarget: ProjectQualifiedName? = null
 ) {
     /**
      * In precedence order: INVALID_NOTATION, NOT_PREPARED, INCOMPLETE_INDEX, AMBIGUOUS_TARGET, PARTIAL_DECLARATIONS,
-     * UNKNOWN_PACKAGE, NOT_FOUND_IN_PROJECT, WRONG_KIND, then NO_APPLICABLE_CANDIDATE / RESOLVED / AMBIGUOUS.
+     * SYNONYM_TARGET_NOT_IN_PROJECT, UNKNOWN_PACKAGE, NOT_FOUND_IN_PROJECT, WRONG_KIND, then NO_APPLICABLE_CANDIDATE /
+     * RESOLVED / AMBIGUOUS.
      */
     enum class Status {
         RESOLVED, AMBIGUOUS, NO_APPLICABLE_CANDIDATE, WRONG_KIND, NOT_FOUND_IN_PROJECT,
         UNKNOWN_PACKAGE, AMBIGUOUS_TARGET, PARTIAL_DECLARATIONS, INCOMPLETE_INDEX,
-        INVALID_NOTATION, NOT_PREPARED
+        INVALID_NOTATION, NOT_PREPARED,
+
+        /** As [ProjectCallCandidates.Status.SYNONYM_TARGET_NOT_IN_PROJECT]. */
+        SYNONYM_TARGET_NOT_IN_PROJECT
     }
+
+    /** As [ProjectCallCandidates.synonyms]. */
+    val synonyms: List<ProjectExternalSynonym> = immutableList(synonyms)
+
+    /** As [ProjectCallCandidates.synonymTarget]. */
+    val synonymTarget: Optional<ProjectQualifiedName> = Optional.ofNullable(synonymTarget)
 
     /** Every discovered public candidate with its evaluation, in discovery order; never ranked. */
     val candidates: List<ProjectCallCandidate> = immutableList(candidates)
@@ -70,6 +82,9 @@ class ProjectCallResolution private constructor(
             (this.candidates.isEmpty() && this.uncertainties.isEmpty() && this.packageSpecifications.isEmpty())) {
             "NOT_PREPARED and INVALID_NOTATION results are empty"
         }
+        require(status != Status.SYNONYM_TARGET_NOT_IN_PROJECT || (this.synonyms.isNotEmpty() && this.candidates.isEmpty())) {
+            "SYNONYM_TARGET_NOT_IN_PROJECT names its synonyms and has no candidate"
+        }
     }
 
     internal companion object {
@@ -85,27 +100,30 @@ class ProjectCallResolution private constructor(
             kind: ProjectCallKind,
             arguments: ProjectCallArguments,
             scope: ProjectSnapshotScope,
-            failures: List<ProjectPreparationFailure>
+            failures: List<ProjectPreparationFailure>,
+            reading: SynonymReading? = null
         ): ProjectCallResolution {
             val views = ProjectSnapshotDeclarations.views(scope, result.candidates.map { it.declaration })
             val candidates = result.candidates.mapIndexed { index, candidate ->
                 ProjectCallCandidate.of(candidate, views[index] as ProjectSubprogramView, arguments)
             }
             val selectedIndex = result.candidates.indexOfFirst { it === result.selected }
+            val status = when (result.status) {
+                InternalCallResolution.Status.RESOLVED -> Status.RESOLVED
+                InternalCallResolution.Status.AMBIGUOUS -> Status.AMBIGUOUS
+                InternalCallResolution.Status.NO_APPLICABLE_CANDIDATE -> Status.NO_APPLICABLE_CANDIDATE
+                InternalCallResolution.Status.WRONG_KIND -> Status.WRONG_KIND
+                InternalCallResolution.Status.NOT_FOUND_IN_PROJECT -> Status.NOT_FOUND_IN_PROJECT
+                InternalCallResolution.Status.UNKNOWN_PACKAGE -> Status.UNKNOWN_PACKAGE
+                InternalCallResolution.Status.AMBIGUOUS_TARGET -> Status.AMBIGUOUS_TARGET
+                InternalCallResolution.Status.PARTIAL_DECLARATIONS -> Status.PARTIAL_DECLARATIONS
+                InternalCallResolution.Status.INCOMPLETE_INDEX -> Status.INCOMPLETE_INDEX
+                InternalCallResolution.Status.INVALID_NOTATION -> Status.INVALID_NOTATION
+                InternalCallResolution.Status.NOT_PREPARED -> Status.NOT_PREPARED
+            }
+            val outside = reading != null && (status == Status.NOT_FOUND_IN_PROJECT || status == Status.UNKNOWN_PACKAGE)
             return ProjectCallResolution(
-                when (result.status) {
-                    InternalCallResolution.Status.RESOLVED -> Status.RESOLVED
-                    InternalCallResolution.Status.AMBIGUOUS -> Status.AMBIGUOUS
-                    InternalCallResolution.Status.NO_APPLICABLE_CANDIDATE -> Status.NO_APPLICABLE_CANDIDATE
-                    InternalCallResolution.Status.WRONG_KIND -> Status.WRONG_KIND
-                    InternalCallResolution.Status.NOT_FOUND_IN_PROJECT -> Status.NOT_FOUND_IN_PROJECT
-                    InternalCallResolution.Status.UNKNOWN_PACKAGE -> Status.UNKNOWN_PACKAGE
-                    InternalCallResolution.Status.AMBIGUOUS_TARGET -> Status.AMBIGUOUS_TARGET
-                    InternalCallResolution.Status.PARTIAL_DECLARATIONS -> Status.PARTIAL_DECLARATIONS
-                    InternalCallResolution.Status.INCOMPLETE_INDEX -> Status.INCOMPLETE_INDEX
-                    InternalCallResolution.Status.INVALID_NOTATION -> Status.INVALID_NOTATION
-                    InternalCallResolution.Status.NOT_PREPARED -> Status.NOT_PREPARED
-                },
+                if (outside) Status.SYNONYM_TARGET_NOT_IN_PROJECT else status,
                 target,
                 kind,
                 arguments,
@@ -117,11 +135,21 @@ class ProjectCallResolution private constructor(
                         InternalCallUncertainty.PARTIAL_DECLARATIONS -> ProjectCallUncertainty.PARTIAL_DECLARATIONS
                     }
                 },
-                ProjectSnapshotDeclarations.views(scope, result.packageSpecifications),
+                if (outside) emptyList() else ProjectSnapshotDeclarations.views(scope, result.packageSpecifications),
                 candidates.getOrNull(selectedIndex),
                 // INVALID_NOTATION is decided before the project is consulted and carries no failures.
-                if (result.failures.isEmpty()) emptyList() else failures
+                if (result.failures.isEmpty()) emptyList() else failures,
+                reading?.synonyms.orEmpty(),
+                reading?.target
             )
         }
+
+        /** A target whose synonyms end outside the project before any lookup: at a database link or a cycle. */
+        @JvmSynthetic
+        fun outsideProject(target: ProjectCallTarget, kind: ProjectCallKind, arguments: ProjectCallArguments, reading: SynonymReading) =
+            ProjectCallResolution(
+                Status.SYNONYM_TARGET_NOT_IN_PROJECT, target, kind, arguments, emptyList(), emptyList(), emptyList(), null, emptyList(),
+                reading.synonyms, reading.target
+            )
     }
 }

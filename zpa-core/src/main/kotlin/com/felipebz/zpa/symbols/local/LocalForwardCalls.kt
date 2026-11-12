@@ -199,9 +199,11 @@ internal class LocalForwardCalls(
 
     /** Whether the project shows a function or procedure named [name]. */
     private fun isProjectCallable(name: QualifiedName, region: LocalRegionId): Boolean {
-        val candidates = snapshot.preferring(walk.compilationSchema(region)).findCallCandidates(ProjectCallTarget.written(ProjectQualifiedName.wrap(name)))
+        val candidates = view(region).findCallCandidates(ProjectCallTarget.written(ProjectQualifiedName.wrap(name)))
         return candidates.status == ProjectCallCandidates.Status.FOUND && candidates.candidates.isNotEmpty()
     }
+
+    private fun view(region: LocalRegionId) = snapshot.preferring(walk.compilationSchema(region), external.metadata)
 
     /**
      * Whether the project knows [name] as a function and not as a package value: a certain candidate search with a
@@ -209,11 +211,12 @@ internal class LocalForwardCalls(
      */
     private fun isProjectFunction(name: QualifiedName, region: LocalRegionId): Boolean {
         val written = ProjectQualifiedName.wrap(name)
-        val candidates = snapshot.preferring(walk.compilationSchema(region)).findCallCandidates(ProjectCallTarget.written(written))
+        val view = view(region)
+        val candidates = view.findCallCandidates(ProjectCallTarget.written(written))
         if (candidates.status != ProjectCallCandidates.Status.FOUND || candidates.uncertainties.isNotEmpty() ||
             candidates.candidates.none { it is ProjectFunctionView }
         ) return false
-        val value = snapshot.preferring(walk.compilationSchema(region)).resolvePackageValue(written, walk.packageOwner(region))
+        val value = view.resolvePackageValue(written, walk.packageOwner(region))
         return value.status == ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT && value.candidates.none { it is ProjectPackageValueView }
     }
 
@@ -234,7 +237,7 @@ internal class LocalForwardCalls(
             }
             return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, null, local)
         }
-        val structural = snapshot.preferring(walk.compilationSchema(reference.region)).resolveCall(ProjectCallTarget.written(ProjectQualifiedName.wrap(target)), kind, notation)
+        val structural = view(reference.region).resolveCall(ProjectCallTarget.written(ProjectQualifiedName.wrap(target)), kind, notation)
         val typed = snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, external.metadata, walk.compilationSchema(reference.region))
         return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed, null)
     }

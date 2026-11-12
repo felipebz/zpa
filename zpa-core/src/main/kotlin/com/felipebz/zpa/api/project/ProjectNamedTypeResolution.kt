@@ -22,7 +22,8 @@ class ProjectNamedTypeResolution private constructor(
     packageOwner: ProjectQualifiedName?,
     declaration: ProjectTypeDeclarationView?,
     candidates: List<ProjectTypeDeclarationView>,
-    failures: List<ProjectPreparationFailure>
+    failures: List<ProjectPreparationFailure>,
+    synonyms: List<ProjectExternalSynonym> = emptyList()
 ) {
     enum class Status {
         RESOLVED,
@@ -43,6 +44,9 @@ class ProjectNamedTypeResolution private constructor(
 
     /** Runtime-unmodifiable preparation failures; nonempty only for [Status.INCOMPLETE_INDEX]. */
     val failures: List<ProjectPreparationFailure> = immutableList(failures)
+
+    /** As [ProjectValueResolution.synonyms], for the type name. Runtime-unmodifiable. */
+    val synonyms: List<ProjectExternalSynonym> = immutableList(synonyms)
 
     init {
         when (status) {
@@ -65,15 +69,16 @@ class ProjectNamedTypeResolution private constructor(
             name: ProjectQualifiedName,
             packageOwner: ProjectQualifiedName?,
             candidates: List<ProjectTypeDeclarationView>,
-            failures: List<ProjectPreparationFailure>
+            failures: List<ProjectPreparationFailure>,
+            synonyms: List<ProjectExternalSynonym> = emptyList()
         ): ProjectNamedTypeResolution = when {
             failures.isNotEmpty() ->
-                ProjectNamedTypeResolution(Status.INCOMPLETE_INDEX, name, packageOwner, null, candidates, failures)
+                ProjectNamedTypeResolution(Status.INCOMPLETE_INDEX, name, packageOwner, null, candidates, failures, synonyms)
             candidates.isEmpty() ->
-                ProjectNamedTypeResolution(Status.NOT_FOUND_IN_PROJECT, name, packageOwner, null, candidates, failures)
+                ProjectNamedTypeResolution(Status.NOT_FOUND_IN_PROJECT, name, packageOwner, null, candidates, failures, synonyms)
             candidates.size == 1 ->
-                ProjectNamedTypeResolution(Status.RESOLVED, name, packageOwner, candidates.single(), candidates, failures)
-            else -> ProjectNamedTypeResolution(Status.AMBIGUOUS, name, packageOwner, null, candidates, failures)
+                ProjectNamedTypeResolution(Status.RESOLVED, name, packageOwner, candidates.single(), candidates, failures, synonyms)
+            else -> ProjectNamedTypeResolution(Status.AMBIGUOUS, name, packageOwner, null, candidates, failures, synonyms)
         }
 
         @JvmSynthetic

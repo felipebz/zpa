@@ -22,6 +22,7 @@ fun describeWrittenCall(snapshot: ProjectSnapshot): List<String> {
         Status.AMBIGUOUS_TARGET, Status.PARTIAL_DECLARATIONS, Status.INCOMPLETE_INDEX ->
             "not settled: ${resolution.uncertainties} ${resolution.failures.map { it.fileId }}"
         Status.UNKNOWN_PACKAGE, Status.NOT_FOUND_IN_PROJECT -> "not in the supplied sources"
+        Status.SYNONYM_TARGET_NOT_IN_PROJECT -> "a synonym for ${resolution.synonymTarget.map { it.toString() }.orElse("an object in another database")}"
         Status.INVALID_NOTATION -> "invalid notation at argument ${arguments.invalidArgumentOrdinal.asInt}"
         Status.NOT_PREPARED -> "no project was prepared"
     }

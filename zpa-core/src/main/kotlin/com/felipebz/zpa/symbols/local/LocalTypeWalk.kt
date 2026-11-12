@@ -100,6 +100,9 @@ internal class LocalTypeWalk(
 ) {
     private val metadata = external.metadata
 
+    /** The project as seen from the unit holding [region]: its compilation schema first, and the run's synonyms. */
+    fun projectView(region: LocalRegionId): ProjectSnapshot? = snapshot?.preferring(compilationSchema(region), metadata)
+
     /**
      * The schema the file-level unit holding [region] compiles in, from the run's external context: its written schema,
      * else its file's configured schema path, else the configured default. Code outside a named unit (an anonymous
@@ -412,7 +415,7 @@ internal class LocalTypeWalk(
         }
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
         val written = ProjectQualifiedName.wrap(name)
-        val resolution = snapshot.resolveNamedType(written, null)
+        val resolution = snapshot.preferring(compilationSchema(use.lookupRegion), metadata).resolveNamedType(written, null)
         if (resolution.status == ProjectNamedTypeResolution.Status.RESOLVED && resolution.declaration.get() !is ProjectStandaloneTypeView) {
             return LocalTypeEvidence.unknown("SQL does not see the package type ${resolution.declaration.get().qualifiedName}")
         }
@@ -494,7 +497,7 @@ internal class LocalTypeWalk(
     fun namesNoPackageCursor(name: ProjectQualifiedName, region: LocalRegionId): Boolean {
         val owner = packageOwner(region)
         if (name.segments.size == 1 && owner == null) return true
-        val resolution = snapshot?.preferring(compilationSchema(region))?.resolvePackageValue(name, owner) ?: return false
+        val resolution = projectView(region)?.resolvePackageValue(name, owner) ?: return false
         return resolution.status == ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT && resolution.candidates.none { it is ProjectPackageCursorView }
     }
 
@@ -536,7 +539,7 @@ internal class LocalTypeWalk(
     }
 
     private fun projectConstant(name: QualifiedName, region: LocalRegionId): BigDecimal? {
-        val snapshot = snapshot?.takeIf { prepared }?.preferring(compilationSchema(region)) ?: return null
+        val snapshot = projectView(region)?.takeIf { prepared } ?: return null
         val resolution = snapshot.resolvePackageValue(ProjectQualifiedName.wrap(name), packageOwner(region))
         val value = resolution.value.orElse(null)?.takeIf { resolution.status == ProjectValueResolution.Status.RESOLVED } ?: return null
         val fact = snapshot.occurrenceOf(value.id)?.declaration as? PackageValueDeclaration ?: return null

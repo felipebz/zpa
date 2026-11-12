@@ -198,12 +198,13 @@ class ProjectValueResolutionTest {
         val method = ProjectSnapshot::class.java.getMethod("resolvePackageValue", ProjectQualifiedName::class.java, ProjectQualifiedName::class.java)
         assertThat(method.returnType).isEqualTo(ProjectValueResolution::class.java)
         val getters = ProjectValueResolution::class.java.declaredMethods.filter { Modifier.isPublic(it.modifiers) && !it.isSynthetic }
-        assertThat(getters.map { it.name }).containsExactlyInAnyOrder("getStatus", "getName", "getPackageOwner", "getValue", "getCandidates", "getFailures")
+        assertThat(getters.map { it.name }).containsExactlyInAnyOrder("getStatus", "getName", "getPackageOwner", "getValue", "getCandidates", "getFailures", "getSynonyms")
         val types = getters.associate { it.name to it.genericReturnType.typeName }
         assertThat(types["getValue"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectPackageValueView>")
         assertThat(types["getPackageOwner"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectQualifiedName>")
         assertThat(types["getCandidates"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectDeclarationView>")
         assertThat(types["getFailures"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectPreparationFailure>")
+        assertThat(types["getSynonyms"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectExternalSynonym>")
         assertThat((ProjectValueResolution::class.java.getMethod("getCandidates").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectDeclarationView::class.java)
         assertThat(ProjectValueResolution::class.java.constructors.filter { !it.isSynthetic && it.parameterTypes.none { t -> t.name.endsWith("DefaultConstructorMarker") } }).isEmpty()
         assertThat(ProjectValueResolution::class.java.methods.filter { it.name.startsWith("set") || Modifier.isStatic(it.modifiers) && it.declaringClass == ProjectValueResolution::class.java }).isEmpty()

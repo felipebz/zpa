@@ -24,7 +24,8 @@ class ProjectSnapshot private constructor(
     failures: List<ProjectPreparationFailure>,
     fileIds: List<String>,
     // Plain identity token for declaration IDs; it holds no reference back to this snapshot.
-    private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue()
+    private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue(),
+    private val synonymScope: ProjectSynonymScope? = null
 ) {
     /**
      * This snapshot as seen from a unit compiling in [schema]: every lookup of the returned snapshot reads an
@@ -37,9 +38,29 @@ class ProjectSnapshot private constructor(
     fun preferring(schema: ProjectIdentifier?): ProjectSnapshot {
         if (schema == null) return this
         val index = preparationResult.index.preferring(schema.identifier)
-        if (index === preparationResult.index) return this
+        if (index === preparationResult.index && synonymScope == null) return this
         return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope)
     }
+
+    /**
+     * As [preferring], and the call, package value and type lookups of the returned snapshot ([findCallCandidates],
+     * [resolveCall], [resolvePackageValue], [resolveNamedType], and the walks of [describeType]) read the first segment
+     * of a written name through the synonyms of [metadata] as Oracle does from [schema]: an object of [schema] (in the
+     * project or in [metadata]) first, then a private synonym of [schema], then a public synonym when [schema] is
+     * complete in [metadata]. A synonym of a synonym is followed; the name is then looked up as the target followed by
+     * the rest of the written name, and each result lists the synonyms in its `synonyms`. A synonym over a database
+     * link, or one that resolves to itself, leads to no project declaration. Without a [schema] or without metadata
+     * (an empty [ProjectExternalMetadata.origin]) this is [preferring].
+     */
+    fun preferring(schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): ProjectSnapshot {
+        if (schema == null || !metadata.origin.isPresent) return preferring(schema)
+        val index = preparationResult.index.preferring(schema.identifier)
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(metadata, schema))
+    }
+
+    private fun synonymReading(name: ProjectQualifiedName): SynonymReading? =
+        synonymScope?.takeIf { preparationState != ProjectPreparationState.NOT_PREPARED }
+            ?.let { ProjectSynonymNames.read(preparationResult.index, it, name.name) }
 
     /**
      * The names of the standalone procedures and functions whose heading was identified in a project file but produced
@@ -119,9 +140,11 @@ class ProjectSnapshot private constructor(
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectNamedTypeResolution.notPrepared(name, packageOwner)
         }
-        val occurrences = ProjectTypeNameLookup.typeOccurrences(preparationResult.index, name.name, packageOwner?.name)
+        val reading = if (name.name.segments.size > 1 || packageOwner == null) synonymReading(name) else null
+        val occurrences = if (reading != null && reading.target == null) emptyList()
+        else ProjectTypeNameLookup.typeOccurrences(preparationResult.index, reading?.name ?: name.name, packageOwner?.name)
         val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectTypeDeclarationView }
-        return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures)
+        return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures, reading?.synonyms.orEmpty())
     }
 
     /**
@@ -196,7 +219,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema), name, null, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), name, null, packageOwner, null, metadata, currentSchema)
 
     // Every external description is made from the unit compiling in [currentSchema]: its unqualified names prefer the
     // declarations of that schema ([preferring]).
@@ -208,7 +231,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema), reference.name, reference, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), reference.name, reference, packageOwner, null, metadata, currentSchema)
 
     /**
      * As the name overload, for a caller-written [anchor], with the same lexical precondition as the written
@@ -220,7 +243,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema), anchor.name, null, packageOwner, anchor, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), anchor.name, null, packageOwner, anchor, metadata, currentSchema)
 
     /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
@@ -237,9 +260,14 @@ class ProjectSnapshot private constructor(
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectValueResolution.notPrepared(name, packageOwner)
         }
-        val effective = if (name.name.segments.size == 1) packageOwner?.name?.append(name.name.last) else name.name
+        val reading = if (name.name.segments.size > 1) synonymReading(name) else null
+        val effective = when {
+            reading != null -> reading.name.takeIf { reading.target != null }
+            name.name.segments.size == 1 -> packageOwner?.name?.append(name.name.last)
+            else -> name.name
+        }
         val occurrences = effective?.let { preparationResult.index.findOccurrences(it) }.orEmpty()
-        return ProjectValueResolution.of(name, packageOwner, ProjectSnapshotDeclarations.views(scope, occurrences), failures)
+        return ProjectValueResolution.of(name, packageOwner, ProjectSnapshotDeclarations.views(scope, occurrences), failures, reading?.synonyms.orEmpty())
     }
 
     /**
@@ -265,12 +293,16 @@ class ProjectSnapshot private constructor(
      * Call candidate discovery for [target] over this snapshot's prepared index, using the project's existing
      * namespace, coverage and precedence rules. Only package SPECIFICATION and STANDALONE procedures/functions are
      * candidates; bodies never are, and a standalone heading whose signature was not retained is evidence only. This
-     * is not call resolution: no argument is bound and nothing is selected. No schema, lexical scope or catalog is
-     * inferred, and no source is read again.
+     * is not call resolution: no argument is bound and nothing is selected. No lexical scope or catalog is inferred, and
+     * no source is read again. A view from [preferring] with metadata reads the target's first segment as Oracle does,
+     * through a private then a public synonym when the compilation schema has no object of that name, and reports the
+     * synonyms followed ([ProjectCallCandidates.synonyms]).
      */
     fun findCallCandidates(target: ProjectCallTarget): ProjectCallCandidates {
-        val result = ProjectCallCandidateFinder(callContext()).find(target.toInternal())
-        return ProjectCallCandidates.of(result, target, scope, failures)
+        val reading = synonymReading(target.name)
+        if (reading != null && reading.target == null) return ProjectCallCandidates.outsideProject(target, reading)
+        val result = ProjectCallCandidateFinder(callContext()).find(target.toInternal(reading?.name))
+        return ProjectCallCandidates.of(result, target, scope, failures, reading)
     }
 
     /**
@@ -285,8 +317,10 @@ class ProjectSnapshot private constructor(
             ProjectCallKind.PROCEDURE -> InternalCallKind.PROCEDURE
             ProjectCallKind.FUNCTION -> InternalCallKind.FUNCTION
         }
-        val result = ProjectCallBinder(callContext()).resolve(target.toInternal(), internalKind, arguments.internal)
-        return ProjectCallResolution.of(result, target, kind, arguments, scope, failures)
+        val reading = synonymReading(target.name)?.takeIf { arguments.notation == ProjectCallArguments.Notation.VALID }
+        if (reading != null && reading.target == null) return ProjectCallResolution.outsideProject(target, kind, arguments, reading)
+        val result = ProjectCallBinder(callContext()).resolve(target.toInternal(reading?.name), internalKind, arguments.internal)
+        return ProjectCallResolution.of(result, target, kind, arguments, scope, failures, reading)
     }
 
     /**
@@ -324,7 +358,7 @@ class ProjectSnapshot private constructor(
         argumentTypes: List<ProjectArgumentType>,
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
-    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(preferring(currentSchema), structural, argumentTypes, metadata, currentSchema)
+    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(preferring(currentSchema, metadata), structural, argumentTypes, metadata, currentSchema)
 
     // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
     private fun callContext(): ProjectAnalysisContext =

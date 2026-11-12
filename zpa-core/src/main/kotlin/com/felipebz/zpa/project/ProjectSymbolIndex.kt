@@ -280,6 +280,17 @@ class ProjectSymbolIndex private constructor(
         occurrencesBySchema[schema to name].orEmpty()
 
     /**
+     * Whether a project unit (package, type, sequence, standalone subprogram, or package owner of members) named [name]
+     * may be an object of [schema]: its effective schema is [schema], or it has none, so it may be anywhere.
+     */
+    internal fun hasUnitPossiblyIn(schema: OracleIdentifier, name: OracleIdentifier): Boolean {
+        val unit = QualifiedName(name)
+        if (findInSchema(schema, unit).isNotEmpty() || (schema to unit) in ownersBySchema) return true
+        if (occurrencesByQualifiedName[unit].orEmpty().any { schemaKey(it) == null }) return true
+        return unit in packageOwners && ownersBySchema.none { it.second == unit }
+    }
+
+    /**
      * The schema and the rest of [name] when it is read through a schema: `x.y` (or `x.y.z`) whose first name is a known
      * schema that no project unit or package owner is named (a unit of that name, through a synonym Oracle cannot be
      * ruled out to read, would capture `x`). Null otherwise. Every lookup by name reads such a name through its schema.
