@@ -326,6 +326,7 @@ internal class LocalSpecificationCoverage private constructor(
             is LocalResolution.WrongKind -> listOf(outcome.declaration)
             is LocalResolution.DeclaredLater -> listOf(outcome.declaration)
             is LocalResolution.Duplicate -> outcome.declarations
+            is LocalResolution.SqlBuiltinOrLocal -> outcome.declarations
             else -> return false
         }
         return ids.all { id -> model.declaration(id).let { it.region == body.id || isOwnUnit(LocalResolution.Bound(id), body) } }
