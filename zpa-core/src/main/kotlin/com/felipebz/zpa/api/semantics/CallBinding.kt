@@ -112,5 +112,23 @@ enum class CallKeptLocalReason {
     INCOMPLETE,
 
     /** The first segment's outcome, or the call's form (a later argument list with several actuals, `f(1)(2, 3)`), is not modeled. */
-    UNSUPPORTED
+    UNSUPPORTED,
+
+    /**
+     * In SQL, a relation of the statement (a table, view or alias) takes the first segment: `alias.column.method(x)`, or
+     * `alias.m(x)` when the project has no function of that name (a method of the rows of an object table).
+     */
+    SQL_RELATION,
+
+    /**
+     * In SQL, `alias.m(x)` where the project also has a function `alias.m`: Oracle calls the method of the rows when the
+     * relation is an object table, and the package's function otherwise. Which one the relation is, is not known.
+     */
+    SQL_RELATION_OR_PROJECT,
+
+    /**
+     * In SQL, the name binds functions of the file that are not stored: declared in a subprogram or block, or private to
+     * a package body. Oracle rejects the statement (PLS-00231). Not a binding.
+     */
+    NOT_CALLABLE_IN_SQL
 }

@@ -80,7 +80,7 @@ class InsertValuesCollectionTest {
 
     /** The rows of an element read bound to a local associative array of records: an element access, not a call. */
     private fun local(line: Int) = listOf("item_id", "sample_no").map {
-        "$line:samples(i).$it name=Local/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
+        "$line:samples(i).$it name=Local/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=KeptLocal(LOCAL_CAPTURE) " +
             "value=Scalar(NUMERIC) field=Field"
     }
 
@@ -116,9 +116,9 @@ class InsertValuesCollectionTest {
             "end;\n/\n"
         // The name stays outside the file; its type comes from the project's specification.
         assertThat(values("b.sql", mapOf("s.sql" to declaring, "b.sql" to user))).containsExactly(
-            "5:samples(i).item_id name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
+            "5:samples(i).item_id name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Project(NOT_NARROWED) " +
                 "value=Scalar(NUMERIC) field=Field",
-            "5:samples(i).sample_no name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
+            "5:samples(i).sample_no name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Project(NOT_NARROWED) " +
                 "value=Scalar(NUMERIC) field=Field"
         )
     }

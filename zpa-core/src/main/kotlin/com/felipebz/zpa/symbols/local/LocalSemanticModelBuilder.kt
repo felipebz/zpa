@@ -208,7 +208,9 @@ internal object LocalSemanticModelBuilder {
                 SourceRange(fileId, first.token.line, first.token.column, node.lastToken.endLine, node.lastToken.endColumn))
             labels.forEach { it.details = (it.details as LocalLabel).copy(labeled = region.id) }
             val index = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-            declare(region, LocalDeclarationKind.LOOP_INDEX, index, index, details = LocalLoopIndex(null, true))
+            // The index of FORALL is a PLS_INTEGER, whatever its bounds.
+            declare(region, LocalDeclarationKind.LOOP_INDEX, index, index,
+                details = LocalLoopIndex(null, true, LocalLoopControl(LocalLoopControl.Form.STEPPED, null, null)))
             content.filter { it !== index }.forEach { visit(it, region) }
         }
 

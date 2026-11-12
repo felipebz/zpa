@@ -31,8 +31,8 @@ internal class LocalSemanticFacts(
      * [LocalSpecificationValue.Unknown]. Absent when the project is not prepared.
      */
     val specificationValues: Map<Pair<LocalRegionId, String>, LocalSpecificationValue> = emptyMap(),
-    /** See [LocalSpecificationCoverage.sqlSpecificationMembers]. */
-    val sqlSpecificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap(),
+    /** See [LocalSpecificationCoverage.specificationMembers]. */
+    val specificationMembers: Map<Pair<Int, Int>, LocalSpecificationMember> = emptyMap(),
     /** The names written as members of a value (after a call, an element access or a parenthesized expression). */
     members: List<LocalMember> = emptyList(),
     /** See [LocalForwardCalls.itemActualTypes]. */

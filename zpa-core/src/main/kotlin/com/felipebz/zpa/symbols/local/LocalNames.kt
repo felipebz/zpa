@@ -11,6 +11,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.*
+import com.felipebz.zpa.project.SourceRange
 import java.util.*
 
 /**
@@ -73,7 +74,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
                 if (noColumn) NameBinding.Local(declaration(decided.declaration)) else NameBinding.ColumnOrLocal(declaration(decided.declaration))
             // A table, view or alias of the statement takes the first name of `x.f`.
             LocalResolution.SqlRelation -> NameBinding.NothingLocal(sqlColumnPossible = true)
-            else -> decided(decided)
+            else -> decided(decided, reference.range)
         }
     }
 
@@ -137,7 +138,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         return when (val own = unwrap(steps.getOrNull(position) ?: return NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE)))) {
             is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(own))
             is LocalResolution.Field, is LocalResolution.CollectionMethod, is LocalResolution.Unsupported -> unavailable()
-            else -> decided(own)
+            else -> decided(own, segments[position - 1].range)
         }
     }
 
@@ -159,7 +160,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
             last is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(last))
             steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
             last is LocalResolution.Bound -> NameBinding.Local(declaration(last.declaration))
-            last == LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+            last == LocalResolution.SpecificationMember -> decided(last, reference.segments.last().range)
             else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
         }
     }
@@ -188,7 +189,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         return when {
             last is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(last))
             steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
-            else -> decided(last)
+            else -> decided(last, reference.segments.lastOrNull()?.range ?: reference.range)
         }
     }
 
@@ -198,7 +199,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
     private fun specificationMember(reference: LocalReference, outcome: LocalResolution.Incomplete, noColumn: Boolean): NameBinding? {
         if (outcome.provisional != LocalResolution.SpecificationMember || outcome.regionReasons.isNotEmpty() ||
             outcome.lookupReasons != setOf(LocalLookupGap.SQL_COLUMN_UNKNOWN)) return null
-        val member = facts.sqlSpecificationMembers[reference.range.startLine to reference.range.startColumn] ?: return null
+        val member = facts.specificationMembers[reference.range.startLine to reference.range.startColumn] ?: return null
         val declaration = NameDeclaration(kind(member.kind), member.line, member.column, member.fileId)
         return if (noColumn) NameBinding.Local(declaration) else NameBinding.ColumnOrLocal(declaration)
     }
@@ -215,7 +216,8 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         }
     }
 
-    private fun decided(outcome: LocalResolution): NameBinding = when (outcome) {
+    /** [outcome] of the name written at [range]: a specification member is the one the project names there, when one does. */
+    private fun decided(outcome: LocalResolution, range: SourceRange): NameBinding = when (outcome) {
         LocalResolution.ProvenAbsent -> NameBinding.NothingLocal(sqlColumnPossible = false)
         is LocalResolution.Bound -> NameBinding.Local(declaration(outcome.declaration))
         is LocalResolution.OverloadSet -> NameBinding.Local(declaration(outcome.declarations.first()))
@@ -225,7 +227,9 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         is LocalResolution.DeclaredLater -> NameBinding.Local(declaration(outcome.declaration))
         is LocalResolution.Duplicate -> NameBinding.Local(declaration(outcome.declarations.first()))
         is LocalResolution.OutOfScope -> NameBinding.Local(declaration(outcome.declaration))
-        LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+        LocalResolution.SpecificationMember -> facts.specificationMembers[range.startLine to range.startColumn]
+            ?.let { NameBinding.Local(NameDeclaration(kind(it.kind), it.line, it.column, it.fileId)) }
+            ?: NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
         else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
     }
 
@@ -263,12 +267,12 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
 
     companion object {
         /**
-         * A plain name read in an expression, the name of a call in a PL/SQL expression (`f`, `f()`, `f(x)`), or the
-         * cursor of `OPEN`, `FETCH` or `CLOSE`.
+         * A plain name read in an expression, the name of a call in a PL/SQL expression (`f`, `f()`, `f(x)`), the
+         * cursor of `OPEN`, `FETCH` or `CLOSE`, or the cursor (or value) a cursor `FOR` loop iterates over.
          */
         val CONTEXTS = EnumSet.of(
             LocalReferenceContext.VALUE, LocalReferenceContext.SQL_VALUE, LocalReferenceContext.INSERT_VALUE,
-            LocalReferenceContext.CALL_EXPRESSION, LocalReferenceContext.CURSOR_OPERAND
+            LocalReferenceContext.CALL_EXPRESSION, LocalReferenceContext.CURSOR_OPERAND, LocalReferenceContext.FOR_CONTROL
         )
 
         /** The positions of a qualified name whose segments are answered: [CONTEXTS], and a call statement (`v.delete;`). */

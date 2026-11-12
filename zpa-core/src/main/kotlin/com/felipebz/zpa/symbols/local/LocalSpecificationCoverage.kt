@@ -66,6 +66,7 @@ internal class LocalSpecificationCoverage private constructor(
         if (!onlySpecificationGap(first)) return steps
         val (body, specification) = bodyWithSpecification(reference) ?: return steps
         val decided = decide(specification, body, reference, first.provisional, LocalResolution.ProvenAbsent, member = false) ?: return steps
+        if (decided == LocalResolution.SpecificationMember) record(reference.range, body, reference.name)
         // Absent or a specification member: nothing after it is read locally.
         val final = decided == LocalResolution.ProvenAbsent || decided == LocalResolution.SpecificationMember
         // A body decision other than the provisional one: the later segments were read after the provisional outcome.
@@ -91,7 +92,10 @@ internal class LocalSpecificationCoverage private constructor(
             val decidedMember = ownUnitMember(specification, body, reference, rest) ?: return result + rest
             if (decidedMember is LocalResolution.Unsupported) return result + decidedMember
             result += LocalResolution.SpecificationCovered(decidedMember)
-            if (decidedMember == LocalResolution.SpecificationMember) return result
+            if (decidedMember == LocalResolution.SpecificationMember) {
+                record(reference.segments.first().range, body, reference.segments.first().name)
+                return result
+            }
             rest = rest.drop(1)
         }
         for (step in rest) {
@@ -145,6 +149,21 @@ internal class LocalSpecificationCoverage private constructor(
         val body = packageBody(LocalResolver.chain(model, found.region)) ?: return false
         val specification = specification(body) ?: return false
         return PackageMemberNames.at(index, specification, found.name, null).status == MemberNameStatus.NOT_DECLARED
+    }
+
+    /**
+     * Whether the specification in another file of the package body directly holding [declaration] declares its name:
+     * null when the project does not prove either.
+     */
+    fun declaredBySpecification(declaration: LocalDeclarationId): Boolean? {
+        val found = model.declaration(declaration)
+        val body = model.region(found.region).takeIf { it.kind == LocalRegionKind.PACKAGE_BODY } ?: return null
+        val specification = specification(body) ?: return null
+        return when (PackageMemberNames.at(index, specification, found.name, null).status) {
+            MemberNameStatus.DECLARED_BEFORE -> true
+            MemberNameStatus.NOT_DECLARED -> false
+            MemberNameStatus.REJECTED, MemberNameStatus.UNKNOWN -> null
+        }
     }
 
     /** The package body enclosing [reference] with the one specification the project holds for it. */
@@ -206,8 +225,17 @@ internal class LocalSpecificationCoverage private constructor(
         return types
     }
 
-    /** The specification member that an unqualified SQL name may bind, by the name's position, when it is the only reading besides a column. */
-    val sqlSpecificationMembers = HashMap<Pair<Int, Int>, LocalSpecificationMember>()
+    /**
+     * The one declaration of the specification in another file that a name decided as [LocalResolution.SpecificationMember]
+     * names, by the position of that name's segment (the first, or the member after the package's own name). An
+     * unqualified SQL name is listed when the member is its only reading besides a column.
+     */
+    val specificationMembers = HashMap<Pair<Int, Int>, LocalSpecificationMember>()
+
+    private fun record(range: SourceRange, body: LocalRegion, name: OracleIdentifier) {
+        val member = specificationMembers(body, name)?.singleOrNull() ?: return
+        memberOf(member)?.let { specificationMembers[range.startLine to range.startColumn] = it }
+    }
 
     /** An unqualified SQL name decided as with the specification in the file; null keeps the gaps. */
     private fun sqlName(reference: LocalReference, outcome: LocalResolution.Incomplete): LocalResolution? {
@@ -229,6 +257,11 @@ internal class LocalSpecificationCoverage private constructor(
     }
 
     private fun specificationMember(reference: LocalReference, member: ProjectDeclaration): LocalResolution? {
+        specificationMembers[reference.range.startLine to reference.range.startColumn] = memberOf(member) ?: return null
+        return columnOr(LocalResolution.SpecificationMember)
+    }
+
+    private fun memberOf(member: ProjectDeclaration): LocalSpecificationMember? {
         val kind = when (member) {
             is PackageValueDeclaration -> LocalDeclarationKind.VARIABLE
             is PackageExceptionDeclaration -> LocalDeclarationKind.EXCEPTION
@@ -238,9 +271,7 @@ internal class LocalSpecificationCoverage private constructor(
             is PackageTypeDeclaration, is PackageSubtypeDeclaration -> LocalDeclarationKind.SUBTYPE
             else -> return null
         }
-        sqlSpecificationMembers[reference.range.startLine to reference.range.startColumn] =
-            LocalSpecificationMember(kind, member.sourceRange.startLine, member.sourceRange.startColumn, member.fileId.value)
-        return columnOr(LocalResolution.SpecificationMember)
+        return LocalSpecificationMember(kind, member.sourceRange.startLine, member.sourceRange.startColumn, member.fileId.value)
     }
 
     private fun columnOr(outcome: LocalResolution) =
@@ -327,6 +358,7 @@ internal class LocalSpecificationCoverage private constructor(
             is LocalResolution.DeclaredLater -> listOf(outcome.declaration)
             is LocalResolution.Duplicate -> outcome.declarations
             is LocalResolution.SqlBuiltinOrLocal -> outcome.declarations
+            is LocalResolution.LocalFunctionInSql -> outcome.declarations
             else -> return false
         }
         return ids.all { id -> model.declaration(id).let { it.region == body.id || isOwnUnit(LocalResolution.Bound(id), body) } }
@@ -417,6 +449,9 @@ internal class LocalReferenceOutcomes(private val model: LocalSemanticModel, pri
     }
 
     fun first(reference: LocalReference): LocalResolution = steps(reference).first()
+
+    /** See [LocalSpecificationCoverage.declaredBySpecification]; null without a prepared project. */
+    fun declaredBySpecification(declaration: LocalDeclarationId): Boolean? = coverage?.declaredBySpecification(declaration)
 
     /** See [LocalSpecificationCoverage.specificationDefaults]; null without a prepared project. */
     fun specificationDefaults(definition: LocalDeclarationId): List<Boolean>? = coverage?.specificationDefaults(definition)

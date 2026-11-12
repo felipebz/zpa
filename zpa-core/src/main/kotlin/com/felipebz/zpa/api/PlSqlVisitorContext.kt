@@ -145,8 +145,12 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
 
     /**
      * What [name], a `VARIABLE_NAME` read in an expression (in PL/SQL, or in SQL inside PL/SQL), naming a call in a
-     * PL/SQL expression, or naming the cursor of `OPEN`, `FETCH` or `CLOSE`, binds among the file's declarations. A
-     * qualified name there (a `MEMBER_EXPRESSION` such as `fn.v` or `block.v`) binds the declaration of its last segment. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
+     * PL/SQL expression, naming the cursor of `OPEN`, `FETCH` or `CLOSE`, or naming what a cursor `FOR` loop iterates
+     * over (`c` of `for r in c` and of `for r in c(10)`, whose actuals are read as any other name), binds among the
+     * file's declarations. A qualified name there (a `MEMBER_EXPRESSION` such as `fn.v` or `block.v`) binds the
+     * declaration of its last segment. In a package body whose specification is in another project file, a member of
+     * that specification is [NameBinding.Local] with the specification's file when the project names one declaration of
+     * it. Only [NameBinding.NothingLocal] proves that no declaration of the file takes the name; in SQL a column
      * may still take it ([NameBinding.NothingLocal.sqlColumnPossible]). [NameBinding.Unknown] is never a proof.
      *
      * Each written segment of such a qualified name, and of a method call statement (`v.delete;`), is answered on its
@@ -165,7 +169,11 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * What the datatype name [name] binds among the file's declarations: the `VARIABLE_NAME`, or the `MEMBER_EXPRESSION`
      * such as `pkg.t_rec`, of the `CUSTOM_DATATYPE` of a declaration (`l_x t_rec;`, a parameter's, a return's or a field's
      * type, a collection's element type). A record, collection or ref cursor type, a subtype or an object type of the
-     * file is [NameBinding.Local] with [NameDeclarationKind.TYPE], qualified or not (`pkg.t_rec` in the body of `pkg`);
+     * file is [NameBinding.Local] with [NameDeclarationKind.TYPE], qualified or not (`pkg.t_rec` in the body of `pkg`).
+     * In a package body whose specification is in another project file, a type or subtype of that specification, written
+     * alone or qualified with the package's name, is [NameBinding.Local] with [NameDeclarationKind.TYPE] and the
+     * specification's file and position; a type of an inner block or subprogram of the body hides it, and it is
+     * [NameBinding.Unknown] when the project does not hold the specification or cannot decide the name.
      * [NameBinding.NothingLocal] proves that no declaration of the file takes the name (`other_pkg.t_rec`), and
      * [NameBinding.Unknown] is never a proof. A datatype written in an expression (`TREAT(x AS t)`, `SELF AS t`,
      * `RETURNING t`) and any other node are [NameBinding.Unavailable].
@@ -184,14 +192,29 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * - of a call in a PL/SQL expression, the first child of its `METHOD_CALL` (`f(x)`, `pkg.f(x)`, the `f` of
      *   `f(1)(2)`); the same written form is also an element access (`v(1)`) or a constructor (`t(1)`);
      * - of a function named without parentheses, read as a value: a function of the file, or a qualified name the
-     *   project knows as a function and not as a package variable (`pkg.f`).
+     *   project knows as a function and not as a package variable (`pkg.f`);
+     * - of a call written with arguments inside static SQL (a `SELECT` list, a `WHERE`, the `VALUES` of an `INSERT`, the
+     *   `SET` of an `UPDATE`), the first child of its `METHOD_CALL`.
      *
      * A name of the file's own subprograms gives [CallBinding.Local], with the subprogram the call binds or the reason
      * it is undecided. A name whose first segment no declaration of the file takes gives [CallBinding.Project], the
      * project's resolution narrowed by the types of the actuals. Any other call keeps [CallBinding.KeptLocal] with the
-     * reason. [CallBinding.Unavailable] answers:
-     * - a call written inside SQL (`select f(x) from dual`, the `VALUES` of an `INSERT`), which the analysis does not
-     *   forward;
+     * reason.
+     *
+     * Inside SQL, SQL's name resolution applies. A column never takes the first segment of a call, so an actual a column
+     * could take has no known type and narrows nothing; one no column can take (over `DUAL` alone, or in the `VALUES` of
+     * a single-table `INSERT`) has its local declaration's type, as in PL/SQL. A relation of the statement takes the
+     * first segment before a member and a method (`alias.column.method(x)`, [CallKeptLocalReason.SQL_RELATION]).
+     * `alias.m(x)` is the method of the rows of an object table, else the function `m` of the package of that name:
+     * [CallKeptLocalReason.SQL_RELATION] when the project has no such function, and
+     * [CallKeptLocalReason.SQL_RELATION_OR_PROJECT] when it has one, since the relation's kind decides. A function of the file that is not stored (declared in a subprogram or block, or
+     * private to a package body) is [CallKeptLocalReason.NOT_CALLABLE_IN_SQL]; one a package body defines for its
+     * specification in another file is the project's call of that specification's function.
+     *
+     * [CallBinding.Unavailable] answers:
+     * - an unqualified name a SQL built-in function may take, which wins over the file's declarations in SQL, as
+     *   [nameBinding] answers it;
+     * - a call in the text of dynamic SQL;
      * - a method called after another call or an element (`f(1).m(x)`, `v(i).m(x)`), bound only while typing a value;
      * - a node that names no call (a variable, a qualifier segment, a datatype), and a file that was not analyzed.
      *

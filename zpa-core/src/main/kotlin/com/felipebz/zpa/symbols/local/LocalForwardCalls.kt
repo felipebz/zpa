@@ -34,7 +34,22 @@ internal enum class LocalCallOutcome {
     INCOMPLETE,
 
     /** The first segment's outcome, or the call's form, is not modeled. */
-    UNSUPPORTED
+    UNSUPPORTED,
+
+    /** In SQL, a relation of the statement takes the first segment: `alias.column.method(x)`, or `alias.m(x)` with no function `alias.m` in the project. */
+    SQL_RELATION,
+
+    /**
+     * In SQL, `alias.m(x)` where the project has a function of that name: Oracle calls the object's method when the
+     * relation is an object table, and the package's function otherwise. The relation's kind is not known here.
+     */
+    SQL_RELATION_OR_PROJECT,
+
+    /**
+     * In SQL, the name binds functions of the file that are not stored (declared in a subprogram or block, or private to
+     * a package body): Oracle rejects the statement (PLS-00231).
+     */
+    NOT_CALLABLE_IN_SQL
 }
 
 /**
@@ -114,6 +129,8 @@ internal class LocalForwardCalls(
         return when (reference.lastSegmentContext) {
             Ctx.CALL_STATEMENT -> ProjectCallKind.PROCEDURE
             Ctx.CALL_EXPRESSION -> ProjectCallKind.FUNCTION
+            // A SQL built-in takes an unqualified name written with arguments, whatever the file declares.
+            Ctx.SQL_CALL -> if (reference.segments.isEmpty() && SqlBuiltinFunctions.mayTake(reference.name)) null else ProjectCallKind.FUNCTION
             // A name without parentheses: a call of a local function, or of a project function when the project shows a
             // function and no value of that name.
             Ctx.VALUE -> if (localCallee(reference) != null || reference.segments.isNotEmpty() &&
@@ -131,7 +148,13 @@ internal class LocalForwardCalls(
     private fun localCallee(reference: LocalReference): Pair<LocalResolution.OverloadSet, Boolean>? {
         val steps = outcomes.steps(reference)
         if (steps.size != reference.segments.size + 1) return null
-        val set = provisional(steps.last()) as? LocalResolution.OverloadSet ?: return null
+        val set = when (val last = provisional(steps.last())) {
+            is LocalResolution.OverloadSet -> last
+            is LocalResolution.SqlBuiltinOrLocal -> LocalResolution.OverloadSet(last.declarations).takeIf { set ->
+                set.declarations.all { model.declaration(it).kind == LocalDeclarationKind.FUNCTION }
+            }
+            else -> null
+        } ?: return null
         val methods = set.declarations.map { (model.declaration(it).details as LocalSubprogram).methodKind }
         val complete = steps.none { it is LocalResolution.Incomplete }
         if (methods.none { it != null }) return set to complete
@@ -174,6 +197,12 @@ internal class LocalForwardCalls(
     /** A member of the enclosing package's specification in another file, named as the project knows it. */
     private fun memberTarget(reference: LocalReference): QualifiedName? = walk.specificationMember(target(reference).segments, reference.region)
 
+    /** Whether the project shows a function or procedure named [name]. */
+    private fun isProjectCallable(name: QualifiedName, region: LocalRegionId): Boolean {
+        val candidates = snapshot.preferring(walk.compilationSchema(region)).findCallCandidates(ProjectCallTarget.written(ProjectQualifiedName.wrap(name)))
+        return candidates.status == ProjectCallCandidates.Status.FOUND && candidates.candidates.isNotEmpty()
+    }
+
     /**
      * Whether the project knows [name] as a function and not as a package value: a certain candidate search with a
      * function candidate, and no package value of that name.
@@ -190,20 +219,11 @@ internal class LocalForwardCalls(
 
     private fun analyze(reference: LocalReference, kind: ProjectCallKind): LocalCallAnalysis {
         val first = outcomes.first(reference)
-        val member = LocalReferenceOutcomes.isSpecificationMember(first)
-        val target = (if (member) memberTarget(reference) else null) ?: target(reference)
         val call = callsByPosition[reference.range.startLine to reference.range.startColumn]
+        val (outcome, viaSpecification) =
+            if (reference.lastSegmentContext == Ctx.SQL_CALL) sqlDecision(reference, first, call) else plsqlDecision(reference, first, call)
+        val target = (if (viaSpecification) memberTarget(reference) else null) ?: target(reference)
         val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it, reference.region)) }.orEmpty()
-        val outcome = when {
-            // A member of an object type's specification has no package target: a method set this analysis does not bind.
-            member && memberTarget(reference) == null -> LocalCallOutcome.UNSUPPORTED
-            LocalReferenceOutcomes.isAbsent(first) || member -> if (call == null || call.actuals != null) LocalCallOutcome.PROJECT else LocalCallOutcome.UNSUPPORTED
-            else -> when (first) {
-                is LocalResolution.Incomplete -> LocalCallOutcome.INCOMPLETE
-                is LocalResolution.Unsupported -> LocalCallOutcome.UNSUPPORTED
-                else -> LocalCallOutcome.LOCAL_CAPTURE
-            }
-        }
         val notation = ProjectCallArguments.of(actuals.map { actual ->
             actual.actual.label?.let { ProjectCallArgument.named(ProjectIdentifier.fromSource(it.originalSpelling)) } ?: ProjectCallArgument.positional()
         })
@@ -218,6 +238,75 @@ internal class LocalForwardCalls(
         val typed = snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, external.metadata, walk.compilationSchema(reference.region))
         return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed, null)
     }
+
+    /** The outcome of a call written in PL/SQL, and whether it names a member of the specification in another file. */
+    private fun plsqlDecision(reference: LocalReference, first: LocalResolution, call: LocalCall?): Pair<LocalCallOutcome, Boolean> {
+        val member = LocalReferenceOutcomes.isSpecificationMember(first)
+        val outcome = when {
+            // A member of an object type's specification has no package target: a method set this analysis does not bind.
+            member && memberTarget(reference) == null -> LocalCallOutcome.UNSUPPORTED
+            LocalReferenceOutcomes.isAbsent(first) || member -> if (call == null || call.actuals != null) LocalCallOutcome.PROJECT else LocalCallOutcome.UNSUPPORTED
+            first is LocalResolution.Incomplete -> LocalCallOutcome.INCOMPLETE
+            first is LocalResolution.Unsupported -> LocalCallOutcome.UNSUPPORTED
+            else -> LocalCallOutcome.LOCAL_CAPTURE
+        }
+        return outcome to member
+    }
+
+    /** As [plsqlDecision], for a call written in SQL; see [sqlOutcome]. */
+    private fun sqlDecision(reference: LocalReference, first: LocalResolution, call: LocalCall?): Pair<LocalCallOutcome, Boolean> {
+        if (specificationUndecided(first)) return LocalCallOutcome.INCOMPLETE to false
+        val viaSpecification = LocalReferenceOutcomes.isSpecificationMember(first) || sqlSpecificationMember(first) || publicInOtherSpecification(first)
+        val outcome = sqlOutcome(reference, first, viaSpecification)
+        return (if (outcome == LocalCallOutcome.PROJECT && call?.actuals == null) LocalCallOutcome.UNSUPPORTED else outcome) to viaSpecification
+    }
+
+    /**
+     * The outcome of a call written in SQL. A column never takes the first segment of a call: a column's method is
+     * written after the relation's alias. A relation of the statement takes it before a member and a method
+     * (`alias.column.method(x)`). `alias.m(x)` is the method of an object table's rows, else a function of the package
+     * of that name: without such a function in the project the relation takes it, with one the kind of the relation
+     * decides.
+     */
+    private fun sqlOutcome(reference: LocalReference, first: LocalResolution, member: Boolean): LocalCallOutcome {
+        if (member) return if (memberTarget(reference) == null) LocalCallOutcome.UNSUPPORTED else LocalCallOutcome.PROJECT
+        return when (val decided = covered(first)) {
+            LocalResolution.ProvenAbsent -> LocalCallOutcome.PROJECT
+            LocalResolution.SqlRelation ->
+                if (reference.segments.size == 1 && isProjectCallable(target(reference), reference.region)) LocalCallOutcome.SQL_RELATION_OR_PROJECT
+                else LocalCallOutcome.SQL_RELATION
+            is LocalResolution.LocalFunctionInSql -> LocalCallOutcome.NOT_CALLABLE_IN_SQL
+            is LocalResolution.Incomplete ->
+                if (onlyColumnGap(decided) && decided.provisional == LocalResolution.ProvenAbsent) LocalCallOutcome.PROJECT else LocalCallOutcome.INCOMPLETE
+            is LocalResolution.Unsupported -> LocalCallOutcome.UNSUPPORTED
+            else -> LocalCallOutcome.LOCAL_CAPTURE
+        }
+    }
+
+    /**
+     * Functions of a package body whose specification is in another file: callable in SQL when the specification
+     * declares them, as a call of that specification's function.
+     */
+    private fun bodyFunctions(first: LocalResolution): List<LocalDeclarationId>? =
+        (covered(first) as? LocalResolution.LocalFunctionInSql)?.declarations?.takeIf { declarations ->
+            declarations.all { id ->
+                val region = model.region(model.declaration(id).region)
+                region.kind == LocalRegionKind.PACKAGE_BODY && LocalTypeScope.unitOf(model, region.id)?.counterpart == null
+            }
+        }
+
+    private fun publicInOtherSpecification(first: LocalResolution) = bodyFunctions(first)?.all { outcomes.declaredBySpecification(it) == true } == true
+
+    private fun specificationUndecided(first: LocalResolution) = bodyFunctions(first)?.any { outcomes.declaredBySpecification(it) == null } == true
+
+    /** An unqualified SQL call whose only reading besides a column is a member of the specification in another file. */
+    private fun sqlSpecificationMember(first: LocalResolution): Boolean =
+        (covered(first) as? LocalResolution.Incomplete)?.let { onlyColumnGap(it) && it.provisional == LocalResolution.SpecificationMember } == true
+
+    private fun onlyColumnGap(outcome: LocalResolution.Incomplete) =
+        outcome.regionReasons.isEmpty() && outcome.lookupReasons == setOf(LocalLookupGap.SQL_COLUMN_UNKNOWN)
+
+    private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
     /**
      * A name `v.m1.m2…` written without parentheses whose first segment is a local value and whose members the
@@ -273,7 +362,12 @@ internal class LocalForwardCalls(
             return local.selected?.let(walk::result) ?: LocalTypeEvidence.unknown("the local call is ${local.status}")
         }
         // A decision made with the project's specification coverage is still the body's: its declaration is local.
-        val last = steps.last().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it }
+        val last = steps.last().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it }.let { decided ->
+            // Over DUAL alone no column but DUMMY exists: the local declaration takes the name, as nameBinding decides.
+            if (decided is LocalResolution.SqlColumnOrLocal && reference.segments.isEmpty() && reference.sql?.excludesColumn(reference.name) == true) {
+                LocalResolution.Bound(decided.declaration)
+            } else decided
+        }
         if (!actual.isCall) return walk.outcome(last)
         val arguments = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size ?: 0
         val element = walk.call(last, arguments)

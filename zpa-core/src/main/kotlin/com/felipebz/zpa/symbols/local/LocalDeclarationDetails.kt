@@ -132,7 +132,7 @@ internal class LocalLoopControl(
     val row: LocalQueryRow? = null
 ) {
     enum class Form {
-        /** `lo .. hi` without `BY`: the index is a PLS_INTEGER. */
+        /** `lo .. hi` without `BY`, or the bounds of FORALL: the index is a PLS_INTEGER. */
         STEPPED,
 
         /** A subquery: the index is a row. */
