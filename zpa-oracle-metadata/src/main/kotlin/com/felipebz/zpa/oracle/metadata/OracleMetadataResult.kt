@@ -36,6 +36,10 @@ class OracleMetadataResult internal constructor(
     val relationCount: Int,
     /** Columns added to [metadata]. */
     val columnCount: Int,
+    /** Distinct object names (`ALL_OBJECTS` rows of the requested schemas) added to [metadata]. */
+    val objectCount: Int,
+    /** Synonyms (of the requested schemas and public ones) added to [metadata]. */
+    val synonymCount: Int,
     /** `DBMS_DB_VERSION.VERSION` and `RELEASE`, as the database's package declares them; null when they could not be read. */
     val databaseVersion: DatabaseVersion? = null,
     /** Why [databaseVersion] could not be read (the driver's message, not sanitized); null when it was read. */
@@ -51,5 +55,7 @@ class OracleMetadataResult internal constructor(
     val notVisible: Set<OracleRelationName> = Collections.unmodifiableSet(LinkedHashSet(notVisible))
 
     override fun toString(): String =
-        "OracleMetadataResult($relationCount relations, $columnCount columns, complete=$completeSchemas, notVisible=$notVisible, ${metadata.origin.orElse("")})"
+        "OracleMetadataResult($relationCount relations, $columnCount columns, $objectCount objects, $synonymCount synonyms, " +
+            "complete=$completeSchemas, publicSynonymsComplete=${metadata.isPublicSynonymsComplete}, notVisible=$notVisible, " +
+            "${metadata.origin.orElse("")})"
 }

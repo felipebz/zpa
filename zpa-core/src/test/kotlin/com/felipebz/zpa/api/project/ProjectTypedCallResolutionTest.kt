@@ -30,7 +30,7 @@ class ProjectTypedCallResolutionTest {
 
     private fun metadata(vararg relations: ProjectExternalRelation, complete: Boolean = true): ProjectExternalMetadata {
         val builder = ProjectExternalMetadata.builder("fixture")
-        if (complete) builder.completeSchema("HR")
+        if (complete) builder.completeSchema("HR").completePublicSynonyms()
         relations.forEach { builder.relation(it) }
         return builder.build()
     }

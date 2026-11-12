@@ -76,7 +76,7 @@ class PlSqlSquidSensorOracleTest {
     private val secret = "s3cr3t-Pa55"
     private val environment = mapOf("ZPA_ORACLE_PASSWORD" to secret)
 
-    private val metadata = ProjectExternalMetadata.builder("test fixture").completeSchema("HR").relation(
+    private val metadata = ProjectExternalMetadata.builder("test fixture").completeSchema("HR").completePublicSynonyms().relation(
         ProjectExternalRelation.of(
             "HR", "EMPLOYEES", true, listOf(
                 ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 6, 0)),

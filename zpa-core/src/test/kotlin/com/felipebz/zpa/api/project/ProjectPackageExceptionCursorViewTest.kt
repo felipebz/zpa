@@ -102,10 +102,11 @@ class ProjectPackageExceptionCursorViewTest {
         assertThat(inside.status).isEqualTo(ProjectExternalTypeDescription.Status.NOT_EXTERNAL)
         assertThat(inside.sourceCandidates.map { it.kind }).containsExactly(ProjectDeclarationKind.PACKAGE_CURSOR)
         assertThat(describe(n("error_pkg"), "app_error").sourceCandidates.map { it.kind }).containsExactly(ProjectDeclarationKind.PACKAGE_EXCEPTION)
-        // Qualified from outside, the project does not prove the package is in the current schema: the schema-qualified
-        // relation reading stays open, with the package and its cursor listed as possible captors.
+        // Qualified from outside, the project does not prove the package is in the current schema, and a public synonym
+        // the metadata does not hold may take the qualifier: the reading stays open, with the package and its cursor
+        // listed as possible captors.
         val outside = describe(null, "error_pkg", "c_all")
-        assertThat(outside.status).isEqualTo(ProjectExternalTypeDescription.Status.INCOMPLETE)
+        assertThat(outside.status).isEqualTo(ProjectExternalTypeDescription.Status.CAPTURE_NOT_EXCLUDED)
         assertThat(outside.sourceCandidates.map { it.kind })
             .containsExactly(ProjectDeclarationKind.PACKAGE, ProjectDeclarationKind.PACKAGE_CURSOR)
     }

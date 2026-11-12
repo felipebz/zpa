@@ -9,6 +9,8 @@ private const val COLUMN_LIST =
     "SELECT owner, table_name, column_name, column_id, data_type, data_type_owner, data_length, char_length, " +
         "char_used, data_precision, data_scale FROM all_tab_cols "
 
+private const val SYNONYM_LIST = "SELECT owner, synonym_name, table_owner, table_name, db_link FROM all_synonyms "
+
 private fun placeholders(pairs: Int) = List(pairs) { "(?, ?)" }.joinToString(", ")
 
 /**
@@ -47,6 +49,22 @@ internal enum class OracleDictionaryDialect(private val containerExpression: Str
     fun targetedColumnsSql(pairs: Int): String =
         COLUMN_LIST + "WHERE (owner, table_name) IN (${placeholders(pairs)}) AND $columnFilter " +
             "ORDER BY owner, table_name, internal_column_id"
+
+    /**
+     * Object names of one owner, of the types that can start a qualified name. A materialized view is read too (its
+     * container table has the same name); package and type bodies and other types are not read.
+     */
+    val schemaObjectsSql: String =
+        "SELECT owner, object_name, object_type FROM all_objects WHERE owner = ? AND object_type IN " +
+            "('TABLE', 'MATERIALIZED VIEW', 'VIEW', 'SYNONYM', 'PACKAGE', 'TYPE', 'SEQUENCE', 'PROCEDURE', 'FUNCTION')"
+
+    val schemaSynonymsSql: String = SYNONYM_LIST + "WHERE owner = ?"
+
+    val publicSynonymsSql: String = SYNONYM_LIST + "WHERE owner = 'PUBLIC'"
+
+    /** Public synonyms whose `TABLE_OWNER` is one of [targets] schemas, which are the parameters. */
+    fun targetedPublicSynonymsSql(targets: Int): String =
+        SYNONYM_LIST + "WHERE owner = 'PUBLIC' AND table_owner IN (${List(targets) { "?" }.joinToString(", ")})"
 
     companion object {
         fun forMajorVersion(major: Int): OracleDictionaryDialect = if (major < 12) LEGACY else CURRENT

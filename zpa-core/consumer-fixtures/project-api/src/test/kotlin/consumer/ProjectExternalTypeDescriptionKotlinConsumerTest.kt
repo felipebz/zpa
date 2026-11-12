@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test
 @OptIn(ZpaExperimentalApi::class)
 class ProjectExternalTypeDescriptionKotlinConsumerTest {
     private val hr = ProjectIdentifier.fromSource("HR")
-    private val metadata = ProjectExternalMetadata.builder("fixture").completeSchema("HR").relation(
+    private val metadata = ProjectExternalMetadata.builder("fixture").completeSchema("HR").completePublicSynonyms()
+        .synonym(ProjectExternalSynonym.of("HR", "STAFF", "HR", "EMPLOYEES", null)).relation(
         ProjectExternalRelation.of(
             "HR", "EMPLOYEES", true, listOf(
                 ProjectExternalColumn.of("NAME", 3, ProjectExternalDatatype.of("VARCHAR2", null, 30, ProjectExternalDatatype.LengthSemantics.BYTE, null, null)),
@@ -27,7 +28,6 @@ class ProjectExternalTypeDescriptionKotlinConsumerTest {
         ProjectExternalTypeDescription.Status.CONFLICT -> "conflict"
         ProjectExternalTypeDescription.Status.UNAVAILABLE -> "unavailable"
         ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING -> "schema context missing"
-        ProjectExternalTypeDescription.Status.AMBIGUOUS -> "ambiguous"
         ProjectExternalTypeDescription.Status.INCOMPLETE -> "incomplete"
         ProjectExternalTypeDescription.Status.RELATION_NOT_FOUND -> "relation not found"
         ProjectExternalTypeDescription.Status.COLUMN_NOT_FOUND -> "column not found"
@@ -42,6 +42,9 @@ class ProjectExternalTypeDescriptionKotlinConsumerTest {
         assertThat(sal.lookup.get().column.get().datatype.get().scale.asInt).isEqualTo(2)
         assertThat(label(empty.describeExternalType(ProjectWrittenAnchor.of(ProjectQualifiedName.of("employees"), ProjectTypeReference.Anchor.ROWTYPE), null, metadata, null).status))
             .isEqualTo("schema context missing")
+        val staff = empty.describeExternalType(ProjectWrittenAnchor.of(ProjectQualifiedName.of("staff", "salary"), ProjectTypeReference.Anchor.TYPE), null, metadata, hr)
+        assertThat(label(staff.status)).isEqualTo("resolved")
+        assertThat(staff.synonyms.map { it.targetName }).containsExactly(ProjectIdentifier.fromSource("employees"))
 
         val snapshot = ProjectSnapshots.prepare(
             listOf(ProjectSourceInput.ofText("p_spec.sql", "CREATE PACKAGE p AS CURSOR employees RETURN r_t; TYPE rows_t IS TABLE OF employees%ROWTYPE; TYPE free_t IS TABLE OF jobs%ROWTYPE; END p;")),

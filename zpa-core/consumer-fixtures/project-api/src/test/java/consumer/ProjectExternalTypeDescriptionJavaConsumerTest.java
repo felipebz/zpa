@@ -32,7 +32,6 @@ class ProjectExternalTypeDescriptionJavaConsumerTest {
             case CONFLICT -> "conflict";
             case UNAVAILABLE -> "unavailable";
             case SCHEMA_CONTEXT_MISSING -> "schema context missing";
-            case AMBIGUOUS -> "ambiguous";
             case INCOMPLETE -> "incomplete";
             case RELATION_NOT_FOUND -> "relation not found";
             case COLUMN_NOT_FOUND -> "column not found";

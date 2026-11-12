@@ -75,14 +75,17 @@ private class Composition(
         val sourceCandidates: List<ProjectDeclarationView> = emptyList(),
         val externalCandidates: List<ProjectExternalRelation> = emptyList(),
         /** Facts a definitive answer rests on; any conditionally compiled one makes it inconclusive. */
-        val dependencies: List<ProjectDeclaration> = emptyList()
+        val dependencies: List<ProjectDeclaration> = emptyList(),
+        val synonyms: List<ProjectExternalSynonym> = emptyList(),
+        val capturingObject: ProjectExternalObject? = null
     )
 
     fun compose(): ProjectExternalTypeDescription {
         val outcome = decide()
         return guarded(outcome).let {
             ProjectExternalTypeDescription.of(
-                it.status, source, it.anchor?.kind, it.anchor?.name, it.relationName, it.lookup, distinct(it.sourceCandidates), it.externalCandidates.distinct()
+                it.status, source, it.anchor?.kind, it.anchor?.name, it.relationName, it.lookup, distinct(it.sourceCandidates),
+                it.externalCandidates.distinct(), it.synonyms, it.capturingObject
             )
         }
     }
@@ -259,58 +262,121 @@ private class Composition(
         }
         // 9. Context.
         if (!reading.qualified && reading.schema == null) return Outcome(Status.SCHEMA_CONTEXT_MISSING, anchor, sourceCandidates = captors)
-        // 10. Lookups.
-        val lookup = lookup(reading)
-        val relationName = reading.name!!
-        currentSchemaCapture(anchor, reading, first, relationName, lookup, captors)?.let { return it }
-        return lookupOutcome(anchor, reading, relationName, lookup, captors, stepFacts, referenceFacts)
+        // 10. Name resolution and lookups.
+        if (reading.qualified) return qualifiedOutcome(anchor, reading, first, captors, stepFacts + referenceFacts)
+        return readingOutcome(anchor, reading, resolve(reading.schema!!, reading.relation, unqualified = true), captors, stepFacts + referenceFacts)
     }
 
-    private fun currentSchemaCapture(
+    /**
+     * Step 11. Oracle reads the first segment of a schema-qualified anchor as an object of the compilation schema, then
+     * as a public synonym, and only when neither takes it as a schema.
+     */
+    private fun qualifiedOutcome(
         anchor: WrittenName,
         reading: Reading,
         first: ProjectIdentifier,
-        relationName: ProjectQualifiedName,
-        lookup: ProjectExternalLookup,
-        captors: List<ProjectDeclarationView>
-    ): Outcome? {
-        // 11. Schema-qualified readings: a current-schema relation named like the qualifier captures it, or competes.
-        if (reading.qualified && currentSchema != null) {
-            val current = metadata.findRelation(currentSchema, first)
-            if (current.status == ProjectExternalLookup.Status.FOUND) {
-                val currentRelation = current.relation.get()
-                if (lookup.status == ProjectExternalLookup.Status.FOUND) {
-                    return Outcome(Status.AMBIGUOUS, anchor, relationName, lookup, captors, listOf(currentRelation, lookup.relation.get()))
-                }
-                return Outcome(Status.CAPTURE_NOT_EXCLUDED, anchor, relationName, lookup, captors, listOf(currentRelation))
-            }
+        captors: List<ProjectDeclarationView>,
+        dependencies: List<ProjectDeclaration>
+    ): Outcome {
+        val compiling = currentSchema
+        val captor = compiling?.let { metadata.findObject(it, first).orElse(null) }
+            ?: metadata.findObject(ProjectExternalSynonym.PUBLIC, first).orElse(null)
+        if (captor != null) return Outcome(Status.NOT_EXTERNAL, anchor, capturingObject = captor)
+        if (compiling == null || !metadata.isSchemaComplete(compiling) || !metadata.isPublicSynonymsComplete) {
+            return inconclusive(Status.CAPTURE_NOT_EXCLUDED, anchor, reading, captors)
         }
-        return null
+        return readingOutcome(anchor, reading, resolve(reading.schema!!, reading.relation, unqualified = false), captors, dependencies)
     }
 
-    private fun lookupOutcome(
+    private sealed interface Target {
+        class Relation(val schema: ProjectIdentifier, val name: ProjectIdentifier) : Target
+        class Absent(val schema: ProjectIdentifier, val name: ProjectIdentifier, val proven: Boolean) : Target
+        class Other(val schemaObject: ProjectExternalObject) : Target
+        data object Remote : Target
+        data object Cycle : Target
+    }
+
+    private class Resolution(val target: Target, val synonyms: List<ProjectExternalSynonym>)
+
+    /**
+     * What the relation name [name] of [schema] stands for, as Oracle resolves it: an object of the schema, then (for
+     * an [unqualified] name only) a public synonym; synonyms are followed to their target. Absence is proven only for
+     * the written name itself in a complete schema, with complete public synonyms for an unqualified name: a synonym
+     * whose target is missing from the metadata may point to an object the session cannot see.
+     */
+    private fun resolve(schema: ProjectIdentifier, name: ProjectIdentifier, unqualified: Boolean): Resolution {
+        val synonyms = ArrayList<ProjectExternalSynonym>()
+        var owner = schema
+        var current = name
+        var public = unqualified
+        while (true) {
+            val found = metadata.findObject(owner, current).orElse(null)
+            val synonym = when {
+                found == null && public && metadata.isSchemaComplete(owner) ->
+                    metadata.findSynonym(ProjectExternalSynonym.PUBLIC, current).orElse(null)
+                        ?: return Resolution(Target.Absent(owner, current, metadata.isPublicSynonymsComplete), synonyms)
+                found == null ->
+                    return Resolution(Target.Absent(owner, current, !unqualified && synonyms.isEmpty() && metadata.isSchemaComplete(owner)), synonyms)
+                found.kind == ProjectExternalObject.Kind.SYNONYM ->
+                    metadata.findSynonym(owner, current).orElse(null) ?: return Resolution(Target.Absent(owner, current, false), synonyms)
+                found.kind == ProjectExternalObject.Kind.TABLE || found.kind == ProjectExternalObject.Kind.VIEW ->
+                    return Resolution(Target.Relation(owner, current), synonyms)
+                else -> return Resolution(Target.Other(found), synonyms)
+            }
+            // Oracle rejects a synonym that resolves to itself (ORA-01775).
+            if (synonym in synonyms) return Resolution(Target.Cycle, synonyms)
+            synonyms += synonym
+            if (synonym.dbLink.isPresent) return Resolution(Target.Remote, synonyms)
+            owner = synonym.targetOwner.get()
+            current = synonym.targetName
+            public = false
+        }
+    }
+
+    /** Steps 12 and 13. */
+    private fun readingOutcome(
         anchor: WrittenName,
         reading: Reading,
-        relationName: ProjectQualifiedName,
-        lookup: ProjectExternalLookup,
+        resolution: Resolution,
         captors: List<ProjectDeclarationView>,
-        stepFacts: List<ProjectDeclaration>,
-        referenceFacts: List<ProjectDeclaration>
+        dependencies: List<ProjectDeclaration>
     ): Outcome {
-        // 12. Lookup outcome.
+        val synonyms = resolution.synonyms
+        val (schema, name) = when (val target = resolution.target) {
+            Target.Remote -> return Outcome(Status.REMOTE, anchor, synonyms = synonyms)
+            Target.Cycle -> return Outcome(Status.NOT_EXTERNAL, anchor, synonyms = synonyms)
+            is Target.Other -> return Outcome(Status.NOT_EXTERNAL, anchor, capturingObject = target.schemaObject, synonyms = synonyms)
+            is Target.Absent -> {
+                val relationName = qualified(target.schema, target.name)
+                if (target.proven) {
+                    return Outcome(Status.RELATION_NOT_FOUND, anchor, relationName, lookup(target.schema, target.name, reading.column), captors, synonyms = synonyms)
+                }
+                return Outcome(Status.INCOMPLETE, anchor, relationName, notCovered(target.schema, target.name, reading.column), captors, synonyms = synonyms)
+            }
+            is Target.Relation -> target.schema to target.name
+        }
+        val relationName = qualified(schema, name)
+        // An object named as a table or view whose relation the metadata does not supply is not covered.
+        val lookup = lookup(schema, name, reading.column).takeIf { it.status != ProjectExternalLookup.Status.RELATION_NOT_FOUND }
+            ?: notCovered(schema, name, reading.column)
         when (lookup.status) {
-            ProjectExternalLookup.Status.NOT_COVERED -> return Outcome(Status.INCOMPLETE, anchor, relationName, lookup, captors)
-            ProjectExternalLookup.Status.RELATION_NOT_FOUND -> return Outcome(Status.RELATION_NOT_FOUND, anchor, relationName, lookup, captors)
-            ProjectExternalLookup.Status.COLUMN_NOT_FOUND -> return Outcome(Status.COLUMN_NOT_FOUND, anchor, relationName, lookup, captors)
+            ProjectExternalLookup.Status.NOT_COVERED -> return Outcome(Status.INCOMPLETE, anchor, relationName, lookup, captors, synonyms = synonyms)
+            ProjectExternalLookup.Status.COLUMN_NOT_FOUND -> return Outcome(Status.COLUMN_NOT_FOUND, anchor, relationName, lookup, captors, synonyms = synonyms)
             else -> Unit
         }
         if (reading.column == null && !lookup.relation.get().isColumnsComplete) {
-            return Outcome(Status.INCOMPLETE, anchor, relationName, lookup, captors)
+            return Outcome(Status.INCOMPLETE, anchor, relationName, lookup, captors, synonyms = synonyms)
         }
-        // 13. Final.
-        if (reading.qualified) return Outcome(Status.CAPTURE_NOT_EXCLUDED, anchor, relationName, lookup, captors)
-        return Outcome(Status.RESOLVED, anchor, relationName, lookup, dependencies = stepFacts + referenceFacts)
+        return Outcome(Status.RESOLVED, anchor, relationName, lookup, dependencies = dependencies, synonyms = synonyms)
     }
+
+    private fun qualified(schema: ProjectIdentifier, name: ProjectIdentifier) = ProjectQualifiedName.ofIdentifiers(listOf(schema, name))
+
+    private fun lookup(schema: ProjectIdentifier, name: ProjectIdentifier, column: ProjectIdentifier?): ProjectExternalLookup =
+        if (column == null) metadata.findRelation(schema, name) else metadata.findColumn(schema, name, column)
+
+    private fun notCovered(schema: ProjectIdentifier, name: ProjectIdentifier, column: ProjectIdentifier?) =
+        ProjectExternalLookup.of(ProjectExternalLookup.Status.NOT_COVERED, schema, name, column, null, null, metadata.origin.get())
 
     /**
      * A definitive answer (`RESOLVED`, `NOT_EXTERNAL`, `CONFLICT`) that rests on a conditionally compiled declaration
@@ -332,7 +398,7 @@ private class Composition(
         val captors = if (outcome.status == Status.RESOLVED && anchor != null) possibleCaptors(anchor, ownerOfAnchor()) else outcome.sourceCandidates
         return Outcome(
             Status.CAPTURE_NOT_EXCLUDED, anchor, relationName, lookup,
-            captors + conditional.flatMap { viewOf(it) }, outcome.externalCandidates
+            captors + conditional.flatMap { viewOf(it) }, outcome.externalCandidates, synonyms = outcome.synonyms, capturingObject = outcome.capturingObject
         )
     }
 

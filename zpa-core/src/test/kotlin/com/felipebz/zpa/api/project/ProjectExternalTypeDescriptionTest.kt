@@ -28,9 +28,10 @@ class ProjectExternalTypeDescriptionTest {
     private val hr = ProjectIdentifier.fromSource("HR")
     private val app = ProjectIdentifier.fromSource("APP")
 
-    private fun metadata(vararg relations: ProjectExternalRelation, complete: List<String> = listOf("HR")): ProjectExternalMetadata {
+    private fun metadata(vararg relations: ProjectExternalRelation, complete: List<String> = listOf("HR"), publicSynonyms: Boolean = true): ProjectExternalMetadata {
         val builder = ProjectExternalMetadata.builder("fixture")
         complete.forEach { builder.completeSchema(it) }
+        if (publicSynonyms) builder.completePublicSynonyms()
         relations.forEach { builder.relation(it) }
         return builder.build()
     }
@@ -357,32 +358,65 @@ class ProjectExternalTypeDescriptionTest {
         assertThat(s.describeExternalType(valueRef(s, "q", "y"), n("q"), md, hr).status).isEqualTo(Status.NOT_EXTERNAL)
     }
 
+    private fun names(complete: List<String>, publicComplete: Boolean, vararg relations: ProjectExternalRelation, more: ProjectExternalMetadata.Builder.() -> Unit = {}) =
+        ProjectExternalMetadata.builder("fixture").apply {
+            complete.forEach { completeSchema(it) }
+            if (publicComplete) completePublicSynonyms()
+            relations.forEach { relation(it) }
+            more()
+        }.build()
+
     @Test
-    fun schemaQualifiedWrittenAnchorsNeverResolve() {
+    fun schemaQualifiedAnchorsReadTheQualifierAsOracleDoes() {
         val qualified = w(TYPE, "hr", "employees", "salary")
-        val appComplete = metadata(employees, complete = listOf("HR", "APP"))
-        val capture = empty.describeExternalType(qualified, null, appComplete, app)
-        assertThat(capture.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
-        assertThat(capture.lookup.get().status).isEqualTo(Lookup.FOUND)
-        assertThat(capture.relationName).contains(n("HR", "EMPLOYEES"))
-        assertThat(appComplete.findColumn(hr, ProjectIdentifier.fromSource("EMPLOYEES"), ProjectIdentifier.fromSource("SALARY")).status).isEqualTo(Lookup.FOUND)
-        assertThat(empty.describeExternalType(qualified, null, appComplete, null).status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
-        // Two positive readings: the current-schema relation HR and the qualified relation.
+        val decided = names(listOf("HR", "APP"), true, employees)
+        // No object of APP and no public synonym is named HR: the qualifier is the schema.
+        val salary = empty.describeExternalType(qualified, null, decided, app)
+        assertThat(salary.status).isEqualTo(Status.RESOLVED)
+        assertThat(salary.relationName).contains(n("HR", "EMPLOYEES"))
+        assertThat(salary.lookup.get().column.get().name.toString()).isEqualTo("\"SALARY\"")
+        assertThat(empty.describeExternalType(w(ROWTYPE, "hr", "employees"), null, decided, app).status).isEqualTo(Status.RESOLVED)
+        assertThat(empty.describeExternalType(w(TYPE, "hr", "employees", "bonus"), null, decided, app).status).isEqualTo(Status.COLUMN_NOT_FOUND)
+        assertThat(empty.describeExternalType(w(TYPE, "hr", "nope", "x"), null, decided, app).status).isEqualTo(Status.RELATION_NOT_FOUND)
+        assertThat(empty.describeExternalType(w(TYPE, "hr", "nope", "x"), null, names(listOf("APP"), true, employees), app).status)
+            .isEqualTo(Status.INCOMPLETE)
+        // Without the compilation schema's names, or the public synonyms, or the schema itself, the qualifier stays open.
+        for (open in listOf(names(listOf("HR"), true, employees), names(listOf("HR", "APP"), false, employees))) {
+            val capture = empty.describeExternalType(qualified, null, open, app)
+            assertThat(capture.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
+            assertThat(capture.lookup.get().status).isEqualTo(Lookup.FOUND)
+        }
+        assertThat(empty.describeExternalType(qualified, null, decided, null).status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
+    }
+
+    @Test
+    fun anObjectOfTheCompilationSchemaOrAPublicSynonymTakesTheQualifier() {
+        val qualified = w(TYPE, "hr", "employees", "salary")
+        // A table of APP named HR: Oracle reads hr.employees as its column (PLS-00487 or PLS-00302), never the schema.
         val appHr = ProjectExternalRelation.of("APP", "HR", true, listOf(idColumn))
-        val ambiguous = empty.describeExternalType(qualified, null, metadata(employees, appHr, complete = listOf("HR", "APP")), app)
-        assertThat(ambiguous.status).isEqualTo(Status.AMBIGUOUS)
-        assertThat(ambiguous.externalCandidates).containsExactly(appHr, employees)
-        // A qualifier capture alone is not competition.
-        val rowCapture = empty.describeExternalType(w(ROWTYPE, "hr", "employees"), null, metadata(appHr, complete = listOf("APP")), app)
-        assertThat(rowCapture.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
-        assertThat(rowCapture.externalCandidates).containsExactly(appHr)
-        assertThat(rowCapture.lookup.get().status).isEqualTo(Lookup.NOT_COVERED)
-        // The qualified relation without the column is not a positive reading either.
-        val noColumn = empty.describeExternalType(w(TYPE, "hr", "employees", "bonus"), null, metadata(employees, appHr, complete = listOf("HR", "APP")), app)
-        assertThat(noColumn.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
-        assertThat(noColumn.lookup.get().status).isEqualTo(Lookup.COLUMN_NOT_FOUND)
-        // Unqualified readings of the same names do resolve.
-        assertThat(empty.describeExternalType(w(TYPE, "employees", "salary"), null, appComplete, hr).status).isEqualTo(Status.RESOLVED)
+        for (complete in listOf(listOf("HR", "APP"), listOf("HR"))) {
+            val table = empty.describeExternalType(qualified, null, names(complete, false, employees, appHr), app)
+            assertThat(table.status).isEqualTo(Status.NOT_EXTERNAL)
+            assertThat(table.capturingObject.get().kind).isEqualTo(ProjectExternalObject.Kind.TABLE)
+            assertThat(table.capturingObject.get().schema).isEqualTo(app)
+        }
+        val row = empty.describeExternalType(w(ROWTYPE, "hr", "employees"), null, names(listOf("APP"), true, appHr), app)
+        assertThat(row.status).isEqualTo(Status.NOT_EXTERNAL)
+        // A package of APP named HR takes it too.
+        val pkg = names(listOf("HR", "APP"), true, employees) { schemaObject(ProjectExternalObject.of("APP", "HR", ProjectExternalObject.Kind.PACKAGE)) }
+        assertThat(empty.describeExternalType(qualified, null, pkg, app).capturingObject.get().kind).isEqualTo(ProjectExternalObject.Kind.PACKAGE)
+        // So does a public synonym named HR, whatever it stands for.
+        val public = names(listOf("HR", "APP"), true, employees) { synonym(ProjectExternalSynonym.of("PUBLIC", "HR", "OTHER", "T_PUB", null)) }
+        val synonym = empty.describeExternalType(qualified, null, public, app)
+        assertThat(synonym.status).isEqualTo(Status.NOT_EXTERNAL)
+        assertThat(synonym.capturingObject.get().kind).isEqualTo(ProjectExternalObject.Kind.SYNONYM)
+        assertThat(synonym.capturingObject.get().schema).isEqualTo(ProjectExternalSynonym.PUBLIC)
+        // A qualified name that is a synonym of that schema is followed.
+        val viaSynonym = names(listOf("HR", "APP"), true, employees) { synonym(ProjectExternalSynonym.of("HR", "EMP_SYN", "HR", "EMPLOYEES", null)) }
+        val followed = empty.describeExternalType(w(TYPE, "hr", "emp_syn", "salary"), null, viaSynonym, app)
+        assertThat(followed.status).isEqualTo(Status.RESOLVED)
+        assertThat(followed.relationName).contains(n("HR", "EMPLOYEES"))
+        assertThat(followed.synonyms.single().name).isEqualTo(ProjectIdentifier.fromSource("emp_syn"))
     }
 
     @Test
@@ -561,7 +595,7 @@ class ProjectExternalTypeDescriptionTest {
         assertThatThrownBy { (e.externalCandidates as MutableList<ProjectExternalRelation>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)
         assertThat(Status.entries.map { it.name }).containsExactly(
             "RESOLVED", "NOT_EXTERNAL", "CAPTURE_NOT_EXCLUDED", "SOURCE_INCOMPLETE", "CONFLICT", "UNAVAILABLE",
-            "SCHEMA_CONTEXT_MISSING", "AMBIGUOUS", "INCOMPLETE", "RELATION_NOT_FOUND", "COLUMN_NOT_FOUND", "REMOTE"
+            "SCHEMA_CONTEXT_MISSING", "INCOMPLETE", "RELATION_NOT_FOUND", "COLUMN_NOT_FOUND", "REMOTE"
         )
         val pool = Executors.newFixedThreadPool(8)
         try {

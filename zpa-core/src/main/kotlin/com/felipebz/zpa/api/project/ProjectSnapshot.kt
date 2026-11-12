@@ -175,11 +175,20 @@ class ProjectSnapshot private constructor(
 
     /**
      * Composes [describeType] for [name] with supplied external relation [metadata]. [currentSchema] is the schema in
-     * which the referencing unit compiles; it is needed only for unqualified relation readings (null gives
-     * [ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING] there). The source description is unchanged and
-     * returned in [ProjectExternalTypeDescription.source]. A source walk stopped at a `%ROWTYPE` anchor with one
-     * pending field is read as that relation's column (`customer.name%TYPE` for `g_cust.name%TYPE` where `g_cust` is
-     * a `customer%ROWTYPE`); a longer pending path, or one after a column anchor, is no relation reading.
+     * which the referencing unit compiles (`ProjectExternalContext.compilationSchema`); it is needed for unqualified
+     * relation readings (null gives [ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING] there) and to decide
+     * schema-qualified ones. The source description is unchanged and returned in [ProjectExternalTypeDescription.source].
+     * A source walk stopped at a `%ROWTYPE` anchor with one pending field is read as that relation's column
+     * (`customer.name%TYPE` for `g_cust.name%TYPE` where `g_cust` is a `customer%ROWTYPE`); a longer pending path, or
+     * one after a column anchor, is no relation reading.
+     *
+     * Names are read as Oracle reads them. An unqualified relation name is an object of [currentSchema], then a private
+     * synonym of it, then a public synonym; synonyms are followed to their target (a synonym of a synonym too, a
+     * database link stopping as [ProjectExternalTypeDescription.Status.REMOTE]), and the description lists them in
+     * [ProjectExternalTypeDescription.synonyms]. The first segment of a schema-qualified anchor (`hr_app.customer.name`)
+     * is read as a schema only when no object of [currentSchema] and no public synonym takes it; an object or public
+     * synonym that does is [ProjectExternalTypeDescription.capturingObject]. Absence needs complete coverage: of the
+     * schema, and of the public synonyms for an unqualified name or a schema qualifier.
      */
     fun describeExternalType(
         name: ProjectQualifiedName,

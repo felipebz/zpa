@@ -9,7 +9,9 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalColumn
 import com.felipebz.zpa.api.project.ProjectExternalDatatype
 import com.felipebz.zpa.api.project.ProjectExternalMetadata
+import com.felipebz.zpa.api.project.ProjectExternalObject
 import com.felipebz.zpa.api.project.ProjectExternalRelation
+import com.felipebz.zpa.api.project.ProjectExternalSynonym
 import com.felipebz.zpa.squid.DatabaseVersion
 import java.math.BigDecimal
 import java.time.Instant
@@ -46,6 +48,12 @@ internal class ColumnRow(
     val scale: BigDecimal?
 )
 
+/** One `ALL_OBJECTS` row. */
+internal class ObjectRow(val schema: String, val name: String, val type: String)
+
+/** One `ALL_SYNONYMS` row, values as read (SQL NULL stays null). */
+internal class SynonymRow(val owner: String, val name: String, val targetOwner: String?, val targetName: String?, val dbLink: String?)
+
 /** Pure mapping from dictionary rows to S8 descriptors; no JDBC. */
 @OptIn(ZpaExperimentalApi::class)
 internal object OracleDictionaryMapping {
@@ -75,14 +83,37 @@ internal object OracleDictionaryMapping {
     fun column(row: ColumnRow): ProjectExternalColumn = ProjectExternalColumn.of(row.name, row.columnId?.intValueExact(), datatype(row))
 
     /**
+     * The kind of an `ALL_OBJECTS` `OBJECT_TYPE`, or null for a type that cannot start a qualified name (bodies,
+     * indexes, triggers...). A materialized view is a table: its container table has the same name.
+     */
+    fun objectKind(objectType: String): ProjectExternalObject.Kind? = when (objectType) {
+        "TABLE", "MATERIALIZED VIEW" -> ProjectExternalObject.Kind.TABLE
+        "VIEW" -> ProjectExternalObject.Kind.VIEW
+        "SYNONYM" -> ProjectExternalObject.Kind.SYNONYM
+        "PACKAGE" -> ProjectExternalObject.Kind.PACKAGE
+        "TYPE" -> ProjectExternalObject.Kind.TYPE
+        "SEQUENCE" -> ProjectExternalObject.Kind.SEQUENCE
+        "PROCEDURE" -> ProjectExternalObject.Kind.PROCEDURE
+        "FUNCTION" -> ProjectExternalObject.Kind.FUNCTION
+        else -> null
+    }
+
+    /** @throws IllegalArgumentException if the row cannot form a synonym descriptor */
+    fun synonym(row: SynonymRow): ProjectExternalSynonym {
+        val target = requireNotNull(row.targetName) { "The synonym has no target name" }
+        return ProjectExternalSynonym.of(row.owner, row.name, row.targetOwner, target, row.dbLink)
+    }
+
+    /**
      * Builds the snapshot. A relation is column-complete exactly when its columns were acquired with it
      * ([RelationRow.columnsAcquired]); a requested schema is declared complete when it is the session user's own
      * schema (whose `ALL_*` rows are not filtered by privileges) or when the caller asserted it complete
      * ([OracleMetadataRequest.completeSchemas], not checked against the session's privileges). Columns of relations not
-     * returned by the relation queries are ignored.
+     * returned by the relation queries are ignored. Public synonyms are declared complete only when every public
+     * synonym was requested ([OracleMetadataRequest.publicSynonyms] without targets).
      *
-     * @throws OracleMetadataException if a relation appears twice, or the rows violate a descriptor invariant
-     * (duplicate column names or positions)
+     * @throws OracleMetadataException if a relation or synonym appears twice, an object name appears with two kinds,
+     * or the rows violate a descriptor invariant (duplicate column names or positions, a synonym without target)
      */
     fun assemble(
         request: OracleMetadataRequest,
@@ -90,7 +121,9 @@ internal object OracleDictionaryMapping {
         relations: List<RelationRow>,
         columns: List<ColumnRow>,
         acquiredAt: Instant,
-        version: Result<DatabaseVersion> = Result.failure(IllegalStateException("not read"))
+        version: Result<DatabaseVersion> = Result.failure(IllegalStateException("not read")),
+        objects: List<ObjectRow> = emptyList(),
+        synonyms: List<SynonymRow> = emptyList()
     ): OracleMetadataResult {
         val columnsByRelation = columns.groupBy { it.schema to it.relation }
         val origin = "oracle ${session.database}/${session.container} as ${session.sessionUser} at $acquiredAt"
@@ -120,10 +153,29 @@ internal object OracleDictionaryMapping {
             }
             columnCount += rows.size
         }
+        val objectNames = HashSet<Pair<String, String>>()
+        for (row in objects) {
+            val kind = objectKind(row.type) ?: continue
+            try {
+                builder.schemaObject(ProjectExternalObject.of(row.schema, row.name, kind))
+            } catch (e: IllegalArgumentException) {
+                throw OracleMetadataException("Inconsistent dictionary metadata for object ${row.schema}.${row.name}: ${e.message}", e)
+            }
+            objectNames += row.schema to row.name
+        }
+        for (row in synonyms) {
+            try {
+                builder.synonym(synonym(row))
+            } catch (e: IllegalArgumentException) {
+                throw OracleMetadataException("Inconsistent dictionary metadata for synonym ${row.owner}.${row.name}: ${e.message}", e)
+            }
+        }
+        if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) builder.completePublicSynonyms()
         val notVisible = request.relations.filter { it.schema !in request.schemas && (it.schema to it.name) !in seen }
         return OracleMetadataResult(
             builder.build(), session.sessionUser, session.currentSchema, session.database, session.container, acquiredAt,
-            complete, notVisible, seen.size, columnCount, version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName }
+            complete, notVisible, seen.size, columnCount, objectNames.size, synonyms.size,
+            version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName }
         )
     }
 }
