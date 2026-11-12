@@ -78,6 +78,9 @@ internal sealed interface LocalActualForm {
 
     /** `c%ISOPEN`, `c%FOUND`, `c%NOTFOUND` or `c%ROWCOUNT` of any cursor, `SQL` included: [rowCount] for the last. */
     class CursorAttribute(val rowCount: Boolean) : LocalActualForm
+
+    /** A Forms host variable `:qualifier.name`. */
+    class HostVariable(val qualifier: OracleIdentifier, val name: OracleIdentifier) : LocalActualForm
 }
 
 /** One written actual of a call: its notation and its form. */
@@ -171,6 +174,7 @@ internal object LocalCallCollector {
             expression.firstChild.type.let { it === PlSqlPunctuator.MINUS || it === PlSqlPunctuator.PLUS }
         ) return LocalActual(label, null, 0, 0, form = LocalActualForm.Signed(expression(null, expression.lastChild)))
         cursorAttribute(expression)?.let { return LocalActual(label, null, 0, 0, form = it) }
+        LocalSyntax.hostVariable(expression)?.let { (qualifier, name) -> return LocalActual(label, null, 0, 0, form = LocalActualForm.HostVariable(qualifier, name)) }
         val name = name(expression) ?: return LocalActual(label, null, 0, 0)
         return LocalActual(label, null, name.token.line, name.token.column)
     }

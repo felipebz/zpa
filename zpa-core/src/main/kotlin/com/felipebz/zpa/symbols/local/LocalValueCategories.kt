@@ -14,6 +14,8 @@ import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.metadata.FormsHostVariables
+import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.callArguments
 import java.util.*
 import com.felipebz.zpa.api.project.ProjectCollectionKind as PublicCollectionKind
@@ -23,11 +25,23 @@ import com.felipebz.zpa.api.project.ProjectCollectionKind as PublicCollectionKin
  * over the scan's project. Computed per name when asked; it holds the project through [walk], so it lives on the visitor
  * context, never in the detached facts.
  */
-internal class LocalValueCategories(private val facts: LocalSemanticFacts, private val walk: LocalTypeWalk) {
+internal class LocalValueCategories(
+    private val facts: LocalSemanticFacts,
+    private val walk: LocalTypeWalk,
+    /** The Oracle Forms metadata of the scan, which types host variables; null without one. */
+    private val forms: FormsMetadata? = null
+) {
     private val model = facts.model
     private val referencesByStart = referenceStarts(facts.references) { it.lastSegmentContext in CONTEXTS }
 
-    fun category(name: AstNode): ValueCategory = valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
+    fun category(name: AstNode): ValueCategory = hostVariable(name) ?: valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
+
+    /** A Forms host variable `:qualifier.name` whose type the [forms] metadata gives; null for any other node, or no type. */
+    private fun hostVariable(name: AstNode): ValueCategory? {
+        val (qualifier, member) = LocalSyntax.hostVariable(name) ?: return null
+        val type = forms?.let { FormsHostVariables.type(it, qualifier.lookupName, member.lookupName) } ?: return null
+        return ProjectArgumentType.builtIn(type).familyOrNull?.let { ValueCategory.Scalar(scalarFamily(it)) }
+    }
 
     /**
      * [category] of a member expression or a member item of a receiver whose last name is one field or attribute of a

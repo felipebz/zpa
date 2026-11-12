@@ -301,6 +301,13 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * it, or the candidates differ only by argument types, which this analysis does not compare.
      * Subtypes and `%TYPE` anchors are followed; a declaration in another file is described by the prepared project.
      * [ValueCategory.Unknown] is never a proof of any category.
+     *
+     * With Oracle Forms metadata ([formsMetadata]), a host variable written `:qualifier.name` (the `MEMBER_EXPRESSION`)
+     * is a [ValueCategory.Scalar]: an item of a block or a parameter of the form by the data type the metadata states
+     * for it (CHAR and LONG character, NUMBER numeric, DATE and DATETIME datetime), a global always a character string,
+     * and a system variable a character string when Forms documents it as one. The same type is the evidence of such a
+     * host variable written as a call actual, for [callBinding]. Without metadata, or without a data type Forms
+     * documents for a reference, the host variable is not typed.
      */
     @ZpaExperimentalApi
     fun valueCategory(name: AstNode): ValueCategory =

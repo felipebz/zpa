@@ -9,6 +9,8 @@ package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
+import com.felipebz.zpa.metadata.FormsHostVariables
+import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.SourceRange
@@ -93,7 +95,9 @@ internal class LocalForwardCalls(
     /** The run's external metadata and compilation schema. */
     private val external: ProjectExternalContext = ProjectExternalContext.none(),
     /** The references' outcomes; by default the resolver's, refined with the project's specification coverage. */
-    private val outcomes: LocalReferenceOutcomes = LocalReferenceOutcomes(model, LocalSpecificationCoverage.of(model, snapshot))
+    private val outcomes: LocalReferenceOutcomes = LocalReferenceOutcomes(model, LocalSpecificationCoverage.of(model, snapshot)),
+    /** The Oracle Forms metadata of the scan, which types host variables; null without one. */
+    private val forms: FormsMetadata? = null
 ) {
     private val walk = LocalTypeWalk(model, snapshot, external, outcomes)
     private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot), outcomes::specificationDefaults)
@@ -414,6 +418,8 @@ internal class LocalForwardCalls(
         is LocalActualForm.Signed -> signed(evidence(form.operand, region))
         // Oracle rejects an attribute of anything but a cursor (PLS-00324), and no declaration takes an attribute's name.
         is LocalActualForm.CursorAttribute -> builtIn(if (form.rowCount) "NUMBER" else "BOOLEAN")
+        is LocalActualForm.HostVariable -> forms?.let { FormsHostVariables.type(it, form.qualifier.lookupName, form.name.lookupName) }?.let(::builtIn)
+            ?: LocalTypeEvidence.unknown("a host variable the Forms metadata does not type")
     }
 
     /**

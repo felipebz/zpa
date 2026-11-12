@@ -32,6 +32,20 @@ internal object LocalSyntax {
         return parent.type == PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild !== current
     }
 
+    /**
+     * The qualifier and name of a Forms host variable written `:qualifier.name` (`:orders.order_id`, `:parameter.p_mode`,
+     * `:global.user_id`, `:system.cursor_record`); null for any other node.
+     */
+    fun hostVariable(node: AstNode): Pair<OracleIdentifier, OracleIdentifier>? {
+        if (node.type !== PlSqlGrammar.MEMBER_EXPRESSION || node.children.size != 3) return null
+        val (variable, dot, name) = node.children
+        val host = variable.takeIf { it.type === PlSqlGrammar.VARIABLE_NAME && it.children.size == 1 }?.firstChild
+        if (host?.type !== PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE || dot.type !== PlSqlPunctuator.DOT || name.type !== PlSqlGrammar.IDENTIFIER_NAME) return null
+        val qualifier = host.children.takeIf { it.size == 2 && it[0].type === PlSqlPunctuator.COLON }?.get(1)
+            ?.takeIf { it.type === PlSqlGrammar.IDENTIFIER_NAME } ?: return null
+        return identifier(qualifier) to identifier(name)
+    }
+
     /** The iteration control of a FOR loop [iterator] with one implicitly typed index and one control, if recognized. */
     fun loopControl(iterator: AstNode, fileId: FileId): LocalLoopControl? {
         val controls = iterator.getChildren(PlSqlGrammar.QUAL_ITERATION_CTL)
