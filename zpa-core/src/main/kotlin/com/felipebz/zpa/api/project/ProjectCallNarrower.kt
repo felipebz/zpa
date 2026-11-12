@@ -161,6 +161,7 @@ internal object ProjectCallNarrower {
             return Evidence(null, UnknownReason.FORMAL_INCONCLUSIVE)
         }
         val rank = builtIn?.let { OverloadRank.of(it.name, description.source.terminalReference.map { ref -> ref.writtenIdentity }.orElse(null)) }
+            ?: DatatypeFamilies.externalRank(description)
         return Evidence(family, null, rank, DatatypeFamilies.compositeKind(description))
     }
 

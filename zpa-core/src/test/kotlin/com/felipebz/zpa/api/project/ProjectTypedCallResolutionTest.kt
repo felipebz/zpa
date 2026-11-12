@@ -348,6 +348,70 @@ class ProjectTypedCallResolutionTest {
             .contains(UnknownReason.UNCLASSIFIED_TYPE)
     }
 
+    private val customer = ProjectExternalRelation.of(
+        "HR", "CUSTOMER", true, listOf(
+            ProjectExternalColumn.of("CUSTOMER_ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 7, 0)),
+            ProjectExternalColumn.of("TAX_CODE", 2, ProjectExternalDatatype.of("VARCHAR2", null, 14, ProjectExternalDatatype.LengthSemantics.BYTE, null, null)),
+            ProjectExternalColumn.of("SHIP_DATE", 3, ProjectExternalDatatype.of("DATE", null, null, null, null, null)),
+            ProjectExternalColumn.of("SHIP_TS", 4, ProjectExternalDatatype.of("TIMESTAMP(6)", null, null, null, null, 6)),
+            ProjectExternalColumn.of("SHIP_TZ", 5, ProjectExternalDatatype.of("TIMESTAMP(3) WITH TIME ZONE", null, null, null, null, 3)),
+            ProjectExternalColumn.of("WAIT_DS", 6, ProjectExternalDatatype.of("INTERVAL DAY(2) TO SECOND(6)", null, null, null, 2, 6)),
+            ProjectExternalColumn.of("WAIT_YM", 7, ProjectExternalDatatype.of("INTERVAL YEAR(2) TO MONTH", null, null, null, 2, 0)),
+            ProjectExternalColumn.of("RATE", 8, ProjectExternalDatatype.of("FLOAT", null, null, null, 126, null)),
+            ProjectExternalColumn.of("LABEL", 9, ProjectExternalDatatype.of("VARCHAR2", "APP", null, null, null, null))
+        )
+    )
+    private val withCustomer = metadata(customer)
+
+    @Test
+    fun columnAnchoredFormalsRankByTheirDictionaryType() {
+        val source = spec(
+            "PROCEDURE name_of(p_id IN customer.customer_id%TYPE);", "PROCEDURE name_of(p_tax IN customer.tax_code%TYPE);",
+            "PROCEDURE kind_of(p_d customer.ship_date%TYPE);", "PROCEDURE kind_of(p_ts customer.ship_ts%TYPE);",
+            "PROCEDURE zone_of(p_ts customer.ship_ts%TYPE);", "PROCEDURE zone_of(p_tz customer.ship_tz%TYPE);",
+            "PROCEDURE wait_of(p_ds customer.wait_ds%TYPE);", "PROCEDURE wait_of(p_ym customer.wait_ym%TYPE);",
+            "PROCEDURE rate_of(p_rate customer.rate%TYPE);", "PROCEDURE rate_of(p_tax customer.tax_code%TYPE);",
+            "PROCEDURE label_of(p_label customer.label%TYPE);", "PROCEDURE label_of(p_tax customer.tax_code%TYPE);"
+        )
+        fun pick(name: String, type: ProjectArgumentType) = call(source, name, listOf(positional()), listOf(type), withCustomer).typed
+
+        // A number value binds the NUMBER column overload, a character value the VARCHAR2 one, as Oracle does.
+        val number = pick("name_of", ProjectArgumentType.builtIn("NUMBER"))
+        assertThat(selected(number)).isEqualTo("(p_id customer.customer_id)")
+        assertThat(number.ranked).isTrue
+        assertThat(selected(pick("name_of", ProjectArgumentType.builtIn("CHAR")))).isEqualTo("(p_tax customer.tax_code)")
+        // A DATE value binds the DATE column rather than the TIMESTAMP(6) one, as Oracle does.
+        assertThat(selected(pick("kind_of", ProjectArgumentType.builtIn("DATE")))).isEqualTo("(p_d customer.ship_date)")
+        // The parenthesized parts of the dictionary spelling do not hide the variant.
+        assertThat(selected(pick("zone_of", ProjectArgumentType.builtIn("TIMESTAMP WITH TIME ZONE")))).isEqualTo("(p_tz customer.ship_tz)")
+        val wait = pick("wait_of", ProjectArgumentType.builtIn("INTERVAL DAY TO SECOND"))
+        assertThat(selected(wait)).isEqualTo("(p_ds customer.wait_ds)")
+        assertThat(wait.evaluations[1].bindings.single().outcome).isEqualTo(Outcome.INCOMPATIBLE)
+        // FLOAT is a NUMBER subtype.
+        assertThat(selected(pick("rate_of", ProjectArgumentType.builtIn("NUMBER")))).isEqualTo("(p_rate customer.rate)")
+        // An owned type keeps no rank, and NULL stays undecided.
+        assertThat(pick("label_of", ProjectArgumentType.builtIn("CHAR")).status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(pick("name_of", ProjectArgumentType.nullLiteral()).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun columnAnchoredActualsRankByTheirDictionaryType() {
+        val s = prepare("p.sql" to spec(
+            "PROCEDURE pick(n NUMBER);", "PROCEDURE pick(s VARCHAR2);", "PROCEDURE when_of(d DATE);", "PROCEDURE when_of(t TIMESTAMP);"
+        ))
+        fun column(name: String) = ProjectArgumentType.described(s.describeExternalType(
+            ProjectWrittenAnchor.of(ProjectQualifiedName.of("customer", name), ProjectTypeReference.Anchor.TYPE), null, withCustomer, hr
+        ))
+        fun narrow(name: String, type: ProjectArgumentType) = s.narrowCall(resolve(s, name, positional()), listOf(type), withCustomer, hr)
+
+        assertThat(selected(narrow("pick", column("customer_id")))).isEqualTo("(n NUMBER)")
+        assertThat(selected(narrow("pick", column("tax_code")))).isEqualTo("(s VARCHAR2)")
+        assertThat(selected(narrow("pick", column("rate")))).isEqualTo("(n NUMBER)")
+        assertThat(selected(narrow("when_of", column("ship_date")))).isEqualTo("(d DATE)")
+        assertThat(selected(narrow("when_of", column("ship_ts")))).isEqualTo("(t TIMESTAMP)")
+        assertThat(narrow("pick", column("label")).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
     @Test
     fun inputsAreValidatedAndResultsKeepStructuralIdentity() {
         val source = spec("PROCEDURE pick(x NUMBER);", "PROCEDURE pick(x DATE);")

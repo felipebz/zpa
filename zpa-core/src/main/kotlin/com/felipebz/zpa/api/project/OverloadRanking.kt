@@ -99,6 +99,13 @@ internal enum class OverloadRank(val group: Group) {
             return if (word == "TIMESTAMP" || word == "INTERVAL") null else names[word]
         }
 
+        /**
+         * The rank of a data dictionary `DATA_TYPE` with its parenthesized groups removed, as [words]: the dictionary
+         * writes `TIMESTAMP(6)` for a timestamp without time zone, so a lone TIMESTAMP is that type there.
+         */
+        fun ofDictionaryText(words: List<String>): OverloadRank? =
+            if (words.size == 1 && words[0] == "TIMESTAMP") phrases["TIMESTAMP"] else ofText(words)
+
         /** Within a group, the formals a value of [actual] prefers, best first; ties share a position. */
         private fun preference(actual: OverloadRank): List<Set<OverloadRank>> = when (actual) {
             PLS_INTEGER -> listOf(setOf(PLS_INTEGER), setOf(NUMBER), setOf(BINARY_FLOAT), setOf(BINARY_DOUBLE))

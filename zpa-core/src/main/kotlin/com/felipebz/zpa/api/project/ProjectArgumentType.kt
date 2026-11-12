@@ -140,7 +140,10 @@ class ProjectArgumentType private constructor(
             val family = DatatypeFamilies.ofDescription(description, null, null)
             val conclusive = DatatypeFamilies.isConclusive(description)
             val builtIn = DatatypeFamilies.builtInName(description, null)?.takeIf { family != null }
-                ?: return ProjectArgumentType(Kind.DESCRIBED, family, family == null && conclusive, null, null, null, DatatypeFamilies.compositeKind(description))
+                ?: return ProjectArgumentType(
+                    Kind.DESCRIBED, family, family == null && conclusive, null, null,
+                    family?.let { DatatypeFamilies.externalRank(description) }, DatatypeFamilies.compositeKind(description)
+                )
             // The package that resolved the built-in name: the last retained step's owner, else the request's owner.
             val stepScope = DatatypeFamilies.builtInScope(description, null)
             if (stepScope == null && description.source.steps.isEmpty() && !ownerKnown) {
