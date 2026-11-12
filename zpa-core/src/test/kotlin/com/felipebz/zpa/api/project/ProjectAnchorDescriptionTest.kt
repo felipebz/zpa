@@ -186,10 +186,13 @@ class ProjectAnchorDescriptionTest {
             assertThat(d.valueResolution).isEmpty
         }
         stop(describe("p", "type_ref"), AnchorStop.ENCLOSING_SCOPE) // a package type captures rec_t
-        stop(describe("p", "field_ref"), AnchorStop.FIELD_PATH) // rec_value is a package value: field path
-        stop(describe("q", "fa"), AnchorStop.FIELD_PATH)
-        assertThat(describe("q", "fa").values.map { it.qualifiedName }).containsExactly(n("p", "field_ref"))
-        stop(describe("q2", "x"), AnchorStop.FIELD_PATH) // q2 declares a value p that captures p.g
+        // rec_value is a package value: the field path is followed to the field's type.
+        val field = describe("p", "field_ref")
+        assertThat(field.builtInCategory).isEqualTo(Optional.of(Category.NUMERIC))
+        assertThat(field.steps.map { it.qualifiedName }).containsExactly(n("p", "rec_value"), n("p", "rec_t"))
+        assertThat(describe("q", "fa").values.map { it.qualifiedName }).containsExactly(n("p", "field_ref"), n("p", "rec_value"))
+        assertThat(describe("q", "fa").builtInCategory).isEqualTo(Optional.of(Category.NUMERIC))
+        stop(describe("q2", "x"), AnchorStop.DECLARED_LATER) // q2 declares, after x, a value p that captures p.g
 
         val cap = snapshot.findDeclarations(n("p", "cap_t")).declarations.single() as ProjectPackageTypeView
         stop(snapshot.describeType(cap.recordFields[1].typeRef, cap.owner), AnchorStop.ENCLOSING_SCOPE) // sibling field a
@@ -201,13 +204,14 @@ class ProjectAnchorDescriptionTest {
         val fn = snapshot.findDeclarations(n("p", "fn")).declarations.single() as ProjectFunctionView
         stop(snapshot.describeType(fn.returnType, p), AnchorStop.ENCLOSING_SCOPE) // conservative: parameter c
 
-        // Standalone: no package scope, only qualified names; package-body subprograms: private declarations are not facts, so no anchor can be judged.
+        // Standalone: no package scope, only qualified names. Package body bp declares nothing at its own level.
         val standalone = snapshot.findDeclarations(n("sp")).declarations.single() as ProjectSubprogramView
         stop(snapshot.describeType(standalone.parameters[0].typeRef, null), AnchorStop.ENCLOSING_SCOPE)
         assertThat(snapshot.describeType(standalone.parameters[1].typeRef, null).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
         val body = snapshot.findPackageSubprograms(n("bp"), ProjectIdentifier.fromSource("w")).declarations.single { it.role == ProjectDeclarationRole.BODY }
-        stop(snapshot.describeType(body.parameters[0].typeRef, n("bp")), AnchorStop.ENCLOSING_SCOPE)
-        stop(snapshot.describeType(body.parameters[1].typeRef, n("bp")), AnchorStop.ENCLOSING_SCOPE) // private declarations are not facts
+        // Neither bp nor its body declares g: Oracle rejects the anchor (PLS-00201).
+        assertThat(snapshot.describeType(body.parameters[0].typeRef, n("bp")).status).isEqualTo(Status.UNRESOLVED_VALUE)
+        assertThat(snapshot.describeType(body.parameters[1].typeRef, n("bp")).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
     }
 
     @Test
@@ -322,6 +326,110 @@ class ProjectAnchorDescriptionTest {
             assertThat(it.steps.filterIsInstance<ProjectPackageValueView>()).isEqualTo(it.values)
             assertThat(it.steps.filterIsInstance<ProjectSubtypeView>()).isEqualTo(it.subtypes)
         }
+    }
+
+    private val ordSpec = """
+        CREATE PACKAGE pk_ord AS
+          g_early g_line.qty%TYPE;
+          TYPE t_line IS RECORD (line_no NUMBER(4), qty NUMBER(9,2), note VARCHAR2(40));
+          TYPE t_outer IS RECORD (inner t_line, tag VARCHAR2(5));
+          TYPE t_lines IS TABLE OF t_line;
+          g_line t_line;
+          g_outer t_outer;
+          g_cust customer%ROWTYPE;
+          g_lines t_lines;
+          g_qty g_line.qty%TYPE;
+          g_deep g_outer.inner.qty%TYPE;
+          g_name g_cust.name%TYPE;
+          g_nope g_line.nope%TYPE;
+          PROCEDURE use_fields(p_x NUMBER);
+        END pk_ord;
+        /
+        CREATE PACKAGE BODY pk_ord AS
+          PROCEDURE use_fields(p_qty g_line.qty%TYPE, p_deep g_outer.inner.qty%TYPE, p_name g_cust.name%TYPE, p_nope g_line.nope%TYPE) IS
+          BEGIN
+            NULL;
+          END;
+        END pk_ord;
+    """.trimIndent()
+    private val useSpec = """
+        CREATE PACKAGE pk_use AS
+          v_qty pk_ord.g_line.qty%TYPE;
+          v_deep pk_ord.g_outer.inner.qty%TYPE;
+          v_name pk_ord.g_cust.name%TYPE;
+          v_nope pk_ord.g_line.nope%TYPE;
+          v_scalar pk_ord.g_line.qty.digits%TYPE;
+          v_elem pk_ord.g_lines.qty%TYPE;
+        END pk_use;
+    """.trimIndent()
+
+    @Test
+    fun fieldPathsThroughPackageRecordValuesReachTheFieldType() {
+        val s = prepare(false, listOf("ord.sql" to ordSpec, "use.sql" to useSpec))
+        fun names(d: ProjectTypeDescription) = d.steps.map { it.qualifiedName.toString() }
+        val line = s.findDeclarations(n("pk_ord", "t_line")).declarations.single() as ProjectPackageTypeView
+        val qtyType = line.recordFields[1].typeRef.sourceRange
+        fun assertQty(d: ProjectTypeDescription, vararg steps: String) {
+            assertThat(d.status).isEqualTo(Status.BUILT_IN)
+            assertThat(d.builtInCategory).isEqualTo(Optional.of(Category.NUMERIC))
+            assertThat(d.terminalReference.get().sourceRange).isEqualTo(qtyType)
+            assertThat(d.terminalReference.map { "${it.name}${it.constraints.orElse(null)}" }).contains("NUMBER(precision=9, scale=2)")
+            assertThat(names(d)).containsExactly(*steps)
+            assertThat(d.fieldPath).isEmpty()
+        }
+        fun assertRow(d: ProjectTypeDescription) {
+            // Without external metadata the walk stops at the %ROWTYPE anchor, with the field still to select.
+            assertThat(d.status).isEqualTo(Status.ANCHORED_REFERENCE)
+            assertThat(d.anchorStop).isEqualTo(Optional.of(AnchorStop.ROWTYPE))
+            assertThat(d.terminalReference.get().sourceRange).isEqualTo(value(s, "pk_ord", "g_cust").typeRef.sourceRange)
+            assertThat(d.fieldPath.map { it.toString() }).containsExactly("name")
+            assertThat(names(d)).containsExactly("pk_ord.g_cust")
+        }
+        fun assertMissing(d: ProjectTypeDescription, vararg steps: String) {
+            assertThat(d.status).isEqualTo(Status.ANCHORED_REFERENCE)
+            assertThat(d.anchorStop).isEqualTo(Optional.of(AnchorStop.FIELD_NOT_FOUND))
+            assertThat(names(d)).containsExactly(*steps)
+            assertThat(d.fieldPath).isEmpty()
+        }
+
+        // Qualified by the package, from another unit.
+        assertQty(describe(s, "pk_use", "v_qty"), "pk_ord.g_line", "pk_ord.t_line")
+        assertQty(describe(s, "pk_use", "v_deep"), "pk_ord.g_outer", "pk_ord.t_outer", "pk_ord.t_line")
+        assertRow(describe(s, "pk_use", "v_name"))
+        val nope = describe(s, "pk_use", "v_nope")
+        assertMissing(nope, "pk_ord.g_line", "pk_ord.t_line")
+        assertThat(nope.terminalReference.get().sourceRange).isEqualTo(value(s, "pk_use", "v_nope").typeRef.sourceRange)
+        // A scalar field and a collection have no fields.
+        assertMissing(describe(s, "pk_use", "v_scalar"), "pk_ord.g_line", "pk_ord.t_line")
+        assertMissing(describe(s, "pk_use", "v_elem"), "pk_ord.g_lines", "pk_ord.t_lines")
+
+        // Written in a standalone unit: the same walk, the request echoed.
+        assertQty(s.describeType(ProjectWrittenAnchor.of(n("pk_ord", "g_line", "qty"), ProjectTypeReference.Anchor.TYPE), null), "pk_ord.g_line", "pk_ord.t_line")
+        val written = ProjectWrittenAnchor.of(n("pk_ord", "g_line", "nope"), ProjectTypeReference.Anchor.TYPE)
+        val writtenNope = s.describeType(written, null)
+        assertMissing(writtenNope, "pk_ord.g_line", "pk_ord.t_line")
+        assertThat(writtenNope.terminalReference).isEmpty
+        assertThat(writtenNope.writtenAnchor).contains(written)
+
+        // Without the package name inside the specification: a member declared before the reference binds the first segment.
+        assertQty(describe(s, "pk_ord", "g_qty"), "pk_ord.g_line", "pk_ord.t_line")
+        assertQty(describe(s, "pk_ord", "g_deep"), "pk_ord.g_outer", "pk_ord.t_outer", "pk_ord.t_line")
+        assertRow(describe(s, "pk_ord", "g_name"))
+        assertMissing(describe(s, "pk_ord", "g_nope"), "pk_ord.g_line", "pk_ord.t_line")
+        val early = describe(s, "pk_ord", "g_early")
+        assertThat(early.anchorStop).isEqualTo(Optional.of(AnchorStop.DECLARED_LATER))
+        assertThat(early.steps).isEmpty()
+
+        // Inside the package body: retained by a subprogram, or written there.
+        val body = s.findPackageSubprograms(n("pk_ord"), ProjectIdentifier.fromSource("use_fields")).declarations.single { it.role == ProjectDeclarationRole.BODY }
+        val pkOrd = n("pk_ord")
+        assertQty(s.describeType(body.parameters[0].typeRef, pkOrd), "pk_ord.g_line", "pk_ord.t_line")
+        assertQty(s.describeType(body.parameters[1].typeRef, pkOrd), "pk_ord.g_outer", "pk_ord.t_outer", "pk_ord.t_line")
+        assertRow(s.describeType(body.parameters[2].typeRef, pkOrd))
+        assertMissing(s.describeType(body.parameters[3].typeRef, pkOrd), "pk_ord.g_line", "pk_ord.t_line")
+        assertQty(s.describeType(ProjectWrittenAnchor.of(n("g_line", "qty"), ProjectTypeReference.Anchor.TYPE), pkOrd), "pk_ord.g_line", "pk_ord.t_line")
+        assertRow(s.describeType(ProjectWrittenAnchor.of(n("g_cust", "name"), ProjectTypeReference.Anchor.TYPE), pkOrd))
+        assertMissing(s.describeType(ProjectWrittenAnchor.of(n("g_line", "nope"), ProjectTypeReference.Anchor.TYPE), pkOrd), "pk_ord.g_line", "pk_ord.t_line")
     }
 
     private val p = n("p")

@@ -13,7 +13,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import java.util.*
 
-/** A package-body subprogram can be captured by a private declaration that no fact represents. */
+/** A package-body subprogram can be captured by a declaration at the body's own level, which the index records by name. */
 @OptIn(ZpaExperimentalApi::class)
 class ProjectBodyAnchorScopeTest {
     private val sources = listOf(
@@ -73,14 +73,16 @@ class ProjectBodyAnchorScopeTest {
     }
 
     @Test
-    fun absenceOfPrivateDeclarationsCannotBeEstablished() {
+    fun withoutABodyDeclarationOfTheNameTheAnchorResolvesInThePackageScope() {
         val s = prepare()
         val body = sub(s, "cl", "w", ProjectDeclarationRole.BODY)
-        assertScopeStop(s.describeType(body.parameters[0].typeRef, n("cl")), body.parameters[0].typeRef) // qualified
-        assertScopeStop(s.describeType(body.parameters[1].typeRef, n("cl")), body.parameters[1].typeRef) // unqualified
+        // qualified: no body declaration is named p
+        assertThat(s.describeType(body.parameters[0].typeRef, n("cl")).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
+        // unqualified: the body sees every member of its specification
+        assertThat(s.describeType(body.parameters[1].typeRef, n("cl")).values.map { it.qualifiedName }).containsExactly(n("cl", "g"))
         val f = sub(s, "cl", "f", ProjectDeclarationRole.BODY) as ProjectFunctionView
-        assertScopeStop(s.describeType(f.parameters[1].typeRef, n("cl")), f.parameters[1].typeRef) // qualified
-        assertScopeStop(s.describeType(f.returnType, n("cl")), f.returnType)
+        assertThat(s.describeType(f.parameters[1].typeRef, n("cl")).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
+        assertThat(s.describeType(f.returnType, n("cl")).values.map { it.qualifiedName }).containsExactly(n("p", "g"))
     }
 
     @Test
@@ -111,7 +113,7 @@ class ProjectBodyAnchorScopeTest {
     }
 
     @Test
-    fun incompleteProjectsAreNotLookupsAndOrdinaryChainsAreUnchanged() {
+    fun incompleteProjectsKeepTheSourceWalkAndOrdinaryChainsAreUnchanged() {
         val chain = listOf("p.sql" to sources[0].second, "b.sql" to """
             CREATE PACKAGE bs AS SUBTYPE t IS NUMBER; v t; PROCEDURE w(x v%TYPE); END bs;
             /
@@ -121,10 +123,11 @@ class ProjectBodyAnchorScopeTest {
         for (concurrent in listOf(false, true)) {
             val s = prepare(concurrent, chain)
             val body = sub(s, "bs", "w", ProjectDeclarationRole.BODY)
-            assertScopeStop(s.describeType(body.parameters[0].typeRef, n("bs")), body.parameters[0].typeRef)
+            assertThat(s.describeType(body.parameters[0].typeRef, n("bs")).values.map { it.qualifiedName }).containsExactly(n("bs", "v"))
             val failed = prepare(concurrent, chain, ProjectSourceInput.ofReader("bad.sql") { throw java.io.IOException("x") })
             val b2 = sub(failed, "bs", "w", ProjectDeclarationRole.BODY)
-            assertScopeStop(failed.describeType(b2.parameters[0].typeRef, n("bs")), b2.parameters[0].typeRef)
+            // A file that failed may declare the value elsewhere: the lookup is not decided, as for a specification.
+            assertThat(failed.describeType(b2.parameters[0].typeRef, n("bs")).status).isEqualTo(Status.UNRESOLVED_VALUE)
         }
         // ordinary chain traversal outside body subprograms is unchanged
         val s = prepare()

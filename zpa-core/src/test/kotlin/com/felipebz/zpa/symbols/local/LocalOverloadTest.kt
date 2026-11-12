@@ -247,4 +247,64 @@ class LocalOverloadTest {
             "  procedure p(x date) is begin null; end;\n  procedure p(x number) is begin null; end;\nbegin\n  p(h(1));\nend;\n/\n"
         assertThat(resolutions(mixed)).containsExactly("8: p RESOLVED PROCEDURE 6", "8: h RESOLVED FUNCTION 4")
     }
+
+    private val shipSpec = "create package pk_ship as\n" +
+        "  type t_head is record (id number, code varchar2(10));\n" +
+        "  type t_line is record (id number, code varchar2(10));\n" +
+        "  type t_ids is table of number index by pls_integer;\n" +
+        "  type t_nums is table of number index by pls_integer;\n" +
+        "  subtype t_head2 is t_head;\n" +
+        "  procedure save(p t_head);\n  procedure save(p t_line);\n" +
+        "  procedure load(p t_ids);\n  procedure load(p t_nums);\n" +
+        "end;\n/\n"
+
+    private fun projectCalls(source: String, snapshot: ProjectSnapshot, line: Int): List<String> = analyze(source, snapshot).calls
+        .filter { it.reference.range.startLine == line && it.typed != null }
+        .map { call ->
+            val typed = call.typed!!
+            val selected = if (typed.status == ProjectTypedCallResolution.Status.RESOLVED) " " + typed.selected.get().declaration.parameters.single().typeRef.name else ""
+            "${call.target} ${typed.status}$selected"
+        }
+
+    @Test
+    fun aPackageRecordOrCollectionValueBindsTheOverloadOfItsOwnType() {
+        val snapshot = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("ship.sql", shipSpec)), false)
+        val source = "declare\n  v_head pk_ship.t_head;\n  v_line pk_ship.t_line;\n  v_head2 pk_ship.t_head2;\n  v_ids pk_ship.t_ids;\n" +
+            "  type t_mine is record (id number, code varchar2(10));\n  type t_local is table of number index by pls_integer;\n" +
+            "  v_mine t_mine;\n  v_local t_local;\nbegin\n" +
+            "  pk_ship.save(v_head); pk_ship.save(v_line); pk_ship.save(v_head2);\n" +
+            "  pk_ship.save(v_mine); pk_ship.load(v_ids); pk_ship.load(v_local);\nend;\n/\n"
+        // Oracle runs the overload of the value's own declared type, a subtype counting as its base type.
+        assertThat(projectCalls(source, snapshot, 11)).containsExactly(
+            "pk_ship.save RESOLVED t_head", "pk_ship.save RESOLVED t_line", "pk_ship.save RESOLVED t_head"
+        )
+        // Oracle: PLS-00306 for a local record or collection type, even with the same fields or element.
+        assertThat(projectCalls(source, snapshot, 12)).containsExactly(
+            "pk_ship.save NO_COMPATIBLE_CANDIDATE", "pk_ship.load RESOLVED t_ids", "pk_ship.load NO_COMPATIBLE_CANDIDATE"
+        )
+    }
+
+    @Test
+    fun aTypeOfTheAnalyzedSpecificationIsTheProjectType() {
+        // The specification is in the analyzed file and in the project: its types are the project's.
+        val source = shipSpec + "create package body pk_ship as\n  v_head t_head;\n  v_line pk_ship.t_line;\n" +
+            "  procedure save(p t_head) is begin null; end;\n  procedure save(p t_line) is begin null; end;\n" +
+            "  procedure load(p t_ids) is begin null; end;\n  procedure load(p t_nums) is begin null; end;\n" +
+            "  procedure run is begin save(v_head); save(v_line); end;\nend;\n/\n"
+        val snapshot = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("local.sql", source)), false)
+        val analysis = analyze(source, snapshot)
+        val calls = analysis.calls.filter { it.local != null && it.reference.range.startLine == 20 }.map { call ->
+            val local = call.local!!
+            "${local.status} ${local.selected?.let { analysis.model.declaration(it).nameRange.startLine }}"
+        }
+        assertThat(calls).containsExactly("RESOLVED 16", "RESOLVED 17")
+    }
+
+    @Test
+    fun aLocalRecordFormalAcceptsOnlyItsOwnLocalType() {
+        // A declared record type accepts only a value of that same declared type: p(v1) runs p(x r1), p(v2) p(x r2).
+        val source = "declare\n  type r1 is record (a number);\n  type r2 is record (a number);\n  v1 r1;\n  v2 r2;\n" +
+            "  procedure p(x r1) is begin null; end;\n  procedure p(x r2) is begin null; end;\nbegin\n  p(v1); p(v2);\nend;\n/\n"
+        assertThat(resolutions(source)).containsExactly("9: p RESOLVED PROCEDURE 6", "9: p RESOLVED PROCEDURE 7")
+    }
 }

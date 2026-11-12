@@ -75,9 +75,10 @@ sealed interface DeclaredType {
     }
 
     /**
-     * A `%ROWTYPE`, or a `%TYPE` of a column, of the relation [name] written before the anchor. [description] is the
-     * project's reading of it, with the scan's external metadata when it has any; without metadata the relation's
-     * columns are not known here.
+     * A `%ROWTYPE`, or a `%TYPE` of a column, of the relation [name] written before the anchor; a `%TYPE` of a field of
+     * a package value declared as a relation's `%ROWTYPE` is that column's (`pk.g_cust.name%TYPE` gives
+     * `customer.name%TYPE` when `g_cust` is a `customer%ROWTYPE`). [description] is the project's reading of it, with the
+     * scan's external metadata when it has any; without metadata the relation's columns are not known here.
      */
     class Anchored(val anchor: ProjectTypeReference.Anchor, val name: ProjectQualifiedName, val description: ProjectExternalTypeDescription) : DeclaredType {
         override fun equals(other: Any?) = other is Anchored && anchor == other.anchor && name == other.name

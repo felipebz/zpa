@@ -132,6 +132,16 @@ internal object DatatypeFamilies {
             description.source.declaration.orElse(null)?.kind == ProjectDeclarationKind.STANDALONE_TYPE
         ) CompositeKind.SCHEMA_OBJECT else null
 
+    fun declaredCompositeType(description: ProjectExternalTypeDescription): DeclaredCompositeType? {
+        if (description.status != ProjectExternalTypeDescription.Status.NOT_EXTERNAL) return null
+        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return null
+        val source = description.source
+        if (source.status != ProjectTypeDescription.Status.DECLARED_TYPE) return null
+        val type = source.declaration.orElse(null) as? ProjectPackageTypeView ?: return null
+        val shape = type.shape.orElse(null)
+        return if (shape == ProjectTypeShape.RECORD || shape == ProjectTypeShape.COLLECTION) DeclaredCompositeType.Project(type.id) else null
+    }
+
     /** The overload rank of a built-in type spelled as text, read as [ofTypeName] reads it; null when not known. */
     fun rankOfTypeName(text: String): OverloadRank? {
         if (text.contains('"') || text.contains('.')) return null
@@ -248,11 +258,15 @@ internal object DatatypeFamilies {
         return source.terminalReference.map { it.name }.orElse(null) ?: startName
     }
 
-    /** The package whose scope resolved the built-in name: the owner of the last followed step, else [requestOwner]. */
+    /**
+     * The package whose scope resolved the built-in name: the owner of the last followed step (for a field, the package
+     * of the record type that declares it), else [requestOwner].
+     */
     fun builtInScope(description: ProjectExternalTypeDescription, requestOwner: QualifiedName?): QualifiedName? =
         when (val last = description.source.steps.lastOrNull()) {
             is ProjectPackageValueView -> last.owner.name
             is ProjectSubtypeView -> last.owner.name
+            is ProjectPackageTypeView -> last.owner.name
             null -> requestOwner
             else -> null
         }

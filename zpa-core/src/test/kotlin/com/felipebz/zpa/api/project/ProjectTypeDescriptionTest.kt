@@ -304,18 +304,22 @@ class ProjectTypeDescriptionTest {
         assertThat(getters["getValueResolution"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectValueResolution>")
         assertThat(getters["getAnchorStop"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectTypeDescription\$AnchorStop>")
         assertThat(getters["getWrittenAnchor"]).isEqualTo("java.util.Optional<com.felipebz.zpa.api.project.ProjectWrittenAnchor>")
+        assertThat(getters["getFieldPath"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectIdentifier>")
         val byWritten = ProjectSnapshot::class.java.getMethod("describeType", ProjectWrittenAnchor::class.java, ProjectQualifiedName::class.java)
         assertThat(byWritten.returnType).isEqualTo(ProjectTypeDescription::class.java)
         assertThat((ProjectTypeDescription::class.java.getMethod("getSteps").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectDeclarationView::class.java)
         assertThat((ProjectTypeDescription::class.java.getMethod("getValues").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectPackageValueView::class.java)
         assertThat(ProjectTypeDescription::class.java.declaredMethods.filter { it.name.startsWith("get") && Modifier.isPublic(it.modifiers) }.map { it.name })
-            .containsExactlyInAnyOrder("getStatus", "getSteps", "getValues", "getSubtypes", "getDeclaration", "getBuiltInCategory", "getTerminalReference", "getResolution", "getValueResolution", "getAnchorStop", "getWrittenAnchor")
+            .containsExactlyInAnyOrder(
+                "getStatus", "getSteps", "getValues", "getSubtypes", "getDeclaration", "getBuiltInCategory", "getTerminalReference", "getResolution",
+                "getValueResolution", "getAnchorStop", "getWrittenAnchor", "getFieldPath"
+            )
         assertThat((ProjectTypeDescription::class.java.getMethod("getSubtypes").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectSubtypeView::class.java)
         assertThat(ProjectTypeDescription.Status.entries.map { it.ordinal to it.name }).containsExactly(
             0 to "DECLARED_TYPE", 1 to "BUILT_IN", 2 to "UNRESOLVED_NAME", 3 to "ANCHORED_REFERENCE", 4 to "REF_REFERENCE", 5 to "CYCLE",
             6 to "UNRESOLVED_VALUE"
         )
-        assertThat(ProjectTypeDescription.AnchorStop.entries.map { it.name }).containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER", "REMOTE")
+        assertThat(ProjectTypeDescription.AnchorStop.entries.map { it.name }).containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER", "REMOTE", "FIELD_NOT_FOUND")
         assertThat(Category.entries.map { it.name }).containsExactly("NUMERIC", "CHARACTER", "LOB", "BOOLEAN", "DATE", "JSON")
         val described = snapshot.describeType(n("total"), p)
         assertThatThrownBy { (described.subtypes as MutableList<ProjectSubtypeView>).clear() }.isInstanceOf(UnsupportedOperationException::class.java)

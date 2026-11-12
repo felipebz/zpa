@@ -77,10 +77,14 @@ class ProjectExternalTypeDescription private constructor(
         REMOTE
     }
 
-    /** The anchor kind interpreted: the stopped anchor, or a followed anchor that competes with a relation. */
+    /**
+     * The anchor kind interpreted: the stopped anchor, or a followed anchor that competes with a relation. A source walk
+     * that stopped with a pending [ProjectTypeDescription.fieldPath] is interpreted as a `%TYPE` anchor: a field of a
+     * `%ROWTYPE` value (`g_cust.name%TYPE`, `g_cust customer%ROWTYPE`) is read as the column `customer.name%TYPE`.
+     */
     val anchor: Optional<ProjectTypeReference.Anchor> = Optional.ofNullable(anchor)
 
-    /** The written name of that anchor. */
+    /** The written name of that anchor, followed by the pending field path of the source walk, if any. */
     val anchorName: Optional<ProjectQualifiedName> = Optional.ofNullable(anchorName)
 
     /** The interpreted relation reading as `[schema, relation]`. */

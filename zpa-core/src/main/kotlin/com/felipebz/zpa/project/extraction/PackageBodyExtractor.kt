@@ -9,8 +9,9 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.*
 
 /**
- * Value-based extraction of the subprograms of a package body. Like a specification, the walk stops at the unit limit
- * (the next real `CREATE` or lone-line `/`): a body without its `;` or its final `END` never takes the next unit's text.
+ * Value-based extraction of the subprograms of a package body, and of the names the body declares at its own level.
+ * Like a specification, the walk stops at the unit limit (the next real `CREATE` or lone-line `/`): a body without its
+ * `;` or its final `END` never takes the next unit's text.
  */
 internal class PackageBodyExtractor(
     private val stream: TokenStream,
@@ -18,50 +19,113 @@ internal class PackageBodyExtractor(
     private val memberParser: PackageMemberParser,
     private val typeReferences: TypeReferences,
     private val bounds: UnitBounds,
+    private val discardedText: DiscardedSourceText
 ) {
+    private val nameRecorder = MemberNameRecorder(stream)
+
     fun parsePackageBody(create: Int, owner: QualifiedName, afterName: Int): ParsedUnit? {
         val limit = bounds.unitLimit(create)
         val header = stream.firstAtTopLevel(afterName, setOf("IS", "AS")) ?: return null
         if (header >= limit) return null
-        val parsed = parsePackageBodySubprograms(header + 1, owner, limit)
-        return ParsedUnit(parsed.declarations, parsed.end + 1)
+        val parsed = parsePackageBodySubprograms(header, owner, limit)
+        return ParsedUnit(parsed.declarations, parsed.end + 1, PackageBodyMemberNames(owner, stream.range(create, parsed.end), parsed.names))
     }
 
-    private fun parsePackageBodySubprograms(start: Int, owner: QualifiedName, limit: Int): ParsedPackageBody {
+    private fun parsePackageBodySubprograms(header: Int, owner: QualifiedName, limit: Int): ParsedPackageBody {
         val result = mutableListOf<ProjectDeclaration>()
-        var cursor = start
+        val level = LevelNames(header)
+        var cursor = header + 1
         val blocks = mutableListOf<BlockKind>()
         while (cursor < limit) {
-            val parsed = subprogramAt(cursor, blocks, owner, limit)
-            if (parsed != null) {
-                parsed.declaration?.let(result::add)
-                cursor = parsed.nextIndex
-                continue
+            if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) {
+                val parsed = parseBodySubprogram(cursor, limit, owner)
+                if (parsed != null) {
+                    parsed.declaration?.let(result::add)
+                    level.subprogram(cursor, parsed.nextIndex - 1)
+                    cursor = parsed.nextIndex
+                    continue
+                }
+                // The walk now reads the subprogram's own text token by token: its names are not the body's.
+                level.lose()
             }
 
+            val atLevel = blocks.isEmpty()
             val opened = bodyBoundaries.statementStart(cursor)
             when {
                 opened != null -> blocks += opened
                 stream.isKeyword(cursor, "BEGIN") -> {
                     if (blocks.isEmpty()) {
                         val end = bodyBoundaries.executableBlockEnd(cursor, limit)?.coerceAtMost(limit - 1) ?: (limit - 1)
-                        return ParsedPackageBody(immutableList(result), end)
+                        return ParsedPackageBody(immutableList(result), end, level.finish(cursor))
                     }
                     blocks += BlockKind.BEGIN
                 }
                 stream.isKeyword(cursor, "END") ->
                     if (bodyBoundaries.closeBlock(cursor, blocks) == BlockClose.UNBALANCED) {
-                        return ParsedPackageBody(immutableList(result), minOf(stream.semicolonAfter(cursor), limit - 1))
+                        return ParsedPackageBody(immutableList(result), minOf(stream.semicolonAfter(cursor), limit - 1), level.finish(cursor))
                     }
             }
+            if (atLevel) level.token(cursor, blocks.isEmpty() && stream.isPunctuator(cursor, PlSqlPunctuator.SEMICOLON))
             cursor++
         }
-        return ParsedPackageBody(immutableList(result), limit - 1)
+        level.unterminated()
+        return ParsedPackageBody(immutableList(result), limit - 1, level.finish(limit - 1))
     }
 
-    /** The subprogram that starts at [cursor], only outside any block. */
-    private fun subprogramAt(cursor: Int, blocks: List<BlockKind>, owner: QualifiedName, limit: Int): ParsedBodySubprogram? =
-        if (blocks.isEmpty() && bodyBoundaries.isSubprogramKeyword(cursor)) parseBodySubprogram(cursor, limit, owner) else null
+    // Discarded text is scanned only outside the subprograms: their own text declares no name of the body's level.
+    private inner class LevelNames(private var segmentStart: Int) {
+        private val names = mutableListOf<PackageMemberName>()
+        private val gaps = mutableSetOf<MemberNameGap>()
+        private val scans = mutableListOf<DiscardedSourceText.Scan>()
+        private var declarationStart = -1
+        private var lost = false
+
+        fun token(index: Int, ends: Boolean) {
+            if (lost) return
+            if (declarationStart < 0) declarationStart = index
+            if (ends) {
+                nameRecorder.record(declarationStart, index, true, names, gaps)
+                declarationStart = -1
+            }
+        }
+
+        fun subprogram(start: Int, last: Int) {
+            if (lost) return
+            brokenDeclaration(start)
+            scans += discardedText.scan(stream.tokens, segmentStart, start)
+            segmentStart = last
+            val kind = if (stream.isKeyword(start, "FUNCTION")) PackageMemberKind.FUNCTION else PackageMemberKind.PROCEDURE
+            stream.identifierAt(start + 1)?.let { names += PackageMemberName(it.first, kind, stream.range(start, last)) }
+                ?: run { gaps += MemberNameGap.UNIDENTIFIED_DECLARATION }
+        }
+
+        fun lose() {
+            gaps += MemberNameGap.UNIDENTIFIED_DECLARATION
+            lost = true
+        }
+
+        fun unterminated() {
+            gaps += MemberNameGap.UNTERMINATED_DECLARATION
+        }
+
+        fun finish(end: Int): PackageMemberNameCoverage {
+            if (!lost) brokenDeclaration(end)
+            scans += discardedText.scan(stream.tokens, segmentStart, end)
+            scans.forEach { scan -> scan.kinds.forEach { gaps += nameRecorder.discardedGap(it) } }
+            val conditional = scans.mapNotNull { it.conditionalTokens }
+            val range = if (conditional.isEmpty()) null else stream.range(conditional.minOf { it.first }, conditional.maxOf { it.last })
+            val withConditional = scans.filter { CallableCoverageGap.CONDITIONAL_COMPILATION in it.kinds }
+            val mentions = if (withConditional.isEmpty() || withConditional.any { it.conditionalMentions == null }) null
+            else withConditional.flatMapTo(HashSet()) { it.conditionalMentions!! }
+            return PackageMemberNameCoverage(names, gaps, range, mentions)
+        }
+
+        private fun brokenDeclaration(next: Int) {
+            if (declarationStart < 0) return
+            nameRecorder.record(declarationStart, next, false, names, gaps)
+            declarationStart = -1
+        }
+    }
 
     private fun parseBodySubprogram(index: Int, end: Int, owner: QualifiedName): ParsedBodySubprogram? {
         val function = stream.isKeyword(index, "FUNCTION")
@@ -131,6 +195,7 @@ internal class PackageBodyExtractor(
     )
     private data class ParsedPackageBody(
         val declarations: List<ProjectDeclaration>,
-        val end: Int
+        val end: Int,
+        val names: PackageMemberNameCoverage
     )
 }

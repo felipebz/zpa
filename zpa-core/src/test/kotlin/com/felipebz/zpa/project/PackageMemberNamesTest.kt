@@ -276,9 +276,58 @@ class PackageMemberNamesTest {
     }
 
     @Test
-    fun bodiesRecordNoNameCoverage() {
-        val facts = extractor.extract(FileId("b.sql"), "CREATE PACKAGE BODY p AS CURSOR c IS SELECT 1 FROM dual; PROCEDURE r IS BEGIN NULL; END; END p;")
-        assertThat(facts.filterIsInstance<PackageDeclaration>().map { it.memberNames }).allMatch { it == null }
+    fun bodiesRecordTheNamesOfTheirOwnLevel() {
+        val source = """
+            CREATE PACKAGE BODY p AS
+              g_count PLS_INTEGER := CASE WHEN 1 = 1 THEN 1 END;
+              c_max CONSTANT NUMBER := 10;
+              TYPE t_rec IS RECORD (a NUMBER);
+              CURSOR c IS SELECT 1 a FROM dual;
+              e_bad EXCEPTION;
+              PRAGMA EXCEPTION_INIT(e_bad, -20001);
+              FUNCTION later RETURN NUMBER;
+              PROCEDURE r IS inner_v NUMBER; PROCEDURE nested IS BEGIN NULL; END; BEGIN NULL; END;
+              FUNCTION later RETURN NUMBER IS inner_w NUMBER; BEGIN RETURN 1; END;
+            BEGIN
+              g_count := 0;
+            END p;
+        """.trimIndent()
+        val extraction = extractor.extractFile(FileId("b.sql"), source)
+        // No body fact is a package declaration; the names come with the extraction.
+        assertThat(extraction.declarations.filterIsInstance<PackageDeclaration>()).isEmpty()
+        val body = extraction.packageBodies.single()
+        assertThat(body.owner).isEqualTo(name("p"))
+        assertThat(body.names.unretained.map { "${it.kind} ${it.name.originalSpelling}" }).containsExactly(
+            "VALUE g_count", "VALUE c_max", "TYPE t_rec", "CURSOR c", "EXCEPTION e_bad", "FUNCTION later", "PROCEDURE r", "FUNCTION later"
+        )
+        assertThat(body.names.complete).isTrue()
+        assertThat(body.names.unretained[6].sourceRange).isEqualTo(SourceRange(FileId("b.sql"), 9, 2, 9, 86))
+
+        val index = prepare("b.sql" to source).index
+        val r = index.findOccurrences(name("p", "r")).single().declaration
+        val inBody = index.packageBodyOf(r, name("p"))!!
+        val reference = SourceRange(FileId("b.sql"), 9, 20, 9, 26)
+        assertThat(PackageMemberNames.inBody(inBody, id("g_count"), reference).status).isEqualTo(DECLARED_BEFORE)
+        assertThat(PackageMemberNames.inBody(inBody, id("later"), reference).status).isEqualTo(REJECTED)
+        assertThat(PackageMemberNames.inBody(inBody, id("r"), reference).status).isEqualTo(REJECTED)
+        assertThat(PackageMemberNames.inBody(inBody, id("inner_w"), reference).status).isEqualTo(NOT_DECLARED)
+        assertThat(PackageMemberNames.inBody(inBody, id("nested"), reference).status).isEqualTo(NOT_DECLARED)
+    }
+
+    @Test
+    fun bodyNamesUnderConditionalCompilationOrUnidentifiedTextAreNotProven() {
+        fun body(level: String) = extractor.extractFile(FileId("b.sql"), "CREATE PACKAGE BODY p AS\n$level\n  PROCEDURE r IS BEGIN NULL; END;\nEND p;")
+            .packageBodies.single().names
+        val conditional = body("  \$IF \$\$flag \$THEN v NUMBER; \$ELSE w DATE; \$END")
+        assertThat(conditional.gaps).containsExactly(MemberNameGap.CONDITIONAL_COMPILATION)
+        assertThat(conditional.isUnconditional(conditional.unretained.single { it.name == id("v") }.sourceRange)).isFalse()
+        assertThat(conditional.completeFor(id("w"))).isFalse()
+        assertThat(conditional.completeFor(id("other"))).isTrue()
+        // Conditional compilation inside a subprogram declares nothing of the body's level.
+        val inner = extractor.extractFile(FileId("b.sql"), "CREATE PACKAGE BODY p AS\n  PROCEDURE r IS BEGIN \$IF \$\$flag \$THEN NULL; \$END END;\n  v NUMBER;\nEND p;")
+            .packageBodies.single().names
+        assertThat(inner.complete).isTrue()
+        assertThat(body("  (a) NUMBER;").gaps).containsExactly(MemberNameGap.UNIDENTIFIED_DECLARATION)
     }
 
     @Test

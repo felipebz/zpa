@@ -351,7 +351,7 @@ class ProjectExternalTypeDescriptionTest {
         assertThat(s.describeExternalType(valueRef(s, "q", "x"), n("q"), md, hr).status).isEqualTo(Status.NOT_EXTERNAL)
         val relP = ProjectExternalRelation.of("HR", "P", true, listOf(idColumn))
         val y = s.describeExternalType(valueRef(s, "q", "y"), n("q"), metadata(employees, relP), hr)
-        assertThat(y.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.FIELD_PATH)
+        assertThat(y.source.status).isEqualTo(Source.BUILT_IN)
         assertThat(y.status).isEqualTo(Status.CONFLICT)
         assertThat(names(y.sourceCandidates)).containsExactly("p.rec")
         assertThat(s.describeExternalType(valueRef(s, "q", "y"), n("q"), md, hr).status).isEqualTo(Status.NOT_EXTERNAL)
@@ -397,14 +397,13 @@ class ProjectExternalTypeDescriptionTest {
         assertThat(names(x.sourceCandidates)).containsExactly("p.r")
         assertThat(s.describeExternalType(record.recordFields[2].typeRef, n("p"), md, hr).status).isEqualTo(Status.NOT_EXTERNAL)
         val body = s.findDeclarations(n("p", "run")).declarations.single { it.fileId == "b.sql" } as ProjectPackageSubprogramView
+        // The body declares nothing at its own level: neither anchor can be captured there.
         val row = s.describeExternalType(body.parameters[0].typeRef, n("p"), md, hr)
-        assertThat(row.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
+        assertThat(row.status).isEqualTo(Status.RESOLVED)
         assertThat(row.lookup.get().status).isEqualTo(Lookup.FOUND)
-        // A body-private declaration may capture a column anchor too: not a definitive source answer.
         val column = s.describeExternalType(body.parameters[1].typeRef, n("p"), md, hr)
-        assertThat(column.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
-        assertThat(column.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
-        assertThat(column.lookup.get().status).isEqualTo(Lookup.FOUND)
+        assertThat(column.status).isEqualTo(Status.RESOLVED)
+        assertThat(column.lookup.get().column.get().name.toString()).isEqualTo("\"SALARY\"")
     }
 
     @Test
@@ -439,13 +438,14 @@ class ProjectExternalTypeDescriptionTest {
     fun conditionalCapturesAreNeverDefinitive() {
         val record = "  TYPE rec_t IS RECORD (salary VARCHAR2(30));\n"
         val fieldPath = h("CREATE PACKAGE p AS\n$record  \$IF \$\$use_local \$THEN\n    employees rec_t;\n  \$END\n  h employees.salary%TYPE;\nEND p;")
-        assertThat(fieldPath.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.FIELD_PATH)
+        assertThat(fieldPath.source.status).isEqualTo(Source.BUILT_IN)
+        assertThat(names(fieldPath.source.steps)).containsExactly("p.employees", "p.rec_t")
         assertThat(fieldPath.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
         assertThat(fieldPath.lookup.get().status).isEqualTo(Lookup.FOUND)
         assertThat(fieldPath.relationName).contains(n("HR", "EMPLOYEES"))
         val unconditional = h("CREATE PACKAGE p AS\n$record  employees rec_t;\n  h employees.salary%TYPE;\nEND p;")
         assertThat(unconditional.status).isEqualTo(Status.NOT_EXTERNAL)
-        assertThat(names(unconditional.sourceCandidates)).containsExactly("p.employees")
+        assertThat(names(unconditional.source.steps)).containsExactly("p.employees", "p.rec_t")
 
         val oneSegment = h("CREATE PACKAGE p AS \$IF \$\$f \$THEN employees NUMBER; \$END h employees%TYPE; END p;")
         assertThat(oneSegment.source.status).isEqualTo(Source.BUILT_IN)
@@ -459,7 +459,7 @@ class ProjectExternalTypeDescriptionTest {
         assertThat(h("CREATE PACKAGE p AS g NUMBER; h g%TYPE; END p;").status).isEqualTo(Status.NOT_EXTERNAL)
 
         val chainHop = h("CREATE PACKAGE p AS\n$record  \$IF \$\$f \$THEN employees rec_t; \$END\n  a employees.salary%TYPE;\n  h a%TYPE;\nEND p;")
-        assertThat(names(chainHop.source.steps)).containsExactly("p.a")
+        assertThat(names(chainHop.source.steps)).containsExactly("p.a", "p.employees", "p.rec_t")
         assertThat(chainHop.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
         assertThat(chainHop.lookup.get().status).isEqualTo(Lookup.FOUND)
         assertThat(h("CREATE PACKAGE p AS\n$record  employees rec_t;\n  a employees.salary%TYPE;\n  h a%TYPE;\nEND p;").status).isEqualTo(Status.NOT_EXTERNAL)
@@ -520,9 +520,9 @@ class ProjectExternalTypeDescriptionTest {
         assertThat(rowValue(sibling.replace("  \$IF \$\$use_record \$THEN\n", "  \$IF \$\$x \$THEN v NUMBER; \$END\n").replace("  \$END\nEND", "END")).status)
             .isEqualTo(Status.NOT_EXTERNAL)
 
-        // A shorter package value stops a conditional anchor.
+        // A field path through a package value, in a conditional anchor.
         val prefixStop = h("CREATE PACKAGE p AS TYPE r IS RECORD (f NUMBER); rec r; \$IF \$\$f \$THEN h p.rec.f%TYPE; \$END END p;")
-        assertThat(prefixStop.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.FIELD_PATH)
+        assertThat(prefixStop.source.status).isEqualTo(Source.BUILT_IN)
         assertThat(prefixStop.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
         assertThat(h("CREATE PACKAGE p AS TYPE r IS RECORD (f NUMBER); rec r; h p.rec.f%TYPE; END p;").status).isEqualTo(Status.NOT_EXTERNAL)
 
@@ -570,5 +570,59 @@ class ProjectExternalTypeDescriptionTest {
         } finally {
             pool.shutdown()
         }
+    }
+
+    @Test
+    fun aFieldOfARowtypeValueIsTheColumnOfItsRelation() {
+        val sales = ProjectIdentifier.fromSource("SALES")
+        val customer = ProjectExternalRelation.of(
+            "SALES", "CUSTOMER", true, listOf(
+                ProjectExternalColumn.of("CUSTOMER_ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 7, 0)),
+                ProjectExternalColumn.of("NAME", 2, ProjectExternalDatatype.of("VARCHAR2", null, 60, ProjectExternalDatatype.LengthSemantics.BYTE, null, null))
+            )
+        )
+        val sm = metadata(customer, complete = listOf("SALES"))
+        val s = prepare(
+            "ord.sql" to "CREATE PACKAGE pk_ord AS\n  TYPE t_line IS RECORD (line_no NUMBER(4), qty NUMBER(9,2));\n  g_line t_line;\n" +
+                "  g_cust customer%ROWTYPE;\n  g_name g_cust.name%TYPE;\nEND pk_ord;",
+            "use.sql" to "CREATE PACKAGE pk_use AS\n  v_name pk_ord.g_cust.name%TYPE;\n  v_nope pk_ord.g_cust.nope%TYPE;\n  v_line pk_ord.g_line.nope%TYPE;\nEND pk_use;"
+        )
+        fun column(d: ProjectExternalTypeDescription) = d.lookup.get().column.get().datatype.get()
+
+        val name = s.describeExternalType(valueRef(s, "pk_use", "v_name"), n("pk_use"), sm, sales)
+        assertThat(name.status).isEqualTo(Status.RESOLVED)
+        assertThat(name.anchor).contains(TYPE)
+        assertThat(name.anchorName).contains(n("customer", "name"))
+        assertThat(name.relationName).contains(n("SALES", "CUSTOMER"))
+        assertThat(column(name).name).isEqualTo("VARCHAR2")
+        assertThat(column(name).length).isEqualTo(OptionalInt.of(60))
+        // The source walk itself stops at the %ROWTYPE anchor of the value, with the field still to select.
+        assertThat(name.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.ROWTYPE)
+        assertThat(name.source.fieldPath.map { it.toString() }).containsExactly("name")
+        assertThat(names(name.source.steps)).containsExactly("pk_ord.g_cust")
+        // The same path without the package name inside its specification.
+        val inSpec = s.describeExternalType(valueRef(s, "pk_ord", "g_name"), n("pk_ord"), sm, sales)
+        assertThat(inSpec.status).isEqualTo(Status.RESOLVED)
+        assertThat(column(inSpec).length).isEqualTo(OptionalInt.of(60))
+
+        // Without metadata the column is not known: the anchor stays the column of the row's relation.
+        val unavailable = s.describeExternalType(valueRef(s, "pk_use", "v_name"), n("pk_use"), ProjectExternalMetadata.none(), sales)
+        assertThat(unavailable.status).isEqualTo(Status.UNAVAILABLE)
+        assertThat(unavailable.anchorName).contains(n("customer", "name"))
+        assertThat(unavailable.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.ROWTYPE)
+
+        // A column the relation does not have, and a field the record type does not have.
+        assertThat(s.describeExternalType(valueRef(s, "pk_use", "v_nope"), n("pk_use"), sm, sales).status).isEqualTo(Status.COLUMN_NOT_FOUND)
+        val line = s.describeExternalType(valueRef(s, "pk_use", "v_line"), n("pk_use"), sm, sales)
+        assertThat(line.source.anchorStop).contains(ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND)
+        assertThat(line.status).isEqualTo(Status.NOT_EXTERNAL)
+        assertThat(names(line.sourceCandidates)).containsExactly("pk_ord.t_line")
+
+        // A record type whose fields lie under undecided conditional compilation decides nothing for every compilation.
+        val conditional = h("CREATE PACKAGE p AS TYPE r IS RECORD (\$IF \$\$wide \$THEN amount NUMBER, \$END label VARCHAR2(10)); g r; h g.label%TYPE; END p;")
+        assertThat(conditional.source.status).isEqualTo(Source.BUILT_IN)
+        assertThat(conditional.status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
+        assertThat(names(conditional.sourceCandidates)).contains("p.r")
+        assertThat(h("CREATE PACKAGE p AS TYPE r IS RECORD (amount NUMBER, label VARCHAR2(10)); g r; h g.label%TYPE; END p;").status).isEqualTo(Status.NOT_EXTERNAL)
     }
 }

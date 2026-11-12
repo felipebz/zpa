@@ -287,14 +287,16 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * What the `DATATYPE` node [datatype] declares (the type of a variable, constant, parameter, record field or
      * collection element, or a function's RETURN type), from the same walk as [typeCategory]: subtypes and `%TYPE`
      * anchors are followed, a local declaration hides a name declared elsewhere, and a name declared in another file is
-     * described by the prepared project.
+     * described by the prepared project, a `%TYPE` of a field of a package record value (`pk.g_rec.f%TYPE`, or
+     * `g_rec.f%TYPE` in the package) included.
      *
      * A predefined type gives its normalized name and written constraints. A constraint written as an expression is
      * evaluated from constants the analysis decides: a constant of this file whose default is such an expression, or a
      * package constant of another file whose default is an integer literal. Any other expression gives
      * [com.felipebz.zpa.api.semantics.WrittenTypeConstraint.Unknown]. A record or collection type of this file gives
      * its fields, or its kind and element's `DATATYPE` node to ask again. A `%ROWTYPE` or a column's `%TYPE` gives the
-     * anchor, described with the scan's external metadata when it has any. [DeclaredType.Unknown] is never a proof.
+     * anchor, described with the scan's external metadata when it has any; a field of a package value declared with a
+     * relation's `%ROWTYPE` gives that column's `%TYPE`. [DeclaredType.Unknown] is never a proof.
      */
     @ZpaExperimentalApi
     fun declaredType(datatype: AstNode): DeclaredType =

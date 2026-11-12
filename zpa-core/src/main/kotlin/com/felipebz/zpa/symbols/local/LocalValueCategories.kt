@@ -415,8 +415,9 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         return when (source.status) {
             ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(region, source.declaration.orElse(null) as? ProjectShapedTypeView, seen)
             ProjectTypeDescription.Status.BUILT_IN -> ValueCategory.Scalar(DatatypeFamilies.ofDescription(description, null, null)?.let(::scalarFamily))
+            // A field of a `%ROWTYPE` value stops at the row's anchor: the field, not the row, is meant.
             ProjectTypeDescription.Status.ANCHORED_REFERENCE ->
-                if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE) rowtype(region, description)
+                if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE && source.fieldPath.isEmpty()) rowtype(region, description)
                 else unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
             else -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         }

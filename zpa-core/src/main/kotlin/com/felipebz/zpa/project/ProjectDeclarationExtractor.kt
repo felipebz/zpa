@@ -37,12 +37,14 @@ class ProjectDeclarationExtractor(
 
 /**
  * Facts of one file plus name-only standalone coverage: the qualified names of standalone procedure/function
- * headings that were identified strictly but produced no fact. Only namespace evidence; never a candidate.
+ * headings that were identified strictly but produced no fact. Only namespace evidence; never a candidate. Each
+ * package body of the file adds the names it declares at its own level ([packageBodies]).
  */
 internal class ProjectFileExtraction(
     val declarations: List<ProjectDeclaration>,
     omittedStandaloneCallables: Set<QualifiedName>,
-    val alteredTypes: AlteredTypes = AlteredTypes.NONE
+    val alteredTypes: AlteredTypes = AlteredTypes.NONE,
+    val packageBodies: List<PackageBodyMemberNames> = emptyList()
 ) {
     val omittedStandaloneCallables: Set<QualifiedName> = Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 }

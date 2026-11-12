@@ -122,10 +122,103 @@ class ProjectTypedCallResolutionTest {
         assertThat(selected(call(source, "put2", listOf(positional()), listOf(ProjectArgumentType.composite())).typed)).isEqualTo("(t tab_t)")
         assertThat(selected(call(source, "put2", listOf(positional()), listOf(ProjectArgumentType.builtIn("NUMBER"))).typed)).isEqualTo("(n NUMBER)")
         assertThat(call(source, "put2", listOf(positional()), listOf(ProjectArgumentType.builtIn("DATE"))).typed.status).isEqualTo(Status.NO_COMPATIBLE_CANDIDATE)
-        // Two composites are never told apart.
+        // Two composites whose declared types are not known are never told apart.
         val both = call(spec("TYPE r1 IS RECORD (a NUMBER);", "TYPE r2 IS RECORD (a NUMBER);", "PROCEDURE put(x r1);", "PROCEDURE put(x r2);"), "put", listOf(positional()), listOf(ProjectArgumentType.composite()))
         assertThat(both.typed.status).isEqualTo(Status.AMBIGUOUS)
         assertThat(both.typed.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
+    }
+
+    private val ship = "CREATE PACKAGE pk_ship AS\n" +
+        "  TYPE t_head IS RECORD (id NUMBER, code VARCHAR2(10));\n" +
+        "  TYPE t_line IS RECORD (id NUMBER, code VARCHAR2(10));\n" +
+        "  TYPE t_ids IS TABLE OF NUMBER INDEX BY PLS_INTEGER;\n" +
+        "  TYPE t_nums IS TABLE OF NUMBER INDEX BY PLS_INTEGER;\n" +
+        "  SUBTYPE t_head2 IS t_head;\n" +
+        "  PROCEDURE save(p t_head);\n  PROCEDURE save(p t_line);\n" +
+        "  PROCEDURE load(p t_ids);\n  PROCEDURE load(p t_nums);\n" +
+        "  PROCEDURE save_row(p ship_head%ROWTYPE);\n  PROCEDURE save_row(p t_head);\n" +
+        "END pk_ship;"
+    private val withShipHead = metadata(
+        ProjectExternalRelation.of(
+            "HR", "SHIP_HEAD", true, listOf(
+                ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, null, null)),
+                ProjectExternalColumn.of("CODE", 2, ProjectExternalDatatype.of("VARCHAR2", null, 10, ProjectExternalDatatype.LengthSemantics.BYTE, null, null))
+            )
+        )
+    )
+
+    private fun narrowOne(s: ProjectSnapshot, pkg: String, name: String, type: ProjectArgumentType): ProjectTypedCallResolution {
+        val structural = s.resolveCall(
+            ProjectCallTarget.packageMember(ProjectQualifiedName.of(pkg), ProjectIdentifier.fromSource(name)),
+            ProjectCallKind.PROCEDURE, ProjectCallArguments.of(listOf(positional()))
+        )
+        return s.narrowCall(structural, listOf(type), withShipHead, hr)
+    }
+
+    private fun valueOf(s: ProjectSnapshot, vararg name: String) =
+        ProjectArgumentType.described(s.describeExternalType(ProjectQualifiedName.of(*name), null, withShipHead, hr))
+
+    @Test
+    fun aRecordOrCollectionFormalAcceptsOnlyItsOwnDeclaredType() {
+        val s = prepare("ship.sql" to ship)
+        // Oracle runs save(t_head) for a t_head value and save(t_line) for a t_line value, although their fields match.
+        val head = narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_head"))
+        assertThat(head.status).isEqualTo(Status.RESOLVED)
+        assertThat(head.ranked).isFalse
+        assertThat(selected(head)).isEqualTo("(p t_head)")
+        assertThat(head.evaluations.map { it.bindings.single().outcome }).containsExactly(Outcome.COMPATIBLE, Outcome.INCOMPATIBLE)
+        assertThat(selected(narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_line")))).isEqualTo("(p t_line)")
+        // A declared collection type accepts only that same type: load(t_ids) runs for a t_ids value.
+        assertThat(selected(narrowOne(s, "pk_ship", "load", valueOf(s, "pk_ship", "t_ids")))).isEqualTo("(p t_ids)")
+        assertThat(selected(narrowOne(s, "pk_ship", "load", valueOf(s, "pk_ship", "t_nums")))).isEqualTo("(p t_nums)")
+        // A subtype is its base type: a t_head2 value runs save(t_head).
+        assertThat(selected(narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_head2")))).isEqualTo("(p t_head)")
+        // A type of another snapshot is not one of this snapshot's declarations: undecided.
+        val other = prepare("ship.sql" to ship)
+        assertThat(narrowOne(s, "pk_ship", "save", valueOf(other, "pk_ship", "t_head")).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun aRowtypeSideIsComparedFieldByFieldAndStaysUndecided() {
+        val s = prepare("ship.sql" to ship)
+        // Oracle: PLS-00307 for save_row with a ship_head%ROWTYPE value and with a t_head value; both overloads match.
+        val row = ProjectArgumentType.described(
+            s.describeExternalType(ProjectWrittenAnchor.of(ProjectQualifiedName.of("ship_head"), ProjectTypeReference.Anchor.ROWTYPE), null, withShipHead, hr)
+        )
+        val byRow = narrowOne(s, "pk_ship", "save_row", row)
+        assertThat(byRow.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(byRow.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
+        val byHead = narrowOne(s, "pk_ship", "save_row", valueOf(s, "pk_ship", "t_head"))
+        assertThat(byHead.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(byHead.evaluations.map { it.bindings.single().outcome }).containsExactly(Outcome.UNKNOWN, Outcome.COMPATIBLE)
+        // A row value against two declared record types is not decided either.
+        assertThat(narrowOne(s, "pk_ship", "save", row).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun withoutADeclaredTypeCompositeFormalsStayUndecided() {
+        val s = prepare("ship.sql" to ship)
+        // Oracle: PLS-00307 for save(NULL).
+        val nul = narrowOne(s, "pk_ship", "save", ProjectArgumentType.nullLiteral())
+        assertThat(nul.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(nul.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.NULL_LITERAL)
+        assertThat(narrowOne(s, "pk_ship", "save", ProjectArgumentType.unknown()).status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(narrowOne(s, "pk_ship", "load", ProjectArgumentType.composite()).status).isEqualTo(Status.AMBIGUOUS)
+        // A name the project does not describe gives no declared type.
+        assertThat(narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_missing")).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun objectTypesAreNotToldApartByDeclaredType() {
+        // An instance of a subtype is accepted where its supertype is expected: both overloads receive a ship_sub value.
+        val s = prepare(
+            "obj.sql" to "CREATE TYPE ship_obj AS OBJECT (id NUMBER) NOT FINAL;",
+            "sub.sql" to "CREATE TYPE ship_sub UNDER ship_obj (code VARCHAR2(10));",
+            "keep.sql" to "CREATE PACKAGE pk_keep AS\n  PROCEDURE keep(p ship_obj);\n  PROCEDURE keep(p ship_sub);\nEND pk_keep;"
+        )
+        val c = narrowOne(s, "pk_keep", "keep", valueOf(s, "ship_sub"))
+        assertThat(c.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(c.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
     }
 
     @Test

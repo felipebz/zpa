@@ -110,6 +110,26 @@ internal object ReferenceHolders {
                 contains(unit.sourceRange, fact.sourceRange)
         }
 
+    /** Null when the body's names are not recorded or [reference] lies outside the holder's declaration. */
+    @JvmSynthetic
+    fun bodyEvidence(index: ProjectSymbolIndex, holder: ReferenceHolder, name: OracleIdentifier, reference: ProjectSourceRange): MemberNameEvidence? {
+        if (holder.role != DeclarationRole.BODY) return null
+        val owner = holder.owner ?: return null
+        val range = SourceRange(FileId(reference.fileId), reference.startLine, reference.startColumn, reference.endLine, reference.endColumn)
+        if (range.fileId != holder.fact.fileId || !contains(holder.fact.sourceRange, range)) return null
+        val body = index.packageBodyOf(holder.fact, owner) ?: return null
+        return PackageMemberNames.inBody(body, name, range)
+    }
+
+    @JvmSynthetic
+    fun bodyMembers(index: ProjectSymbolIndex, holder: ReferenceHolder, name: OracleIdentifier): List<IndexedDeclaration> {
+        val owner = holder.owner ?: return emptyList()
+        val body = index.packageBodyOf(holder.fact, owner) ?: return emptyList()
+        return index.findOccurrences(owner.append(name)).filter {
+            it.declaration.role == DeclarationRole.BODY && it.fileId == holder.fact.fileId && contains(body.sourceRange, it.declaration.sourceRange)
+        }
+    }
+
     private fun contains(outer: SourceRange, inner: SourceRange): Boolean =
         (outer.startLine < inner.startLine || (outer.startLine == inner.startLine && outer.startColumn <= inner.startColumn)) &&
             (inner.endLine < outer.endLine || (inner.endLine == outer.endLine && inner.endColumn <= outer.endColumn))

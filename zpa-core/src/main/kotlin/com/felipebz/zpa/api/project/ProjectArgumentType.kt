@@ -12,8 +12,9 @@ import java.util.*
 
 /**
  * Detached datatype evidence for one written actual argument of a call, used by [ProjectSnapshot.narrowCall]. It
- * holds only a classification: no expression, text, syntax tree, symbol or type description is retained, and nothing
- * is inferred from expression text.
+ * holds only a classification, with the identity of the declared record or collection type a value is of when known:
+ * no expression, text, syntax tree, symbol or type description is retained, and nothing is inferred from expression
+ * text.
  *
  * Typical sources, all derived by the caller:
  * - a numeric literal is `builtIn("NUMBER")` (`BINARY_DOUBLE`/`BINARY_FLOAT` for `d`/`f` suffixes);
@@ -22,7 +23,8 @@ import java.util.*
  * - `TRUE`/`FALSE` is `builtIn("BOOLEAN")`; `DATE '…'`, `TIMESTAMP '…'` and `INTERVAL '…'` literals are those names;
  * - the `NULL` literal is [nullLiteral], never a character or other datatype;
  * - a variable is `builtIn` of its declared built-in type, [composite] for a record or collection, or [described]
- *   from [ProjectSnapshot.describeExternalType] for project types and anchors;
+ *   from [ProjectSnapshot.describeExternalType] for project types and anchors (a variable of a package record or
+ *   collection type then keeps that type's identity: a formal of another declared record or collection type rejects it);
  * - anything else is [unknown].
  *
  * Built-in names are classified as Oracle's predefined types: resolving a name the caller's own scope may shadow is
@@ -41,7 +43,8 @@ class ProjectArgumentType private constructor(
     /** The exact type, as Oracle's choice among compatible overloads tells types apart; null when not known exactly. */
     @get:JvmSynthetic internal val rank: OverloadRank? = null,
     /** For a composite, what it is where Oracle's compatibility between composites depends on it; null when not known. */
-    @get:JvmSynthetic internal val compositeKind: CompositeKind? = null
+    @get:JvmSynthetic internal val compositeKind: CompositeKind? = null,
+    @get:JvmSynthetic internal val declaredType: DeclaredCompositeType? = null
 ) {
     enum class Kind {
         /** No usable evidence. */
@@ -100,6 +103,10 @@ class ProjectArgumentType private constructor(
         @JvmSynthetic
         internal fun composite(kind: CompositeKind): ProjectArgumentType = ProjectArgumentType(Kind.COMPOSITE, ProjectDatatypeFamily.COMPOSITE, false, null, null, null, kind)
 
+        @JvmSynthetic
+        internal fun composite(type: DeclaredCompositeType): ProjectArgumentType =
+            ProjectArgumentType(Kind.COMPOSITE, ProjectDatatypeFamily.COMPOSITE, false, null, null, declaredType = type)
+
         /** As [builtIn], for a value whose exact type within the family is not known (a timestamp literal, which may have a zone). */
         @JvmSynthetic
         internal fun builtInInexact(typeName: String): ProjectArgumentType {
@@ -120,7 +127,8 @@ class ProjectArgumentType private constructor(
          * declaration, a resolved external column or row, or a source built-in reached through retained value or
          * subtype steps); a `%ROWTYPE` anchor is a row whatever its resolution. A built-in name reached without any
          * step could be shadowed by a member of the unknown package, so it gives unknown evidence: use the overload
-         * with the package owner. The description itself is not retained.
+         * with the package owner. The description itself is not retained; a package record or collection type it
+         * reaches is kept as the value's declared type.
          */
         @JvmStatic
         fun described(description: ProjectExternalTypeDescription): ProjectArgumentType = classify(description, false, null)
@@ -142,7 +150,8 @@ class ProjectArgumentType private constructor(
             val builtIn = DatatypeFamilies.builtInName(description, null)?.takeIf { family != null }
                 ?: return ProjectArgumentType(
                     Kind.DESCRIBED, family, family == null && conclusive, null, null,
-                    family?.let { DatatypeFamilies.externalRank(description) }, DatatypeFamilies.compositeKind(description)
+                    family?.let { DatatypeFamilies.externalRank(description) }, DatatypeFamilies.compositeKind(description),
+                    family?.let { DatatypeFamilies.declaredCompositeType(description) }
                 )
             // The package that resolved the built-in name: the last retained step's owner, else the request's owner.
             val stepScope = DatatypeFamilies.builtInScope(description, null)

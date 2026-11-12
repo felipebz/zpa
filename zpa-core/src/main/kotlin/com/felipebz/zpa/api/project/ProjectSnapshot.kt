@@ -138,10 +138,20 @@ class ProjectSnapshot private constructor(
     /**
      * As the name overload for a retained [reference] (a field, element, subtype base, return or value type), keeping
      * the distinction between named, anchored and `REF` references. Supported source-backed `%TYPE` anchors are
-     * followed through package values; other anchors stop with [ProjectTypeDescription.Status.ANCHORED_REFERENCE]
-     * (including every `%ROWTYPE`) or [ProjectTypeDescription.Status.UNRESOLVED_VALUE], and `REF` stops with
+     * followed through package values, and through the fields an anchor names after a package value
+     * (`p.g_rec.f%TYPE`, or `g_rec.f%TYPE` in the specification or body of `p`, under the same scope rules as a
+     * one-segment name): each field is selected from the record or object type the value's type reaches, also when
+     * the field is itself a record. A field that type does not have stops with
+     * [ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND]; a field path that reaches a `%ROWTYPE` stops at that anchor
+     * with the remaining fields in [ProjectTypeDescription.fieldPath]. Other anchors stop with
+     * [ProjectTypeDescription.Status.ANCHORED_REFERENCE] (including every `%ROWTYPE`) or
+     * [ProjectTypeDescription.Status.UNRESOLVED_VALUE], and `REF` stops with
      * [ProjectTypeDescription.Status.REF_REFERENCE], even when the name matches a project type. [packageOwner] should
-     * be the owner of the declaration holding the reference.
+     * be the owner of the declaration holding the reference. For a reference retained by a subprogram of a package
+     * body, the declarations of the body's own level count as the specification's members do: one named like the
+     * first segment and declared before the subprogram captures it, one declared later makes Oracle reject it, and
+     * the anchor stops at the enclosing scope when the body's names are not known for it (unidentified text, or a
+     * declaration of the name under conditional compilation the configured settings do not decide).
      */
     fun describeType(reference: ProjectTypeReference, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
         ProjectTypeDescriber.describe(this, reference.name, reference, packageOwner)
@@ -167,7 +177,9 @@ class ProjectSnapshot private constructor(
      * Composes [describeType] for [name] with supplied external relation [metadata]. [currentSchema] is the schema in
      * which the referencing unit compiles; it is needed only for unqualified relation readings (null gives
      * [ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING] there). The source description is unchanged and
-     * returned in [ProjectExternalTypeDescription.source].
+     * returned in [ProjectExternalTypeDescription.source]. A source walk stopped at a `%ROWTYPE` anchor with one
+     * pending field is read as that relation's column (`customer.name%TYPE` for `g_cust.name%TYPE` where `g_cust` is
+     * a `customer%ROWTYPE`); a longer pending path, or one after a column anchor, is no relation reading.
      */
     fun describeExternalType(
         name: ProjectQualifiedName,
@@ -285,6 +297,15 @@ class ProjectSnapshot private constructor(
      * NUMBER: NUMBER, BINARY_FLOAT, BINARY_DOUBLE, PLS_INTEGER; for a BINARY_DOUBLE: BINARY_DOUBLE, BINARY_FLOAT,
      * NUMBER, PLS_INTEGER; for a BINARY_FLOAT: BINARY_FLOAT, BINARY_DOUBLE, NUMBER, PLS_INTEGER). A predefined subtype
      * counts as its base type. Anything else stays undecided; nothing is chosen by order.
+     *
+     * A record or collection value is told apart by its declared type, as Oracle does: a formal of a record or
+     * collection type declared with `TYPE … IS RECORD`, `IS TABLE OF` or `IS VARRAY` in a package of the project (a
+     * subtype counting as its base type) accepts only an actual of that same declared type, so a formal of another
+     * declared record or collection type is incompatible even when its fields or element are the same, and a type
+     * declared only in the analyzed file is distinct from every project type. The actual's declared type is known from
+     * a [ProjectArgumentType.described] description that reaches such a declaration. A `%ROWTYPE` on either side
+     * (table, view or cursor), which Oracle compares field by field, an object type (whose subtypes it accepts), a ref
+     * cursor, a NULL actual and an actual whose type is not known are never decided by declared type.
      *
      * @throws IllegalArgumentException if a candidate was issued by another snapshot, if the list size differs from the
      * number of written actuals, or if it contains null

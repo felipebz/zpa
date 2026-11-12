@@ -13,6 +13,7 @@ class ProjectSymbolIndexBuilder {
     private val declarationsByFile = ConcurrentHashMap<FileId, List<ProjectDeclaration>>()
     private val omittedStandaloneCallablesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
     private val alteredTypesByFile = ConcurrentHashMap<FileId, AlteredTypes>()
+    private val packageBodiesByFile = ConcurrentHashMap<FileId, List<PackageBodyMemberNames>>()
     private val schemasByFile = ConcurrentHashMap<FileId, OracleIdentifier>()
     private val configuredSchemas = HashSet<OracleIdentifier>()
 
@@ -28,15 +29,22 @@ class ProjectSymbolIndexBuilder {
 
     fun add(fileId: FileId, declarations: Collection<ProjectDeclaration>) = add(fileId, declarations, emptySet())
 
-    /** [omittedStandaloneCallables]: names of standalone callable headings of this file that produced no fact. */
+    /**
+     * [omittedStandaloneCallables]: names of standalone callable headings of this file that produced no fact;
+     * [packageBodies]: the names each package body of this file declares at its own level.
+     */
     internal fun add(
         fileId: FileId,
         declarations: Collection<ProjectDeclaration>,
         omittedStandaloneCallables: Set<QualifiedName>,
-        alteredTypes: AlteredTypes = AlteredTypes.NONE
+        alteredTypes: AlteredTypes = AlteredTypes.NONE,
+        packageBodies: List<PackageBodyMemberNames> = emptyList()
     ) {
         require(declarations.all { it.fileId == fileId }) {
             "All declarations added for a file must have the same FileId"
+        }
+        require(packageBodies.all { it.sourceRange.fileId == fileId }) {
+            "All package bodies added for a file must have the same FileId"
         }
         val copy = immutableList(declarations)
         require(declarationsByFile.putIfAbsent(fileId, copy) == null) {
@@ -44,6 +52,7 @@ class ProjectSymbolIndexBuilder {
         }
         if (omittedStandaloneCallables.isNotEmpty()) omittedStandaloneCallablesByFile[fileId] = omittedStandaloneCallables
         if (!alteredTypes.isEmpty()) alteredTypesByFile[fileId] = alteredTypes
+        if (packageBodies.isNotEmpty()) packageBodiesByFile[fileId] = immutableList(packageBodies)
     }
 
     fun build(): ProjectSymbolIndex {
@@ -59,7 +68,7 @@ class ProjectSymbolIndexBuilder {
         val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
         return ProjectSymbolIndex(
             occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, AlteredTypes.merge(alteredTypesByFile.values),
-            HashMap(schemasByFile), HashSet(configuredSchemas)
+            HashMap(schemasByFile), HashSet(configuredSchemas), HashMap(packageBodiesByFile)
         )
     }
 }
@@ -98,8 +107,9 @@ class ProjectSymbolIndex private constructor(
         omittedStandaloneCallables: Set<QualifiedName> = emptySet(),
         alteredTypes: AlteredTypes = AlteredTypes.NONE,
         schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
-        configuredSchemas: Set<OracleIdentifier> = emptySet()
-    ) : this(Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas), null, null)
+        configuredSchemas: Set<OracleIdentifier> = emptySet(),
+        packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>> = emptyMap()
+    ) : this(Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas, packageBodiesByFile), null, null)
 
     /** The frozen declarations and every map derived from them; independent of the preferred schema. */
     private class Tables(
@@ -108,7 +118,8 @@ class ProjectSymbolIndex private constructor(
         omittedStandaloneCallables: Set<QualifiedName>,
         alteredTypes: AlteredTypes,
         schemasByFile: Map<FileId, OracleIdentifier>,
-        configuredSchemas: Set<OracleIdentifier>
+        configuredSchemas: Set<OracleIdentifier>,
+        packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>>
     ) {
         val fileIds: List<FileId> = immutableList(fileIds)
         val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
@@ -118,6 +129,8 @@ class ProjectSymbolIndex private constructor(
             Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 
         val alteredTypes: AlteredTypes = alteredTypes
+
+        val packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>> = packageBodiesByFile.toMap()
 
         /** All canonical occurrences in deterministic file, then per-file order. */
         val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })
@@ -212,6 +225,15 @@ class ProjectSymbolIndex private constructor(
     val fileIds: List<FileId> get() = tables.fileIds
     internal val omittedStandaloneCallables: Set<QualifiedName> get() = tables.omittedStandaloneCallables
     internal val alteredTypes: AlteredTypes get() = tables.alteredTypes
+
+    internal fun packageBodyOf(declaration: ProjectDeclaration, owner: QualifiedName): PackageBodyMemberNames? =
+        tables.packageBodiesByFile[declaration.fileId].orEmpty().singleOrNull {
+            it.owner == owner && contains(it.sourceRange, declaration.sourceRange)
+        }
+
+    private fun contains(outer: SourceRange, inner: SourceRange): Boolean =
+        (outer.startLine < inner.startLine || (outer.startLine == inner.startLine && outer.startColumn <= inner.startColumn)) &&
+            (inner.endLine < outer.endLine || (inner.endLine == outer.endLine && inner.endColumn <= outer.endColumn))
 
     /** All canonical occurrences in deterministic file, then per-file order. */
     val occurrences: List<IndexedDeclaration> get() = tables.occurrences

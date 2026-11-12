@@ -49,8 +49,18 @@ private class Composition(
     /** Holder of the start reference, located once: the search scans the retained references of its file. */
     private val startHolder = startReference?.let { ReferenceHolders.find(index, it) }
 
-    /** An anchor written somewhere in the walk: its name, kind, and whether it is a retained reference. */
-    private class WrittenName(val name: ProjectQualifiedName, val kind: ProjectTypeReference.Anchor, val reference: ProjectTypeReference?)
+    /**
+     * An anchor written somewhere in the walk: its name, kind, and whether it is a retained reference. An anchor the
+     * walk stopped at with a pending field path is read with that path appended ([fields] segments) as a `%TYPE`
+     * anchor of kind [base] before the path: `customer.name%TYPE` for the field `name` of a `customer%ROWTYPE` value.
+     */
+    private class WrittenName(
+        val name: ProjectQualifiedName,
+        val kind: ProjectTypeReference.Anchor,
+        val reference: ProjectTypeReference?,
+        val fields: Int = 0,
+        val base: ProjectTypeReference.Anchor = kind
+    )
 
     /** The relation reading of an anchor shape: unqualified readings need [currentSchema]. */
     private class Reading(val qualified: Boolean, val schema: ProjectIdentifier?, val relation: ProjectIdentifier, val column: ProjectIdentifier?) {
@@ -113,14 +123,14 @@ private class Composition(
         return outcomeAfterScope(anchor, reading, first, captors, scope.uncertain, stepFacts, referenceFacts)
     }
 
-    /** Step 2. */
+    /** Step 2. A value bound in package scope (a one-segment name, or the start of a field path there) has no relation reading. */
     private fun followedConflict(stepFacts: List<ProjectDeclaration>, referenceFacts: List<ProjectDeclaration>): Outcome? {
         if (!available) return null
-        val followed = followedAnchors()
-        val (anchor, found) = followed.firstNotNullOfOrNull { (anchor, _) ->
-            competing(anchor.name).takeIf { it.isNotEmpty() }?.let { anchor to it }
+        val followed = trace.followed.filter { !it.packageScope }
+        val (anchor, found) = followed.firstNotNullOfOrNull { followedAnchor ->
+            competing(followedAnchor.name).takeIf { it.isNotEmpty() }?.let { written(followedAnchor) to it }
         } ?: return null
-        val values = followed.filter { competing(it.first.name).isNotEmpty() }.map { it.second }
+        val values = followed.filter { competing(it.name).isNotEmpty() }.map { it.value }
         return conflict(anchor, values, found, stepFacts + referenceFacts)
     }
 
@@ -137,6 +147,10 @@ private class Composition(
                 AnchorStopCause.DECLARED_LATER ->
                     return Outcome(Status.NOT_EXTERNAL, stopped, sourceCandidates = snapshot.viewsOf(trace.captors),
                         dependencies = stepFacts + trace.captors.map { it.declaration })
+                // The first segment bound to a package value: the anchor is a field path, never a relation reading.
+                // The type examined (or the value of a scalar type) is the declaration that decides it.
+                AnchorStopCause.FIELD_NOT_FOUND, AnchorStopCause.FIELD_UNDECIDED ->
+                    return Outcome(Status.NOT_EXTERNAL, stopped, sourceCandidates = listOfNotNull(source.steps.lastOrNull()), dependencies = stepFacts)
                 else -> Unit
             }
             ProjectTypeDescription.Status.UNRESOLVED_VALUE -> {
@@ -185,8 +199,26 @@ private class Composition(
                 is ScopeResult.Open -> uncertain = evidence.uncertain
             }
         }
-        if (holder?.role == DeclarationRole.BODY) uncertain = true
+        if (holder?.role == DeclarationRole.BODY) {
+            when (val body = bodyScope(holder, anchor, first)) {
+                is ScopeResult.Decided -> return body
+                is ScopeResult.Open -> if (body.uncertain) uncertain = true
+            }
+        }
         return ScopeResult.Open(owner, uncertain)
+    }
+
+    /** Step 5, the package body's own level: Oracle rejects a reference to a body declaration of the name declared later too. */
+    private fun bodyScope(holder: ReferenceHolder, anchor: WrittenName, first: ProjectIdentifier): ScopeResult {
+        val evidence = anchor.reference?.sourceRange?.let { ReferenceHolders.bodyEvidence(index, holder, first.identifier, it) }
+        return when (evidence?.status) {
+            MemberNameStatus.DECLARED_BEFORE, MemberNameStatus.REJECTED -> {
+                val members = snapshot.viewsOf(ReferenceHolders.bodyMembers(index, holder, first.identifier))
+                ScopeResult.Decided(Outcome(Status.NOT_EXTERNAL, anchor, sourceCandidates = members, dependencies = members.mapNotNull { factOf(it) }))
+            }
+            MemberNameStatus.NOT_DECLARED -> ScopeResult.Open(holder.owner, false)
+            MemberNameStatus.UNKNOWN, null -> ScopeResult.Open(holder.owner, true)
+        }
     }
 
     /** Step 5, the package member-name evidence for the first segment in [unit]. */
@@ -284,13 +316,16 @@ private class Composition(
      * A definitive answer (`RESOLVED`, `NOT_EXTERNAL`, `CONFLICT`) that rests on a conditionally compiled declaration
      * is not proven for every compilation: it becomes `CAPTURE_NOT_EXCLUDED`, keeping its evidence and listing the
      * conditional declarations among the source candidates. Every definitive answer rests on the walk's provenance
-     * ([provenance]) plus the outcome's own captors or members.
+     * ([provenance]) plus the outcome's own captors or members. Without a stopped anchor, the relation reading kept is
+     * that of the first followed field path that has one (`employees.salary%TYPE` through a conditional value
+     * `employees`): the reading Oracle makes when the value is not compiled.
      */
     private fun guarded(outcome: Outcome): Outcome {
         if (outcome.status != Status.RESOLVED && outcome.status != Status.NOT_EXTERNAL && outcome.status != Status.CONFLICT) return outcome
         val conditional = (provenance() + outcome.dependencies).filter(::conditional).distinct()
         if (conditional.isEmpty()) return outcome
         val anchor = outcome.anchor ?: stoppedAnchor()
+            ?: trace.followed.firstNotNullOfOrNull { followed -> written(followed).takeIf { followed.selectsFields && reading(it) != null } }
         val reading = if (outcome.relationName == null) anchor?.let { reading(it) } else null
         val lookup = outcome.lookup ?: reading?.takeIf { available && it.name != null }?.let { lookup(it) }
         val relationName = outcome.relationName ?: lookup?.let { reading!!.name }
@@ -324,16 +359,7 @@ private class Composition(
         return Outcome(status, anchor, reading.name, lookup, captors)
     }
 
-    /** Each followed value with the anchor that led to it (the request for the first step, else the previous step's reference). */
-    private fun followedAnchors(): List<Pair<WrittenName, ProjectDeclarationView>> {
-        val result = ArrayList<Pair<WrittenName, ProjectDeclarationView>>()
-        for ((i, step) in source.steps.withIndex()) {
-            if (step !is ProjectPackageValueView) continue
-            val anchor = if (i == 0) startAnchor() else anchorOf(source.steps[i - 1])
-            if (anchor != null && anchor.kind == ProjectTypeReference.Anchor.TYPE) result += anchor to step
-        }
-        return result
-    }
+    private fun written(followed: FollowedAnchor) = WrittenName(followed.name, ProjectTypeReference.Anchor.TYPE, followed.reference)
 
     /** Found relation readings of a followed anchor with at least two segments (a one-segment anchor binds in package scope). */
     private fun competing(name: ProjectQualifiedName): List<ProjectExternalLookup> {
@@ -345,32 +371,32 @@ private class Composition(
         return found.filter { it.status == ProjectExternalLookup.Status.FOUND }
     }
 
-    private fun startAnchor(): WrittenName? = when {
-        written != null -> WrittenName(written.name, written.anchor, null)
-        startReference?.kind == ProjectTypeReference.Kind.ANCHORED -> WrittenName(startReference.name, startReference.anchor.get(), startReference)
-        else -> null
-    }
-
-    private fun anchorOf(step: ProjectDeclarationView): WrittenName? {
-        val reference = when (step) {
-            is ProjectPackageValueView -> step.typeRef
-            is ProjectSubtypeView -> step.baseType
-            else -> null
-        } ?: return null
-        return if (reference.kind == ProjectTypeReference.Kind.ANCHORED) WrittenName(reference.name, reference.anchor.get(), reference) else null
-    }
-
-    /** The anchor the walk stopped at: the terminal reference, else the written request. */
+    /**
+     * The anchor the walk stopped at: the terminal reference, else the written request, with the fields an enclosing
+     * anchor still selects past it ([ProjectTypeDescription.fieldPath]) appended.
+     */
     private fun stoppedAnchor(): WrittenName? {
         if (source.status != ProjectTypeDescription.Status.ANCHORED_REFERENCE && source.status != ProjectTypeDescription.Status.UNRESOLVED_VALUE) return null
         val terminal = source.terminalReference.orElse(null)
-        if (terminal != null) return if (terminal.kind == ProjectTypeReference.Kind.ANCHORED) WrittenName(terminal.name, terminal.anchor.get(), terminal) else null
-        return written?.let { WrittenName(it.name, it.anchor, null) }
+        val anchor = if (terminal != null) {
+            if (terminal.kind == ProjectTypeReference.Kind.ANCHORED) WrittenName(terminal.name, terminal.anchor.get(), terminal) else null
+        } else {
+            written?.let { WrittenName(it.name, it.anchor, null) }
+        }
+        val path = source.fieldPath
+        if (anchor == null || path.isEmpty()) return anchor
+        val name = ProjectQualifiedName.ofIdentifiers(anchor.name.segments + path)
+        return WrittenName(name, ProjectTypeReference.Anchor.TYPE, anchor.reference, path.size, anchor.kind)
     }
 
     private fun ownerOfAnchor(): QualifiedName? = if (trace.written) packageOwner?.name else trace.holder?.owner
 
+    /**
+     * The relation reading of an anchor shape. A field path after a `%ROWTYPE` anchor reads as one column of that
+     * relation; any other field path (after a column, or more than one field) is no shape the metadata describes.
+     */
     private fun reading(anchor: WrittenName): Reading? {
+        if (anchor.fields > 0 && (anchor.base != ProjectTypeReference.Anchor.ROWTYPE || anchor.fields != 1)) return null
         val s = anchor.name.segments
         return when {
             anchor.kind == ProjectTypeReference.Anchor.ROWTYPE && s.size == 1 -> Reading(false, currentSchema, s[0], null)

@@ -193,11 +193,16 @@ class ProjectWrittenAnchorDescriptionTest {
     @Test
     fun fieldPathCompetitionMemberCaptureAndCycles() {
         val fieldPath = type("p", "r", "id")
-        val competing = describe(fieldPath)
+        val followed = describe(fieldPath)
+        assertThat(followed.builtInCategory).isEqualTo(Optional.of(Category.NUMERIC))
+        assertThat(followed.steps.map { it.qualifiedName }).containsExactly(n("p", "r"), n("p", "rec_t"))
+        assertThat(followed.terminalReference.get().sourceRange).isEqualTo((view("p", "rec_t") as ProjectPackageTypeView).recordFields.single().typeRef.sourceRange)
+        // The whole name names a value of the package r of schema p too: two readings compete.
+        val competing = describe(fieldPath, s = prepare(files + ("pr.sql" to "CREATE PACKAGE p.r AS id NUMBER; END r;")))
         assertThat(competing.anchorStop).isEqualTo(Optional.of(AnchorStop.FIELD_PATH))
         assertStopAtRequest(competing, fieldPath)
         // A package value named like the first segment captures it: the qualified name is a field path.
-        assertThat(describe(type("r", "id"), n("p")).anchorStop).isEqualTo(Optional.of(AnchorStop.FIELD_PATH))
+        assertThat(describe(type("r", "id"), n("p")).steps.map { it.qualifiedName }).containsExactly(n("p", "r"), n("p", "rec_t"))
         // A package declaration that is not a value captures the first segment.
         assertThat(describe(type("rec_t"), n("p")).anchorStop).isEqualTo(Optional.of(AnchorStop.ENCLOSING_SCOPE))
         assertThat(describe(type("rec_t", "id"), n("p")).anchorStop).isEqualTo(Optional.of(AnchorStop.ENCLOSING_SCOPE))

@@ -174,11 +174,16 @@ internal class LocalTypeWalk(
         return members(value, name.segments.drop(size), region)
     }
 
-    /** The project names no value for the whole name: none found, or one whose fields the name goes into. */
+    /**
+     * The project names no value for the whole name: none found, or one whose fields the name goes into. A field path the
+     * project walked counts too: the member chain keeps the reasons each member gives, conditional fields included.
+     */
     private fun stoppedBeforeValue(evidence: LocalTypeEvidence): Boolean {
         val source = evidence.description?.source ?: return false
-        return source.status == ProjectTypeDescription.Status.UNRESOLVED_VALUE ||
-            source.status == ProjectTypeDescription.Status.ANCHORED_REFERENCE && source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.FIELD_PATH
+        val stop = source.anchorStop.orElse(null)
+        return source.status == ProjectTypeDescription.Status.UNRESOLVED_VALUE || source.fieldPath.isNotEmpty() ||
+            stop == ProjectTypeDescription.AnchorStop.FIELD_PATH || stop == ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND ||
+            source.steps.any { it is ProjectShapedTypeView }
     }
 
     /**
@@ -459,6 +464,18 @@ internal class LocalTypeWalk(
     private fun composite(followed: List<LocalDeclarationId>, kind: CompositeKind? = null) =
         LocalTypeEvidence(kind?.let { ProjectArgumentType.composite(it) } ?: ProjectArgumentType.composite(), LocalTypeEvidence.Terminal.COMPOSITE, followed, null)
 
+    /** A specification type the project does not match by range keeps no declared type: the project may still hold it. */
+    private fun declaredComposite(type: LocalDeclaration, followed: List<LocalDeclarationId>): LocalTypeEvidence {
+        val project = projectDeclarationOf(type.id)
+        val declared = when {
+            project != null -> (project as? ProjectPackageTypeView)?.let { DeclaredCompositeType.Project(it.id) }
+            model.region(type.region).kind == LocalRegionKind.PACKAGE_SPEC -> null
+            else -> DeclaredCompositeType.Local(model.fileId.value, type.id.ordinal)
+        }
+        val argumentType = declared?.let { ProjectArgumentType.composite(it) } ?: ProjectArgumentType.composite()
+        return LocalTypeEvidence(argumentType, LocalTypeEvidence.Terminal.COMPOSITE, followed, null)
+    }
+
     /** A decision made with the project's specification coverage is still the body's: its declaration is local. */
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
@@ -659,7 +676,7 @@ internal class LocalTypeWalk(
                     followed += target.id
                     target.type?.let(::type) ?: unknown(NO_WRITTEN_TYPE)
                 }
-                RECORD_TYPE, COLLECTION_TYPE -> { followed += target.id; composite(followed.toList()) }
+                RECORD_TYPE, COLLECTION_TYPE -> { followed += target.id; declaredComposite(target, followed.toList()) }
                 REF_CURSOR_TYPE -> { followed += target.id; composite(followed.toList(), CompositeKind.REF_CURSOR) }
                 else -> unknown("${target.kind} ${target.name} is not a type")
             }

@@ -24,7 +24,7 @@ class PackageBodyExtractorTest {
         val extractor = PackageBodyExtractor(
             stream, BodyBoundaryScanner(stream),
             PackageMemberParser(stream, references, CollectionElementSyntax(stream, shape, references), shape, CallSpecificationScanner(stream, shape)),
-            references, UnitBounds(stream)
+            references, UnitBounds(stream), DiscardedSourceText(text)
         )
     }
 

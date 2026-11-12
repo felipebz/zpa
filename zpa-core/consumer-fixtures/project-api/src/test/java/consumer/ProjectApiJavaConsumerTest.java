@@ -816,6 +816,7 @@ class ProjectApiJavaConsumerTest {
             case ENCLOSING_SCOPE -> "enclosing scope";
             case DECLARED_LATER -> "declared later";
             case REMOTE -> "remote";
+            case FIELD_NOT_FOUND -> "field not found";
         };
     }
 
@@ -940,7 +941,7 @@ class ProjectApiJavaConsumerTest {
         assertThat(row.getStatus()).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE);
         assertThat(label(row.getAnchorStop().orElseThrow())).isEqualTo("rowtype");
         assertThat(row.getValueResolution()).isEmpty();
-        assertThat(label(describeValue(snapshot, "p", "field_ref").getAnchorStop().orElseThrow())).isEqualTo("field path");
+        assertThat(describeValue(snapshot, "p", "field_ref").getStatus()).isEqualTo(ProjectTypeDescription.Status.BUILT_IN);
         assertThat(label(describeValue(snapshot, "p", "later_ref").getAnchorStop().orElseThrow())).isEqualTo("declared later");
         ProjectPackageTypeView cap = (ProjectPackageTypeView) snapshot.resolveNamedType(name("cap_t"), name("p")).getDeclaration().orElseThrow();
         ProjectTypeDescription captured = snapshot.describeType(cap.getRecordFields().get(1).getTypeRef(), cap.getOwner());
@@ -997,7 +998,7 @@ class ProjectApiJavaConsumerTest {
         assertThat(Arrays.stream(ProjectTypeDescription.Status.values()).map(Enum::name)).containsExactly(
             "DECLARED_TYPE", "BUILT_IN", "UNRESOLVED_NAME", "ANCHORED_REFERENCE", "REF_REFERENCE", "CYCLE", "UNRESOLVED_VALUE");
         assertThat(Arrays.stream(ProjectTypeDescription.AnchorStop.values()).map(Enum::name))
-            .containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER", "REMOTE");
+            .containsExactly("ROWTYPE", "FIELD_PATH", "ENCLOSING_SCOPE", "DECLARED_LATER", "REMOTE", "FIELD_NOT_FOUND");
         assertThat(Arrays.stream(ProjectValueResolution.Status.values()).map(Enum::name)).containsExactly(
             "RESOLVED", "AMBIGUOUS", "NOT_FOUND_IN_PROJECT", "INCOMPLETE_INDEX", "NOT_PREPARED");
     }

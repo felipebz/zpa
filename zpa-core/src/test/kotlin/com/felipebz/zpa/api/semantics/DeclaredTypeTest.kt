@@ -13,7 +13,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.project.ProjectShapedTypeView
+import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
@@ -129,7 +129,41 @@ class DeclaredTypeTest {
         "  end;\n" +
         "end;\n/\n"
 
-    private val sources = mapOf("cfg.pks" to spec, "cfg.pkb" to body, "fn.sql" to function, "type.sql" to schemaType, "u.sql" to user)
+    private val ordSpec = "create package pk_ord as\n" +
+        "  type t_line is record (line_no number(4), qty number(9,2), note varchar2(40));\n" +
+        "  type t_outer is record (inner t_line, tag varchar2(5));\n" +
+        "  g_line t_line;\n" +
+        "  g_outer t_outer;\n" +
+        "  g_cust customer%rowtype;\n" +
+        "  procedure run;\n" +
+        "end;\n/\n"
+
+    private val ordBody = "create package body pk_ord as\n" +
+        "  procedure run is\n" +
+        "    b_qty g_line.qty%type;\n" +
+        "    b_deep g_outer.inner.qty%type;\n" +
+        "    b_name g_cust.name%type;\n" +
+        "    b_nope g_line.nope%type;\n" +
+        "  begin\n" +
+        "    null;\n" +
+        "  end;\n" +
+        "end;\n/\n"
+
+    private val ordUse = "create procedure p_use is\n" +
+        "  v_qty pk_ord.g_line.qty%type;\n" +
+        "  v_deep pk_ord.g_outer.inner.qty%type;\n" +
+        "  v_name pk_ord.g_cust.name%type;\n" +
+        "  v_nope pk_ord.g_line.nope%type;\n" +
+        "begin\n" +
+        "  null;\n" +
+        "end;\n/\n"
+
+    private val sources = mapOf(
+        "cfg.pks" to spec, "cfg.pkb" to body, "fn.sql" to function, "type.sql" to schemaType, "u.sql" to user,
+        "ord.pks" to ordSpec, "ord.pkb" to ordBody, "use.sql" to ordUse
+    )
+
+    private val prepared = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false))
 
     private fun render(type: DeclaredType, context: PlSqlVisitorContext): String = when (type) {
         is DeclaredType.Record -> "Record(${type.fields.joinToString { it.name }})"
@@ -140,8 +174,7 @@ class DeclaredTypeTest {
     }
 
     /** `name=answer` for each written type of a variable, parameter, record field or RETURN of [file]. */
-    private fun scan(file: String, answer: (PlSqlVisitorContext, AstNode) -> String): List<String> {
-        val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false))
+    private fun scan(file: String, context: ProjectAnalysisContext = prepared, answer: (PlSqlVisitorContext, AstNode) -> String): List<String> {
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
@@ -295,4 +328,39 @@ class DeclaredTypeTest {
         val answers = scan("u.sql") { context, node -> context.declaredType(node.parent).toString() }
         assertThat(answers).allMatch { it.endsWith("=Unavailable(NOT_A_COVERED_NAME)") }
     }
+
+    @Test
+    fun fieldsOfPackageRecordValues() {
+        val customer = ProjectExternalRelation.of(
+            "SALES", "CUSTOMER", true, listOf(
+                ProjectExternalColumn.of("CUSTOMER_ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 7, 0)),
+                ProjectExternalColumn.of("NAME", 2, ProjectExternalDatatype.of("VARCHAR2", null, 60, null, null, null))
+            )
+        )
+        val metadata = ProjectExternalMetadata.builder("fixture").completeSchema("SALES").relation(customer).build()
+        val withMetadata = prepared.withExternalContext(ProjectExternalContext.of(metadata, ProjectIdentifier.fromSource("SALES")))
+        for ((file, prefix) in listOf("use.sql" to "v_", "ord.pkb" to "b_")) {
+            val types = scan(file) { context, node -> render(context.declaredType(node), context) }.toMap()
+            // Through the record value to its field, also when the field is itself a record.
+            assertThat(types["${prefix}qty"]).isEqualTo("BuiltIn(NUMBER(precision=9, scale=2))")
+            assertThat(types["${prefix}deep"]).isEqualTo("BuiltIn(NUMBER(precision=9, scale=2))")
+            // A field of a %ROWTYPE value is the column's %TYPE of its relation.
+            assertThat(types["${prefix}name"]).isEqualTo("Anchored(customer.name%TYPE)")
+            val categories = scan(file) { context, node -> context.typeCategory(node).toString() }.toMap()
+            assertThat(categories["${prefix}qty"]).isEqualTo("Scalar(NUMERIC)")
+            assertThat(categories["${prefix}name"]).doesNotStartWith("Record")
+
+            val described = scan(file, withMetadata) { context, node ->
+                val description = (context.declaredType(node) as? DeclaredType.Anchored)?.description
+                val column = description?.lookup?.flatMap { it.column }?.flatMap { it.datatype }?.map { "${it.name}(${it.length.asInt})" }?.orElse("")
+                "${description?.status} $column"
+            }.toMap()
+            assertThat(described["${prefix}name"]).isEqualTo("RESOLVED VARCHAR2(60)")
+            // A field the record type does not have: the project reports the anchor it rejects.
+            val missing = scan(file) { context, node -> ((context.declaredType(node) as? DeclaredType.Anchored)?.description?.source?.anchorStop?.orElse(null)).toString() }.toMap()
+            assertThat(missing["${prefix}nope"]).isEqualTo("FIELD_NOT_FOUND")
+        }
+    }
+
+    private fun List<String>.toMap() = associate { it.substringBefore('=') to it.substringAfter('=') }
 }
