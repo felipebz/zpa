@@ -134,6 +134,58 @@ jobs:
           OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
           OCI_PAR: ${{ secrets.OCI_PAR }}
 
+  oracle-integration-tests:
+    name: Oracle IT
+    needs: build
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-26.04
+    env:
+      SQ_VERSION: 26.11.0.134175
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
+        with:
+          cache-read-only: true
+
+      - name: Cache SonarQube distribution
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: sonar-zpa-plugin/sonar-application-${{ env.SQ_VERSION }}.zip
+          key: sonarqube-${{ env.SQ_VERSION }}
+
+      # Both suites start their Oracle container themselves (Testcontainers, image pinned in gradle.properties).
+      - name: Run Oracle integration tests
+        run: |
+          FILE_NAME="sonar-application-${SQ_VERSION}.zip"
+          if [[ ! -f "sonar-zpa-plugin/${FILE_NAME}" ]]; then
+            DOWNLOAD_URL="https://$OCI_NAMESPACE.objectstorage.sa-saopaulo-1.oci.customer-oci.com/p/$OCI_PAR/n/$OCI_NAMESPACE/b/build-artifacts/o/releases/${FILE_NAME}"
+            curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
+          fi
+          ./gradlew :zpa-oracle-metadata:oracleIntegrationTest :sonar-zpa-plugin:oracleIntegrationTest -Dsonar.zipFile=$FILE_NAME --continue
+        env:
+          OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
+          OCI_PAR: ${{ secrets.OCI_PAR }}
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: oracle-integration-test-reports
+          path: |
+            zpa-oracle-metadata/build/reports/tests/oracleIntegrationTest/
+            sonar-zpa-plugin/build/reports/tests/oracleIntegrationTest/
+          retention-days: 7
+          if-no-files-found: ignore
+
   sonar:
     name: SonarQube analysis
     permissions:
@@ -168,7 +220,7 @@ jobs:
     name: Snapshot publication
     permissions:
       contents: read
-    needs: [integration-tests, sonar]
+    needs: [integration-tests, oracle-integration-tests, sonar]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04
     concurrency:
