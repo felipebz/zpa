@@ -13,6 +13,7 @@ import com.felipebz.zpa.api.symbols.PlSqlType
 import com.felipebz.zpa.api.syntax.MethodCall
 import com.felipebz.zpa.symbols.EffectiveSemanticTypeQuery
 import com.felipebz.zpa.symbols.EffectiveTypeCategory
+import java.util.function.Predicate
 
 class MethodMatcher private constructor()
 {
@@ -24,8 +25,12 @@ class MethodMatcher private constructor()
     private var schemaIsOptional = false
     var methodName: String = ""
         private set
-    @Suppress("DEPRECATION")
-    private val expectedArgumentTypes = ArrayList<PlSqlType>()
+    private class ArgumentConstraint(
+        @Suppress("DEPRECATION") val type: PlSqlType? = null,
+        val predicate: Predicate<AstNode>? = null
+    )
+
+    private val expectedArguments = ArrayList<ArgumentConstraint>()
 
     fun name(methodNameCriteria: String) =
         name(NameCriteria.`is`(methodNameCriteria))
@@ -52,7 +57,7 @@ class MethodMatcher private constructor()
     }
 
     fun withNoParameterConstraint() = apply {
-        check(this.expectedArgumentTypes.isEmpty())
+        check(this.expectedArguments.isEmpty())
         this.shouldCheckParameters = false
     }
 
@@ -60,48 +65,65 @@ class MethodMatcher private constructor()
         this.schemaIsOptional = true
     }
 
-    @Suppress("DEPRECATION")
-    fun addParameter() =
-        addParameter(PlSqlType.UNKNOWN)
+    fun addParameter() = apply {
+        check(this.shouldCheckParameters)
+        expectedArguments.add(ArgumentConstraint())
+    }
 
     /**
-     * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: use
-     * addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name or the grammar
-     * node for a literal.
+     * Deprecated: part of the legacy symbol model, removed in the next major version. Use [addParameter] with a
+     * predicate on the argument's expression node instead (for example [nullLiteral]).
      */
     @Deprecated(
-        "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: " +
-        "use addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name " +
-        "or the grammar node for a literal."
+        "Part of the legacy symbol model. It will be removed in the next major version. Use addParameter(Predicate) " +
+        "with a predicate on the argument's expression node instead, for example MethodMatcher.nullLiteral()."
     )
     @Suppress("DEPRECATION")
     fun addParameter(type: PlSqlType) = apply {
         check(this.shouldCheckParameters)
-        expectedArgumentTypes.add(type)
+        expectedArguments.add(ArgumentConstraint(type = type))
     }
 
-    @Suppress("DEPRECATION")
+    /**
+     * Expects one more argument, accepted only when [predicate] accepts its expression node: the expression of a
+     * positional actual, or the expression after `=>` of a named one. Constraints apply to the written arguments in
+     * order, whatever notation the call uses.
+     */
+    @ZpaExperimentalApi
+    fun addParameter(predicate: Predicate<AstNode>) = apply {
+        check(this.shouldCheckParameters)
+        expectedArguments.add(ArgumentConstraint(predicate = predicate))
+    }
+
     fun addParameters(quantity: Int) = apply {
         for (i in 0 until quantity) {
-            addParameter(PlSqlType.UNKNOWN)
+            addParameter()
         }
     }
 
     /**
-     * Deprecated: part of the legacy symbol model, removed in the next major version. There is no replacement: use
-     * addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name or the grammar
-     * node for a literal.
+     * Deprecated: part of the legacy symbol model, removed in the next major version. Use [addParameters] with
+     * predicates on the arguments' expression nodes instead (for example [nullLiteral]).
      */
     @Deprecated(
-        "Part of the legacy symbol model. It will be removed in the next major version. There is no replacement: " +
-        "use addParameter() and check each argument yourself, with PlSqlVisitorContext.valueCategory for a name " +
-        "or the grammar node for a literal."
+        "Part of the legacy symbol model. It will be removed in the next major version. Use addParameters(vararg " +
+        "Predicate) with predicates on the arguments' expression nodes instead, for example MethodMatcher.nullLiteral()."
     )
     @Suppress("DEPRECATION")
     fun addParameters(vararg types: PlSqlType) = apply {
         check(this.shouldCheckParameters)
         for (type in types) {
             addParameter(type)
+        }
+    }
+
+    /** As [addParameter] with a predicate, once per predicate, in order. */
+    @ZpaExperimentalApi
+    @OptIn(ZpaExperimentalApi::class)
+    fun addParameters(vararg predicates: Predicate<AstNode>) = apply {
+        check(this.shouldCheckParameters)
+        for (predicate in predicates) {
+            addParameter(predicate)
         }
     }
 
@@ -235,14 +257,16 @@ class MethodMatcher private constructor()
 
     private fun argumentsAcceptable(node: AstNode): Boolean {
         val arguments = getArguments(node)
-        return !shouldCheckParameters || arguments.size == expectedArgumentTypes.size && argumentTypesAreCorrect(arguments)
+        return !shouldCheckParameters || arguments.size == expectedArguments.size && argumentsAreAccepted(arguments)
     }
 
     @Suppress("DEPRECATION")
-    private fun argumentTypesAreCorrect(arguments: List<AstNode>): Boolean {
+    private fun argumentsAreAccepted(arguments: List<AstNode>): Boolean {
         var result = true
-        for ((i, type) in expectedArgumentTypes.withIndex()) {
-            if (type === PlSqlType.UNKNOWN) continue
+        for ((i, constraint) in expectedArguments.withIndex()) {
+            constraint.predicate?.let { result = result and it.test(arguments[i].lastChild) }
+            val type = constraint.type
+            if (type == null || type === PlSqlType.UNKNOWN) continue
             val actualArgument = arguments[i].firstChild
             val actualType = when (val category = EffectiveSemanticTypeQuery.typeCategory(semantic(actualArgument))) {
                 is EffectiveTypeCategory.Known -> category.type
@@ -272,6 +296,28 @@ class MethodMatcher private constructor()
 
         fun semantic(node: AstNode): SemanticAstNode {
             return node as SemanticAstNode
+        }
+
+        private val NULL_LITERAL = Predicate<AstNode> { isNullLiteral(it) }
+
+        /**
+         * Accepts the `NULL` literal and an empty character literal (`''`, `N''`, `q'[]'`): Oracle treats an empty
+         * string as NULL. Any other expression, including a string of blanks, is rejected.
+         */
+        @ZpaExperimentalApi
+        @JvmStatic
+        fun nullLiteral(): Predicate<AstNode> = NULL_LITERAL
+
+        private fun isNullLiteral(expression: AstNode): Boolean {
+            if (expression.type !== PlSqlGrammar.LITERAL) return false
+            if (expression.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) return true
+            val value = expression.getFirstChildOrNull(PlSqlGrammar.CHARACTER_LITERAL)?.tokenValue ?: return false
+            val opening = value.indexOf('\'')
+            val closing = value.lastIndexOf('\'')
+            if (opening < 0 || closing <= opening) return false
+            val content = value.substring(opening + 1, closing)
+            // An alternative-quoted literal keeps its opening and closing delimiters inside the quotes.
+            return if (value.substring(0, opening).endsWith('q', ignoreCase = true)) content.length == 2 else content.isEmpty()
         }
     }
 
