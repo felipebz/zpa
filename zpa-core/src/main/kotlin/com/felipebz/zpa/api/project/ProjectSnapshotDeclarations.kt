@@ -147,6 +147,14 @@ internal object ProjectSnapshotDeclarations {
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(cursorFact.name)
         override val parameters: List<ProjectParameterView> = cursorFact.parameters.toParameterViews()
         override val returnType: Optional<ProjectTypeReference> = cursorFact.returnType.toPublicReference()
+        override val selectList: Optional<List<ProjectSelectItemView>> = Optional.ofNullable(cursorFact.selectList).map { list ->
+            immutableList(list.items.mapIndexed { ordinal, item -> BackedSelectItemView(ordinal, item) })
+        }
+    }
+
+    private class BackedSelectItemView(override val ordinal: Int, private val item: SelectItem) : ProjectSelectItemView {
+        override val name: Optional<ProjectIdentifier> get() = Optional.ofNullable(item.name).map { ProjectIdentifier.wrap(it) }
+        override val sourceRange: ProjectSourceRange get() = item.range.toPublic()
     }
 
     /** Standalone callables are never package members: no `packageOwner`, no schema inference. */

@@ -30,7 +30,7 @@ internal class LocalTypeEvidence(
     /** The local declarations followed, in order: the value, then each subtype or anchored declaration. */
     val followed: List<LocalDeclarationId>,
     val unknownReason: String?,
-    /** For a [Terminal.PROJECT] evidence, the project's description it classifies. */
+    /** For a [Terminal.PROJECT] evidence, the project's description it classifies; for a package cursor's row, its `%ROWTYPE`'s. */
     val description: ProjectExternalTypeDescription? = null,
     /** For an unknown evidence, the incomplete lookup that stopped the walk, when one did. */
     val incomplete: LocalResolution.Incomplete? = null,
@@ -40,13 +40,15 @@ internal class LocalTypeEvidence(
      * The first written type along the walk that writes constraints (`s_vc(20)` of a variable of the unconstrained subtype
      * `s_vc`): Oracle applies the constraints written at the nearest use, those of a constrained subtype included.
      */
-    val constrainedUse: LocalTypeUse? = null
+    val constrainedUse: LocalTypeUse? = null,
+    /** For a [Terminal.COMPOSITE] row of a package cursor of another file, the select list its fields follow. */
+    val selectList: SelectList? = null
 ) {
     enum class Terminal {
         /** A predefined type name, written or reached through local subtypes. */
         BUILT_IN,
 
-        /** A local record, collection or ref cursor type, a `%ROWTYPE` of a local cursor, or `SELF`. */
+        /** A local record, collection or ref cursor type, a `%ROWTYPE` of a local cursor, a package cursor's row, or `SELF`. */
         COMPOSITE,
 
         /** A name or anchor handed to the project and described there. */
@@ -121,6 +123,38 @@ internal class LocalTypeWalk(
             }
         } ?: return fileSchema()
         return external.compilationSchema(ProjectQualifiedName.wrap(name), model.fileId.value).orElse(null)
+    }
+
+    /**
+     * The cursor of a package specification in another project file that [name] denotes from [region] (`pk.c`, or `c`
+     * in the body of `pk`), as the project reads the name there; null when the project names no single cursor.
+     */
+    fun projectCursor(name: QualifiedName, region: LocalRegionId): ProjectPackageCursorView? =
+        packageMember(name, region)?.takeIf { it.status != ProjectValueResolution.Status.INCOMPLETE_INDEX }?.candidates?.singleOrNull() as? ProjectPackageCursorView
+
+    /** What the prepared project reads [name] as from [region], among package values and cursors; null when not prepared. */
+    fun packageMember(name: QualifiedName, region: LocalRegionId): ProjectValueResolution? =
+        if (!prepared) null else projectView(region)?.resolvePackageValue(ProjectQualifiedName.wrap(name), packageOwner(region))
+
+    /**
+     * The select list the fields of the row [evidence] gives follow: a package cursor's, a local cursor's (its
+     * `%ROWTYPE`), or a cursor `FOR` loop's query. Null for any other value, and for a query whose row is a relation's
+     * columns (`SELECT *` from one relation).
+     */
+    fun selectListOf(evidence: LocalTypeEvidence): SelectList? {
+        if (evidence.terminal != LocalTypeEvidence.Terminal.COMPOSITE) return null
+        evidence.selectList?.let { return it }
+        val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return null
+        val row = when (last.kind) {
+            CURSOR -> (last.details as? LocalCursor)?.row
+            LOOP_INDEX -> (last.details as? LocalLoopIndex)?.control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row
+            else -> null
+        }
+        return when (row) {
+            is LocalQueryRow.OwnColumns -> row.selectList
+            is LocalQueryRow.Mixed -> row.selectList
+            else -> null
+        }
     }
     private val prepared = snapshot != null && snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
 
@@ -597,22 +631,53 @@ internal class LocalTypeWalk(
             LocalLoopControl.Form.STEPPED ->
                 LocalTypeEvidence(ProjectArgumentType.builtIn("PLS_INTEGER"), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
             LocalLoopControl.Form.QUERY -> composite(followed.toList())
-            LocalLoopControl.Form.NAME -> {
-                // The control is written before the index is declared: it is looked up where the loop is written.
-                val enclosing = model.region(declaration.region).parent ?: return unknown("no enclosing region")
-                val reference = LocalReference(control.name!!, control.nameRange!!, LocalReferenceContext.FOR_CONTROL, enclosing, emptyList(),
-                    LocalReferenceContext.FOR_CONTROL, false, null)
-                val first = outcomes.first(reference)
-                if (LocalReferenceOutcomes.isSpecificationMember(first)) {
-                    // A cursor of the specification in another file: a row only when the project describes one.
-                    val row = specificationMember(listOf(control.name), enclosing)?.let { name -> project(name, TypeAnchor.ROWTYPE, enclosing) }
-                    if (row?.argumentType?.familyOrNull == ProjectDatatypeFamily.COMPOSITE) row else unknown("a specification name the project does not describe as a row")
-                } else {
-                    val cursor = (covered(first) as? LocalResolution.Bound)?.let { model.declaration(it.declaration) }
-                    if (cursor?.kind == CURSOR) { followed += cursor.id; composite(followed.toList()) } else unknown("iterates over a value")
-                }
-            }
+            LocalLoopControl.Form.NAME -> cursorLoop(declaration, control)
             null -> unknown("typed by its iteration control")
+        }
+
+        /**
+         * The index of a loop over a named cursor: the row of its `RETURN` type when it has one, else of its query. The
+         * control is written before the index is declared: it is looked up where the loop is written.
+         */
+        private fun cursorLoop(declaration: LocalDeclaration, control: LocalLoopControl): LocalTypeEvidence {
+            val enclosing = model.region(declaration.region).parent ?: return unknown("no enclosing region")
+            val qualified = control.segments.isNotEmpty()
+            val reference = LocalReference(control.name!!, control.nameRange!!, if (qualified) LocalReferenceContext.QUALIFIER else LocalReferenceContext.FOR_CONTROL,
+                enclosing, control.segments, LocalReferenceContext.FOR_CONTROL, false, null)
+            val steps = outcomes.steps(reference)
+            val name = QualifiedName(listOf(control.name) + control.segments.map { it.name })
+            if (qualified && LocalReferenceOutcomes.isAbsent(steps.first())) {
+                return projectCursor(name, enclosing)?.let { cursorRow(it, true, enclosing) } ?: unknown("not a cursor the project holds")
+            }
+            val member = steps.indexOfFirst(LocalReferenceOutcomes::isSpecificationMember)
+            if (member >= 0) {
+                // A cursor of the specification in another file.
+                val full = if (member == 0) specificationMember(name.segments, enclosing) else name
+                full?.let { projectCursor(it, enclosing) }?.let { return cursorRow(it, true, enclosing) }
+                val row = full?.takeIf { !qualified }?.let { project(it, TypeAnchor.ROWTYPE, enclosing) }
+                return if (row?.argumentType?.familyOrNull == ProjectDatatypeFamily.COMPOSITE) row else unknown("a specification name the project does not describe as a row")
+            }
+            val last = covered(steps.last())
+            val cursor = (last as? LocalResolution.Bound)?.takeIf { steps.size == control.segments.size + 1 }?.let { model.declaration(it.declaration) }
+            if (cursor?.kind != CURSOR) return unknown("iterates over a value")
+            followed += cursor.id
+            return (cursor.details as? LocalCursor)?.returnType?.let(::type) ?: composite(followed.toList())
+        }
+
+        /**
+         * The row of the project's [cursor]. A loop's index has its `RETURN` type's row when it has one; a `%ROWTYPE`
+         * has its query's row when the declaration writes a query, a `RETURN` type notwithstanding, else the `RETURN`
+         * type's. [anchored] is the project's description of the written `%ROWTYPE`, kept with a query's row.
+         */
+        fun cursorRow(cursor: ProjectPackageCursorView, loop: Boolean, region: LocalRegionId, anchored: ProjectExternalTypeDescription? = null): LocalTypeEvidence {
+            val snapshot = snapshot ?: return unknown(NO_PREPARED_PROJECT)
+            val fact = snapshot.occurrenceOf(cursor.id)?.declaration as? PackageCursorDeclaration ?: return unknown("no cursor fact")
+            val returnType = cursor.returnType.orElse(null)
+            if (returnType != null && (loop || fact.selectList == null)) {
+                val described = snapshot.describeExternalType(returnType, cursor.owner, metadata, compilationSchema(region))
+                return LocalTypeEvidence(ProjectArgumentType.described(described, cursor.owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
+            }
+            return LocalTypeEvidence(ProjectArgumentType.composite(), LocalTypeEvidence.Terminal.COMPOSITE, followed.toList(), null, anchored, selectList = fact.selectList)
         }
 
         /** The element type of the local collection [holder] holds. */
@@ -684,7 +749,12 @@ internal class LocalTypeWalk(
                 else -> unknown("${target.kind} ${target.name} is not a type")
             }
             typeRef is AnchoredTypeRef && typeRef.anchor == TypeAnchor.TYPE -> value(target)
-            typeRef is AnchoredTypeRef && target.kind == CURSOR -> { followed += target.id; composite(followed.toList()) }
+            typeRef is AnchoredTypeRef && target.kind == CURSOR -> {
+                followed += target.id
+                // A forward declaration with a RETURN type writes no query: Oracle gives its %ROWTYPE the RETURN type's row.
+                val cursor = target.details as? LocalCursor
+                cursor?.returnType?.takeIf { cursor.isForward }?.let(::type) ?: composite(followed.toList())
+            }
             else -> unknown("${target.kind} ${target.name} anchors no row")
         }
 
@@ -714,7 +784,10 @@ internal class LocalTypeWalk(
             return project(name, (typeRef as? AnchoredTypeRef)?.anchor, use.lookupRegion)
         }
 
-        /** [name] described by the project, as a type, or as the `%TYPE` / `%ROWTYPE` [anchor] of it. */
+        /**
+         * [name] described by the project, as a type, or as the `%TYPE` / `%ROWTYPE` [anchor] of it; the `%ROWTYPE` of a
+         * package cursor of another file is that cursor's row.
+         */
         fun project(name: QualifiedName, anchor: TypeAnchor?, region: LocalRegionId): LocalTypeEvidence {
             val snapshot = snapshot ?: return unknown("no project snapshot")
             val owner = packageOwner(region)
@@ -726,6 +799,7 @@ internal class LocalTypeWalk(
                     owner, metadata, compilationSchema(region)
                 )
             }
+            if (anchor == TypeAnchor.ROWTYPE) projectCursor(name, region)?.let { return cursorRow(it, false, region, described) }
             return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
         }
 

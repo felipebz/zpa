@@ -16,6 +16,7 @@ import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.dynamicsql.DynamicSqlSupport
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.symbols.SymbolTableImpl
+import com.felipebz.zpa.symbols.local.LocalCursors
 import com.felipebz.zpa.symbols.local.LocalFields
 import com.felipebz.zpa.symbols.local.LocalSemanticFacts
 import com.felipebz.zpa.symbols.local.LocalValueCategories
@@ -73,6 +74,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
 
     /** The fields of the file's member segments, left by the pre-pass with the scan's project; null when it did not run. */
     internal var fields: LocalFields? = null
+
+    /** The cursors of the file's cursor positions, left by the pre-pass with the scan's project; null when it did not run. */
+    internal var cursors: LocalCursors? = null
 
     /** Installed by the scanner with the file's configuration and project; created on first use otherwise. */
     internal var dynamicSqlSupport: DynamicSqlSupport? = null
@@ -199,7 +203,7 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * A name of the file's own subprograms gives [CallBinding.Local], with the subprogram the call binds or the reason
      * it is undecided. A name whose first segment no declaration of the file takes gives [CallBinding.Project], the
      * project's resolution narrowed by the types of the actuals. Any other call keeps [CallBinding.KeptLocal] with the
-     * reason.
+     * reason. The cursor of `OPEN c(1)` and of `FOR r IN c(1)` is no call: [cursorBinding] answers it.
      *
      * Inside SQL, SQL's name resolution applies. A column never takes the first segment of a call, so an actual a column
      * could take has no known type and narrows nothing; one no column can take (over `DUAL` alone, or in the `VALUES` of
@@ -226,12 +230,41 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
         localSemanticFacts?.callBindings?.binding(name) ?: CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
 
     /**
+     * The explicit cursor the name [name] denotes and, for `OPEN` and a cursor `FOR` loop, how its written actuals bind
+     * to the cursor's parameters. [name] is the `VARIABLE_NAME`, or for a qualified name the `MEMBER_EXPRESSION`
+     * (`pk.c`), written after `OPEN`, `FETCH` or `CLOSE`, as the control of a cursor `FOR` loop (the first child of its
+     * `METHOD_CALL` when it has actuals), or before `%ROWTYPE`.
+     *
+     * A cursor declared in the file gives [CursorBinding.Local]. A cursor of a package specification in another project
+     * file gives [CursorBinding.Project] with that cursor: named through its package (`pk.c`, `schema.pk.c`, as the
+     * project reads the name from the unit's schema), or alone in the body of that package. A name the project names no
+     * single cursor for gives [CursorBinding.Unknown], as does text the file may hold differently; a name proven to be
+     * something else (a cursor variable, a package variable, a relation) gives [CursorBinding.Unavailable].
+     *
+     * The actuals of `OPEN` and of the loop are associated as the actuals of a call: positional ones in order, then
+     * named ones, a parameter with a default left out ([CursorArguments.omittedParameters]); a list Oracle rejects says
+     * why ([CursorArguments.Status]). No written list binds no actual. `FETCH`, `CLOSE` and `%ROWTYPE` pass none:
+     * their [CursorBinding.Local.arguments] and [CursorBinding.Project.arguments] are null.
+     */
+    @ZpaExperimentalApi
+    fun cursorBinding(name: AstNode): CursorBinding =
+        cursors?.takeIf { localSemanticFacts != null }?.binding(name) ?: CursorBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
      * Which field [segment] names: a segment written after a value, as the `IDENTIFIER_NAME` of a qualified name
      * (`code` of `g_rec.code`, `inner` and `code` of `l_out.inner.code`, `code` of `pkg.v.code`) or the `VARIABLE_NAME`
      * of a member written after an element or a call result (`code` of `f().code`, `items` of `g_rows(1).items`).
      * A field of a record type or an attribute of an object type gives [FieldBinding.Field]; the first name of a chain,
-     * a method, a name the value's type does not have and a column of a `%ROWTYPE` give [FieldBinding.Unavailable];
-     * a value whose type is not decided gives [FieldBinding.Unknown].
+     * a method, a name the value's type does not have and a column of a table's or view's `%ROWTYPE` give
+     * [FieldBinding.Unavailable]; a value whose type is not decided gives [FieldBinding.Unknown].
+     *
+     * The row of a cursor's query (`v c%ROWTYPE`, `v pk.c%ROWTYPE`, the record of `FOR r IN c` or of a loop over a query)
+     * has the fields its select list names: the item of that name is [FieldBinding.Field] with
+     * [FieldDeclarationKind.SELECT_ITEM]. A name no item has is [FieldBinding.Unavailable] when every item has a known
+     * name, and [FieldBinding.Unknown] when a `*`, a `t.*` or an expression without an alias may give it; a select list
+     * that repeats a name gives a record Oracle rejects (PLS-00402), whose segments are all [FieldBinding.Unavailable].
+     * A loop over a cursor with a `RETURN` type, and the `%ROWTYPE` of a package cursor declared with a `RETURN` type
+     * and no query, have the `RETURN` type's fields.
      *
      * In a member method or a constructor of a type body, a name written alone or first in a chain (`items` of
      * `items(1) := 2` or `items.extend`) that is an attribute of the type, its own or a supertype's, is the instance's:

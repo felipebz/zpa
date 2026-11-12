@@ -481,7 +481,7 @@ internal object LocalSemanticModelBuilder {
             }
             val query = item.getFirstChildOrNull(DmlGrammar.SELECT_EXPRESSION)
             declaration.details = LocalCursor(
-                parameters?.id, query == null, item.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, region) }, query?.let(LocalSyntax::queryRow)
+                parameters?.id, query == null, item.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, region) }, query?.let { LocalSyntax.queryRow(fileId, it) }
             )
             query?.let { visit(it, parameters ?: region) }
         }

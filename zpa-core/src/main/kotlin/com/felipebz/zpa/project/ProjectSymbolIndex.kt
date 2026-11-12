@@ -487,7 +487,8 @@ class ProjectSymbolIndex private constructor(
                 is PackageValueDeclaration -> "${declaration.constant}:${declaration.typeRef.structuralKey()}:${declaration.staticDefault ?: ""}"
                 is PackageExceptionDeclaration -> ""
                 is PackageCursorDeclaration ->
-                    declaration.parameters.orderingKey() + ":" + (declaration.returnType?.structuralKey() ?: "")
+                    declaration.parameters.orderingKey() + ":" + (declaration.returnType?.structuralKey() ?: "") + ":" +
+                        (declaration.selectList?.items?.joinToString("|") { "${it.name?.originalSpelling ?: "?"}@${it.range}" } ?: "")
                 is StandaloneProcedureDeclaration -> declaration.parameters.orderingKey()
                 is StandaloneFunctionDeclaration ->
                     declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey() + ":" + declaration.deterministic

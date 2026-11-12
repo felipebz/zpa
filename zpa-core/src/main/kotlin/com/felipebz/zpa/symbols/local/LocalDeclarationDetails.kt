@@ -129,7 +129,9 @@ internal class LocalLoopControl(
     val name: OracleIdentifier?,
     val nameRange: SourceRange?,
     /** For [Form.QUERY], what its row is; null when not recognized. */
-    val row: LocalQueryRow? = null
+    val row: LocalQueryRow? = null,
+    /** For [Form.NAME], the names written after [name] (`c` of `pk.c`), in order. */
+    val segments: List<LocalSegment> = emptyList()
 ) {
     enum class Form {
         /** `lo .. hi` without `BY`, or the bounds of FORALL: the index is a PLS_INTEGER. */
@@ -175,8 +177,11 @@ internal sealed interface LocalQueryRow {
     /** `SELECT *` or `SELECT x.*` from [relation] alone: that relation's columns, in its order. */
     class AllOf(val relation: QualifiedName) : LocalQueryRow
 
-    /** A select list with no `*`: the query's own columns. */
-    data object OwnColumns : LocalQueryRow
+    /** A select list with no `*`: the query's own columns, named by [selectList]. */
+    class OwnColumns(val selectList: SelectList) : LocalQueryRow
+
+    /** A select list with a `*` among other items, or a `*` this does not place on one relation. */
+    class Mixed(val selectList: SelectList) : LocalQueryRow
 }
 
 internal class LocalCursorParameter(

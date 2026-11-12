@@ -390,15 +390,14 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
 
     /** A local record, collection or ref cursor type, a cursor's row, a query loop's record, or `SELF`. */
     private fun composite(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory {
+        // The row of a package cursor's query: its relation is not known.
+        evidence.selectList?.let { return ValueCategory.Record(RecordOrigin.ROWTYPE, null, recordSelectList(it, model.fileId)) }
         val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return ValueCategory.ObjectInstance
         return when (last.kind) {
             LocalDeclarationKind.RECORD_TYPE -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
-            LocalDeclarationKind.CURSOR -> {
-                // A loop over a cursor with a RETURN type has the RETURN type's row.
-                val loop = evidence.followed.first().let(model::declaration).kind == LocalDeclarationKind.LOOP_INDEX
-                (last.details as? LocalCursor)?.returnType?.takeIf { loop }?.let { of(region, walk.written(it)) } ?: queryRow(last)
-            }
-            LocalDeclarationKind.LOOP_INDEX -> loopRow((last.details as? LocalLoopIndex)?.control)
+            // A loop over a cursor with a RETURN type has the RETURN type's row, which the walk follows.
+            LocalDeclarationKind.CURSOR -> row((last.details as? LocalCursor)?.row)
+            LocalDeclarationKind.LOOP_INDEX -> row((last.details as? LocalLoopIndex)?.control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row)
             LocalDeclarationKind.REF_CURSOR_TYPE -> ValueCategory.CursorVariable
             LocalDeclarationKind.COLLECTION_TYPE -> ValueCategory.Collection(collectionKind(last), of(region, walk.written(last.type)))
             else -> unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
@@ -433,20 +432,16 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     }
 
     /**
-     * `c%ROWTYPE` of the local cursor [cursor]: the row of its query, a RETURN type notwithstanding. Its fields are the
-     * query's select list (`select b, a` gives the fields `b, a`), which a fetch fills by position.
+     * The row of a query: of a local cursor (its `%ROWTYPE`, the query's row a RETURN type notwithstanding) or of a query
+     * loop. Its fields are the query's select list (`select b, a` gives the fields `b, a`), which a fetch fills by
+     * position.
      */
-    private fun queryRow(cursor: LocalDeclaration) = ValueCategory.Record(RecordOrigin.ROWTYPE, relation((cursor.details as? LocalCursor)?.row))
-
-    private fun relation(row: LocalQueryRow?): RecordRelation? = when (row) {
-        is LocalQueryRow.AllOf -> RecordRelation.Named(ProjectQualifiedName.wrap(row.relation))
-        LocalQueryRow.OwnColumns -> RecordRelation.QueryColumns
-        null -> null
+    private fun row(row: LocalQueryRow?) = when (row) {
+        is LocalQueryRow.AllOf -> ValueCategory.Record(RecordOrigin.ROWTYPE, RecordRelation.Named(ProjectQualifiedName.wrap(row.relation)))
+        is LocalQueryRow.OwnColumns -> ValueCategory.Record(RecordOrigin.ROWTYPE, RecordRelation.QueryColumns, recordSelectList(row.selectList, model.fileId))
+        is LocalQueryRow.Mixed -> ValueCategory.Record(RecordOrigin.ROWTYPE, null, recordSelectList(row.selectList, model.fileId))
+        null -> ValueCategory.Record(RecordOrigin.ROWTYPE)
     }
-
-    /** The record of a query loop; the walk follows a cursor loop's index to its cursor. */
-    private fun loopRow(control: LocalLoopControl?) =
-        ValueCategory.Record(RecordOrigin.ROWTYPE, relation(control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row))
 
     private fun shaped(region: LocalRegionId, type: ProjectShapedTypeView?, seen: Set<ProjectDeclarationId>): ValueCategory = when (type?.shape?.orElse(null)) {
         ProjectTypeShape.RECORD -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
@@ -639,6 +634,13 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         )
     }
 }
+
+/** [selectList] as the public record answers it, its items placed in [fileId] or in the project file that declares them. */
+internal fun recordSelectList(selectList: SelectList, fileId: FileId): RecordSelectList =
+    RecordSelectList(selectList.items.mapIndexed { ordinal, item -> SelectListItem(item.name?.lookupName, selectItemDeclaration(item, ordinal, fileId)) })
+
+internal fun selectItemDeclaration(item: SelectItem, ordinal: Int, fileId: FileId): FieldDeclaration =
+    FieldDeclaration(FieldDeclarationKind.SELECT_ITEM, ordinal, item.range.startLine, item.range.startColumn, item.range.fileId.takeUnless { it == fileId }?.value)
 
 internal fun collectionKind(collection: LocalDeclaration): CollectionKind? = when ((collection.details as? LocalCollectionType)?.form) {
     LocalCollectionForm.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY

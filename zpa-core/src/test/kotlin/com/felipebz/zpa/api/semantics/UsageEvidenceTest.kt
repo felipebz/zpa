@@ -341,7 +341,7 @@ class UsageEvidenceTest {
             /
             """.trimIndent() + "\n"
         assertThat(valueCategories(text)).containsExactly(
-            "21:r=Record(ROWTYPE, Named(t))", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE, Named(t))", "24:rc=Record(ROWTYPE, QueryColumns)",
+            "21:r=Record(ROWTYPE, Named(t))", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE, Named(t))", "24:rc=Record(ROWTYPE, QueryColumns, [A, B])",
             "25:rs=Record(ROWTYPE, Named(t))", "26:ra=Record(ROWTYPE, Named(t))",
             "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE, Named(t)))", "28:vn=Collection(NESTED_TABLE of Scalar(NUMERIC))",
             "29:vv=Collection(VARRAY of Record(RECORD_TYPE))", "30:n=Scalar(NUMERIC)",
@@ -363,11 +363,11 @@ class UsageEvidenceTest {
         // With a RETURN type, c%ROWTYPE is still the query's row (fields b, a), and a loop over c has the RETURN type's.
         val local = "create procedure p is\n  cursor c return tab%rowtype is select b, a from tab;\n  r c%rowtype;\nbegin\n" +
             "  insert into tab values r;\n  for r2 in c loop\n    insert into tab values r2;\n  end loop;\nend;\n/\n"
-        assertThat(valueCategories(local)).containsExactly("5:r=Record(ROWTYPE, QueryColumns)", "7:r2=Record(ROWTYPE, Named(tab))")
-        // A package cursor's row is not a relation: no relation is known.
+        assertThat(valueCategories(local)).containsExactly("5:r=Record(ROWTYPE, QueryColumns, [B, A])", "7:r2=Record(ROWTYPE, Named(tab))")
+        // A package cursor's row is not a relation: no relation is known, its select list names its fields.
         val spec = "create package cur_pkg is\n  cursor c is select b, a from tab;\nend;\n/\n"
         val user = "create procedure u is\n  r cur_pkg.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
-        assertThat(valueCategories(user, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE)")
+        assertThat(valueCategories(user, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE, [B, A])")
     }
 
     @Test
@@ -375,9 +375,9 @@ class UsageEvidenceTest {
         // Oracle reads pk3.c from a unit of the schema APP as app.pk3.c, a cursor.
         val spec = "create package app.pk3 is\n  cursor c is select b, a from tab;\nend;\n/\n"
         val mapped = "create procedure u is\n  r pk3.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
-        assertThat(valueCategories(mapped, "s.sql" to spec, prepared = true, schemaPaths = "u.sql=APP")).containsExactly("4:r=Record(ROWTYPE)")
+        assertThat(valueCategories(mapped, "s.sql" to spec, prepared = true, schemaPaths = "u.sql=APP")).containsExactly("4:r=Record(ROWTYPE, [B, A])")
         val owned = "create procedure app.u is\n  r pk3.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
-        assertThat(valueCategories(owned, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE)")
+        assertThat(valueCategories(owned, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE, [B, A])")
     }
 
     @Test

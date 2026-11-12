@@ -5,7 +5,9 @@
 
 package com.felipebz.zpa.project.extraction
 
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.*
 
 internal val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
@@ -18,6 +20,23 @@ internal val FUNCTION_RETURN_TYPE_TERMINATORS = setOf(
     "ACCESSIBLE",
     "AUTHID",
     "DEFAULT"
+)
+
+private val SELECT_LIST_TERMINATORS = setOf("FROM", "UNION", "INTERSECT", "MINUS", "EXCEPT", "ORDER")
+
+/** Keywords written before the operand they apply to (`prior l.qty`): the name after one is that operand, not an alias. */
+private val PREFIX_OPERATORS = setOf("PRIOR", "CONNECT_BY_ROOT", "NOT", "NEW")
+
+/** The fields of an interval literal's qualifier (`interval '1' day`): after a literal, one of them ends the literal. */
+private val INTERVAL_FIELDS = setOf("YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND")
+
+private val LITERAL_TYPES = setOf(
+    PlSqlTokenType.STRING_LITERAL,
+    PlSqlTokenType.INTEGER_LITERAL,
+    PlSqlTokenType.NUMBER_LITERAL,
+    PlSqlTokenType.DATE_LITERAL,
+    PlSqlTokenType.TIMESTAMP_LITERAL,
+    PlSqlTokenType.TIME_LITERAL
 )
 
 /**
@@ -153,8 +172,9 @@ internal class PackageMemberParser(
     /**
      * `CURSOR name [ ( parameters ) ] RETURN rowtype ;` or `CURSOR name [ ( parameters ) ] [ RETURN rowtype ] IS query ;`
      * ending at the strict `;` at [semicolon]. Parameters must all be plain `IN` (no `OUT`, `IN OUT` or `NOCOPY`); the
-     * return type must be a strictly valid datatype; the query is bounded by the `;` and not parsed. Anything else yields
-     * null, never a partial fact.
+     * return type must be a strictly valid datatype; the query is bounded by the `;` and only its select list is read, a
+     * query whose select list cannot be read giving one item of no name covering the query. Anything else yields null,
+     * never a partial fact.
      */
     fun parseCursor(index: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? {
         val nameIndex = index + 1
@@ -177,16 +197,97 @@ internal class PackageMemberParser(
             returnType = typeReferences.typeReference(cursor + 1, returnEnd) ?: return null
             cursor = returnEnd
         }
-        when {
-            cursor == semicolon -> if (returnType == null) return null
-            stream.isKeyword(cursor, "IS") -> if (cursor + 1 >= semicolon) return null
+        val selectList = when {
+            cursor == semicolon -> if (returnType == null) return null else null
+            stream.isKeyword(cursor, "IS") -> {
+                if (cursor + 1 >= semicolon) return null
+                selectList(cursor + 1, semicolon) ?: SelectList(listOf(SelectItem(null, stream.range(cursor + 1, semicolon - 1))))
+            }
             else -> return null
         }
         val declaration = PackageCursorDeclaration(
-            owner, stream.identifier(stream.tokens[nameIndex]), parameters, returnType, stream.fileId, stream.range(index, semicolon)
+            owner, stream.identifier(stream.tokens[nameIndex]), parameters, returnType, selectList, stream.fileId,
+            stream.range(index, semicolon)
         )
         return ParsedDeclaration(declaration, semicolon + 1)
     }
+
+    /**
+     * The select list of the query in [start, endExclusive): of its main query block after a `WITH` clause, of its first
+     * branch in a compound query (Oracle names the fields from it), inside any enclosing parentheses. Null when the list
+     * cannot be read: no `SELECT` where expected, an empty item or unbalanced delimiters.
+     */
+    private fun selectList(start: Int, endExclusive: Int): SelectList? {
+        var index = start
+        while (index < endExclusive && stream.isPunctuator(index, PlSqlPunctuator.LPARENTHESIS)) index++
+        if (stream.isKeyword(index, "WITH")) index = stream.firstKeywordAtTopLevel(index + 1, setOf("SELECT"), endExclusive) ?: return null
+        if (index >= endExclusive || !stream.isKeyword(index, "SELECT")) return null
+        index++
+        if (stream.isKeyword(index, "DISTINCT") || stream.isKeyword(index, "UNIQUE") || stream.isKeyword(index, "ALL")) index++
+        val items = mutableListOf<SelectItem>()
+        val expected = ArrayDeque<PlSqlPunctuator>()
+        var itemStart = index
+        while (true) {
+            val ends = index >= endExclusive ||
+                expected.isEmpty() && (stream.isCloser(index) || SELECT_LIST_TERMINATORS.any { stream.isKeyword(index, it) } && !stream.isKeyword(index - 1, "MULTISET"))
+            if (ends || expected.isEmpty() && stream.isPunctuator(index, PlSqlPunctuator.COMMA)) {
+                items += selectItem(itemStart, index) ?: return null
+                if (ends) break
+                itemStart = index + 1
+            } else if (stream.isOpener(index)) {
+                expected.addLast(stream.closerFor(index))
+            } else if (stream.isCloser(index) && expected.removeLastOrNull() !== stream.tokens[index].type) {
+                return null
+            }
+            index++
+        }
+        return if (expected.isEmpty()) SelectList(items) else null
+    }
+
+    /**
+     * The field name of a select item, only when the tokens leave no doubt: a column written `name(.name)*` gives its
+     * last name; an expression followed by `AS name` gives that name; an expression that surely ends (a literal, `)`,
+     * `END`, a value name) followed by a name gives that name, unless the name may still belong to the expression (an
+     * interval qualifier after a literal: `interval '1' day`). Anything else is an item of no known name: a keyword
+     * written after the expression may belong to it (`l.created at local`, `l.name collate binary_ci`,
+     * `l.v multiset union l.w`), and Oracle then names the item by its text.
+     */
+    private fun selectItem(start: Int, endExclusive: Int): SelectItem? {
+        if (start >= endExclusive) return null
+        val last = endExclusive - 1
+        val whole = stream.range(start, last)
+        if (stream.isPunctuator(last, PlSqlPunctuator.MULTIPLICATION) && (start == last || stream.isPunctuator(last - 1, PlSqlPunctuator.DOT))) {
+            return SelectItem(null, whole)
+        }
+        if (isColumn(start, last)) return named(last)
+        val before = last - 1
+        if (start < before && stream.isKeyword(before, "AS") && stream.isName(stream.tokens[last])) return named(last)
+        val qualifier = stream.tokens[before].type in LITERAL_TYPES && stream.tokens[last].type != GenericTokenType.IDENTIFIER && stream.valueAt(last) in INTERVAL_FIELDS
+        if (start <= before && stream.isName(stream.tokens[last]) && !qualifier && endsExpression(start, before)) return named(last)
+        return SelectItem(null, whole)
+    }
+
+    private fun isColumn(start: Int, last: Int) = (last - start) % 2 == 0 && (start..last).all {
+        if ((it - start) % 2 == 1) stream.isPunctuator(it, PlSqlPunctuator.DOT) else stream.isName(stream.tokens[it])
+    }
+
+    /**
+     * Whether the expression in [start, before] surely ends at [before]: a literal, `)`, `END`, a word that is no keyword,
+     * a name written after a `.`, or a whole item of one keyword that is a value (`rownum`, `sysdate`). A keyword written
+     * after other tokens (`at`, `collate`, `zone`) may take more of the item.
+     */
+    private fun endsExpression(start: Int, before: Int): Boolean {
+        val token = stream.tokens[before]
+        return when {
+            token.type in LITERAL_TYPES || stream.isPunctuator(before, PlSqlPunctuator.RPARENTHESIS) || stream.isKeyword(before, "END") -> true
+            token.type == GenericTokenType.IDENTIFIER -> true
+            !stream.isName(token) -> false
+            before > start && stream.isPunctuator(before - 1, PlSqlPunctuator.DOT) -> true
+            else -> before == start && stream.valueAt(before) !in PREFIX_OPERATORS
+        }
+    }
+
+    private fun named(index: Int) = SelectItem(stream.identifier(stream.tokens[index]), stream.range(index, index))
 
     /** `name EXCEPTION ;` and nothing else, ending at the strict `;` at [semicolon]. */
     fun parseException(index: Int, semicolon: Int, owner: QualifiedName): ParsedDeclaration? {

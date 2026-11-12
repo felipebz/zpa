@@ -70,6 +70,8 @@ internal class LocalDeclaredTypes(private val facts: LocalSemanticFacts, private
         variables[constant.range.startLine to constant.range.startColumn]?.getFirstChildOrNull(PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT)?.lastChild
 
     private fun local(evidence: LocalTypeEvidence, fields: LocalFields?): DeclaredType {
+        // A package cursor's query row: the `%ROWTYPE` as written, as the project describes it.
+        if (evidence.selectList != null) return evidence.description?.let { project(it, evidence.constrainedUse) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
         val declaration = facts.names.declaration(last.id)
         return when (last.kind) {
