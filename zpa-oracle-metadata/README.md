@@ -98,9 +98,12 @@ absent when the dictionary has SQL NULL. A length is given only for character ty
   the same transaction (whatever the number of rows): absent columns are reported as `COLUMN_NOT_FOUND`.
 - If the dictionary returns the same relation twice, or rows that cannot form valid descriptors, the acquisition fails
   with `OracleMetadataException` instead of returning a partial or arbitrary snapshot.
-- A requested schema is declared **complete** only when it is the session user's own schema, where `ALL_*` views are
-  not filtered by privileges. Then absent relations are reported as `RELATION_NOT_FOUND`. Note that Oracle may still
+- A requested schema is declared **complete** when it is the session user's own schema, where `ALL_*` views are
+  not filtered by privileges, or when the caller asserts it with `completeSchema(name)` (the schema must also be
+  requested with `schema(name)`). Then absent relations are reported as `RELATION_NOT_FOUND`. Note that Oracle may still
   resolve such a name through a synonym; it is not proof that a reference is invalid.
+- `completeSchema` is the caller's assertion: zpa does not check the session's privileges. If the session cannot see
+  every relation of the schema, the relations it misses become `RELATION_NOT_FOUND` instead of `NOT_COVERED`.
 - Any other schema (seen through privileges) and every targeted acquisition stay incomplete: missing relations are
   `NOT_COVERED`/`INCOMPLETE`, never absent. Requested relations that are not visible are listed in `notVisible` and are
   not part of the metadata.

@@ -109,6 +109,29 @@ class OracleDictionaryMappingTest {
     }
 
     @Test
+    fun aSchemaAssertedCompleteIsDeclaredComplete() {
+        val request = OracleMetadataRequest.builder().schema("SHARED").schema("OTHER").completeSchema("SHARED").build()
+        assertThat(request.completeSchemas).containsExactly("SHARED")
+        val result = OracleDictionaryMapping.assemble(
+            request, session,
+            listOf(RelationRow("SHARED", "T", null, null, true), RelationRow("OTHER", "U", null, null, true)),
+            listOf(col("A", 1, "NUMBER", schema = "SHARED"), col("X", 1, "DATE", relation = "U", schema = "OTHER")), at
+        )
+        assertThat(result.completeSchemas).containsExactly("SHARED")
+        val md = result.metadata
+        // Absent from a schema asserted complete is absent; elsewhere it is only not covered.
+        assertThat(md.findRelation(id("SHARED"), id("NOPE")).status).isEqualTo(ProjectExternalLookup.Status.RELATION_NOT_FOUND)
+        assertThat(md.findRelation(id("SHARED"), id("T")).status).isEqualTo(ProjectExternalLookup.Status.FOUND)
+        assertThat(md.findRelation(id("OTHER"), id("NOPE")).status).isEqualTo(ProjectExternalLookup.Status.NOT_COVERED)
+        // The assertion must name a schema requested for acquisition.
+        assertThatThrownBy { OracleMetadataRequest.builder().schema("OTHER").completeSchema("SHARED").build() }
+            .isInstanceOf(IllegalStateException::class.java).hasMessageContaining("SHARED")
+        assertThatThrownBy { OracleMetadataRequest.builder().relation("SHARED", "T").completeSchema("SHARED").build() }
+            .isInstanceOf(IllegalStateException::class.java)
+        assertThatThrownBy { OracleMetadataRequest.builder().completeSchema("\"x\"") }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
     fun columnCompletenessFollowsTheAcquisitionNotTheRowCount() {
         val request = OracleMetadataRequest.builder().relation("APP", "V").relation("APP", "W").build()
         val result = OracleDictionaryMapping.assemble(

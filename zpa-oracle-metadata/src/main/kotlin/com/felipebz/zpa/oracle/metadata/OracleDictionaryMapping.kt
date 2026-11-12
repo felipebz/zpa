@@ -76,9 +76,10 @@ internal object OracleDictionaryMapping {
 
     /**
      * Builds the snapshot. A relation is column-complete exactly when its columns were acquired with it
-     * ([RelationRow.columnsAcquired]); a requested schema is declared complete only when it is the session user's own
-     * schema (whose `ALL_*` rows are not filtered by privileges). Columns of relations not returned by the relation
-     * queries are ignored.
+     * ([RelationRow.columnsAcquired]); a requested schema is declared complete when it is the session user's own
+     * schema (whose `ALL_*` rows are not filtered by privileges) or when the caller asserted it complete
+     * ([OracleMetadataRequest.completeSchemas], not checked against the session's privileges). Columns of relations not
+     * returned by the relation queries are ignored.
      *
      * @throws OracleMetadataException if a relation appears twice, or the rows violate a descriptor invariant
      * (duplicate column names or positions)
@@ -94,7 +95,7 @@ internal object OracleDictionaryMapping {
         val columnsByRelation = columns.groupBy { it.schema to it.relation }
         val origin = "oracle ${session.database}/${session.container} as ${session.sessionUser} at $acquiredAt"
         val builder = ProjectExternalMetadata.builder(origin)
-        val complete = request.schemas.filter { it == session.sessionUser }
+        val complete = request.schemas.filter { it == session.sessionUser || it in request.completeSchemas }
         complete.forEach { builder.completeSchema(it) }
         val seen = HashSet<Pair<String, String>>()
         var columnCount = 0
