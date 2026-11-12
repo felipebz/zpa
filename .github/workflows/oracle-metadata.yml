@@ -8,6 +8,7 @@ on:
       - zpa-oracle-metadata/**
       - zpa-core/src/main/kotlin/com/felipebz/zpa/api/project/**
       - gradle/libs.versions.toml
+      - gradle.properties
       - .github/workflows/oracle-metadata.yml
   pull_request:
     branches:
@@ -16,6 +17,7 @@ on:
       - zpa-oracle-metadata/**
       - zpa-core/src/main/kotlin/com/felipebz/zpa/api/project/**
       - gradle/libs.versions.toml
+      - gradle.properties
       - .github/workflows/oracle-metadata.yml
   schedule:
     # Weekly, to notice changes in the database image or the JDBC driver that no pull request triggers.
@@ -24,7 +26,6 @@ on:
 
 env:
   JAVA_VERSION: 21
-  ORACLE_IMAGE: gvenzl/oracle-free:23.26.3-slim-faststart@sha256:f5ff19033860d662c821cb04eb10483fa94f14f78eae252d054291ea07028093
 
 permissions:
   contents: read
@@ -47,29 +48,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
 
-      - name: Start Oracle AI Database Free
-        run: |
-          # Throwaway container on an ephemeral runner: the admin password is generated per run and masked.
-          password="$(openssl rand -hex 16)"
-          echo "::add-mask::$password"
-          echo "ZPA_ORACLE_ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
-          docker run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD="$password" "$ORACLE_IMAGE"
-          for _ in $(seq 1 90); do
-            if docker exec oracle healthcheck.sh > /dev/null 2>&1; then
-              echo "Oracle is ready"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Oracle did not become ready" >&2
-          docker logs oracle 2>&1 | tail -50
-          exit 1
-
+      # The tests start the Oracle container themselves (Testcontainers, image pinned in gradle.properties).
       - name: Run Oracle metadata integration tests
         run: ./gradlew :zpa-oracle-metadata:oracleIntegrationTest
-        env:
-          ZPA_ORACLE_JDBC_URL: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
-          ZPA_ORACLE_ADMIN_USER: system
 
       - name: Upload test reports
         if: failure()

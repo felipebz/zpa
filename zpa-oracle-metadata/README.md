@@ -70,15 +70,15 @@ Requested relations the session cannot see are listed in `OracleMetadataResult.n
 
 ## Integration tests
 
-Ordinary builds need no database. The database-backed suite:
+Ordinary builds need no database. The database-backed suite starts an Oracle AI Database Free container with
+Testcontainers, so it only needs Docker:
 
 ```bash
-export ZPA_ORACLE_JDBC_URL='jdbc:oracle:thin:@//localhost:1521/FREEPDB1'
-export ZPA_ORACLE_ADMIN_USER=system
-export ZPA_ORACLE_ADMIN_PASSWORD=...        # never commit credentials
 ./gradlew :zpa-oracle-metadata:oracleIntegrationTest
 ```
 
-The account must be able to create and drop users (see `dev/oracle/README.md` for a local container); each run
-creates its own users and drops them at the end. Without the variables the tests are skipped.
-`ZPA_ORACLE_MEASURE=true` also runs a timing and memory measurement.
+`ZPA_ORACLE_IMAGE` replaces the image pinned in `gradle.properties` (for example with one already pulled). To run
+against an existing database instead, set `ZPA_ORACLE_JDBC_URL`, `ZPA_ORACLE_ADMIN_USER` and
+`ZPA_ORACLE_ADMIN_PASSWORD` (an account able to create and drop users). Each run creates its own users and drops them
+at the end. Without Docker or those variables the tests are skipped. `ZPA_ORACLE_MEASURE=true` also runs a timing and
+memory measurement.

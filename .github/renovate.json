@@ -10,5 +10,14 @@
         "org.sonarsource.sonarqube:sonar-plugin-api-impl",
         "org.sonarsource.api.plugin:sonar-plugin-api",
         "org.sonarsource.sonarqube:sonar-ws"
+    ],
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Oracle image started by the database-backed test suites",
+            "managerFilePatterns": ["/(^|/)gradle\\.properties$/"],
+            "matchStrings": ["zpaOracleImage=(?<depName>gvenzl/oracle-free):(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"],
+            "datasourceTemplate": "docker"
+        }
     ]
 }

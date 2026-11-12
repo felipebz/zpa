@@ -12,7 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
+import org.junit.jupiter.api.condition.EnabledIf
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.client.HttpConnector
 import org.sonarqube.ws.client.WsClientFactories
@@ -27,7 +27,7 @@ import java.nio.file.Files
  * driver from `sonar.zpa.oracle.driverPath`, and a check of a separate, test-only rules plugin (compiled against the
  * relocated API, as third-party rules are) resolves the types through the scanner lifecycle.
  */
-@EnabledIfEnvironmentVariable(named = "ZPA_ORACLE_JDBC_URL", matches = ".+")
+@EnabledIf("com.felipebz.zpa.oracle.OracleFixture#available")
 class SonarQubeOracleMetadataIT {
 
     private fun scanner(projectKey: String, password: String, vararg properties: Pair<String, String>): SonarScanner =
