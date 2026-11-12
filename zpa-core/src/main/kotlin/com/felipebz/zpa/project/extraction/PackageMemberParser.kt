@@ -43,7 +43,8 @@ internal class PackageMemberParser(
         }
         val declaration = PackageTypeDeclaration(
             owner, name.first, shape, recordFields, stream.fileId, stream.range(index, end),
-            elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION }
+            elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION },
+            collectionKind = collection?.kind?.takeIf { shape == ProjectTypeShape.COLLECTION }
         )
         return ParsedDeclaration(declaration, end + 1)
     }

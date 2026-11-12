@@ -232,11 +232,11 @@ internal class LocalFields(
     }
 
     /** The fields of the record type named at [typeName], as [binding] answers them; null when it names none. */
-    fun recordFields(typeName: AstNode): List<DeclaredField>? {
-        val type = recordTypes[typeName.token.line to typeName.token.column] ?: return null
-        return (type.details as LocalRecordType).fields.mapIndexed { ordinal, field ->
-            DeclaredField(field.name.originalSpelling, fieldDeclaration(type.id, ordinal))
-        }
+    fun recordFields(typeName: AstNode): List<DeclaredField>? = recordTypes[typeName.token.line to typeName.token.column]?.let { recordFields(it.id) }
+
+    fun recordFields(type: LocalDeclarationId): List<DeclaredField>? {
+        val record = model.declaration(type).details as? LocalRecordType ?: return null
+        return record.fields.mapIndexed { ordinal, field -> DeclaredField(field.name.originalSpelling, fieldDeclaration(type, ordinal)) }
     }
 
     /** An attribute of an object type of this file, or null for another declaration. */

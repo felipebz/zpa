@@ -9,6 +9,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.RecognitionException
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
+import com.felipebz.zpa.api.project.ProjectTypeReference
 import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.api.symbols.Scope
 import com.felipebz.zpa.api.symbols.SymbolTable
@@ -258,5 +259,33 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     fun typeCategory(datatype: AstNode): ValueCategory =
         if (localSemanticFacts == null) ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
         else valueCategories?.typeCategory(datatype) ?: ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * What the `DATATYPE` node [datatype] declares (the type of a variable, constant, parameter, record field or
+     * collection element, or a function's RETURN type), from the same walk as [typeCategory]: subtypes and `%TYPE`
+     * anchors are followed, a local declaration hides a name declared elsewhere, and a name declared in another file is
+     * described by the prepared project.
+     *
+     * A predefined type gives its normalized name and written constraints. A constraint written as an expression is
+     * evaluated from constants the analysis decides: a constant of this file whose default is such an expression, or a
+     * package constant of another file whose default is an integer literal. Any other expression gives
+     * [com.felipebz.zpa.api.semantics.WrittenTypeConstraint.Unknown]. A record or collection type of this file gives
+     * its fields, or its kind and element's `DATATYPE` node to ask again. A `%ROWTYPE` or a column's `%TYPE` gives the
+     * anchor, described with the scan's external metadata when it has any. [DeclaredType.Unknown] is never a proof.
+     */
+    @ZpaExperimentalApi
+    fun declaredType(datatype: AstNode): DeclaredType =
+        if (localSemanticFacts == null) DeclaredType.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        else valueCategories?.declaredType(datatype, fields) ?: DeclaredType.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * The type reference the prepared project retains for the declaration whose written type is [datatype], a
+     * `DATATYPE` node of this file: a package specification's variable, constant, formal, record field or RETURN type,
+     * or a standalone unit's formal or RETURN type. Null when the project does not index that declaration (a local
+     * variable of a body, a project that is not prepared) or [datatype] is another node.
+     */
+    @ZpaExperimentalApi
+    fun projectTypeReference(datatype: AstNode): ProjectTypeReference? =
+        localSemanticFacts?.let { valueCategories?.projectTypeReference(datatype) }
 
 }

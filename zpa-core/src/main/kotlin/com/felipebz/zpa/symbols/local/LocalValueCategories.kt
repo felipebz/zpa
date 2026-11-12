@@ -16,6 +16,7 @@ import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.callArguments
 import java.util.*
+import com.felipebz.zpa.api.project.ProjectCollectionKind as PublicCollectionKind
 
 /**
  * The category of the type of a named value written in a file, from the file's reference outcomes and the type walk
@@ -399,15 +400,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
             }
             LocalDeclarationKind.LOOP_INDEX -> loopRow((last.details as? LocalLoopIndex)?.control)
             LocalDeclarationKind.REF_CURSOR_TYPE -> ValueCategory.CursorVariable
-            LocalDeclarationKind.COLLECTION_TYPE -> {
-                val kind = when ((last.details as? LocalCollectionType)?.form) {
-                    LocalCollectionForm.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY
-                    LocalCollectionForm.NESTED_TABLE -> CollectionKind.NESTED_TABLE
-                    LocalCollectionForm.VARRAY -> CollectionKind.VARRAY
-                    null -> null
-                }
-                ValueCategory.Collection(kind, of(region, walk.written(last.type)))
-            }
+            LocalDeclarationKind.COLLECTION_TYPE -> ValueCategory.Collection(collectionKind(last), of(region, walk.written(last.type)))
             else -> unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
         }
     }
@@ -458,11 +451,10 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         ProjectTypeShape.RECORD -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
         ProjectTypeShape.OBJECT -> ValueCategory.ObjectInstance
         ProjectTypeShape.REF_CURSOR -> ValueCategory.CursorVariable
-        // The project keeps no collection kind; its element is classified like any type it describes.
         ProjectTypeShape.COLLECTION ->
             // A collection whose element leads back to it (Oracle rejects it, the index may still hold it) is unknown.
             if (type.id in seen) unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-            else ValueCategory.Collection(null, walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
+            else ValueCategory.Collection(type.collectionKind.orElse(null)?.let(::collectionKind), walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
                 ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
         null -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
     }
@@ -537,21 +529,30 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         return (projectTypeName(evidence.description?.source) as? LocalTypeName.Project)?.declaration
     }
 
+    private val declaredTypes by lazy(LazyThreadSafetyMode.NONE) { LocalDeclaredTypes(facts, walk, this) }
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.declaredType]. */
+    fun declaredType(datatype: AstNode, fields: LocalFields?): DeclaredType = declaredTypes.describe(datatype, fields)
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.projectTypeReference]. */
+    fun projectTypeReference(datatype: AstNode): ProjectTypeReference? =
+        datatype.takeIf { it.type === PlSqlGrammar.DATATYPE }?.let { walk.retainedReference(it.token.line, it.token.column) }
+
     /** The schema the unit holding [node] compiles in (see [LocalTypeWalk.compilationSchema]); null when unknown. */
     fun compilationSchema(node: AstNode): ProjectIdentifier? =
         walk.compilationSchema(LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, node)))
 
     /** A written type, the use it records and the walk's evidence of it. */
-    private class WrittenType(val use: LocalTypeUse, val evidence: LocalTypeEvidence, val external: Boolean = false)
+    internal class WrittenType(val use: LocalTypeUse, val evidence: LocalTypeEvidence, val external: Boolean = false)
 
     /** `SYS_REFCURSOR` that no local declaration takes: the predefined weak cursor type. */
-    private fun isRefCursorName(written: WrittenType): Boolean {
+    fun isRefCursorName(written: WrittenType): Boolean {
         val name = (written.use.typeRef as? NamedTypeRef)?.name ?: return false
         return name.segments.size == 1 && name.last.lookupName == "SYS_REFCURSOR" && written.evidence.followed.isEmpty() &&
             (written.evidence.terminal == LocalTypeEvidence.Terminal.PROJECT || written.evidence.terminal == LocalTypeEvidence.Terminal.BUILT_IN)
     }
 
-    private fun written(datatype: AstNode): WrittenType? {
+    fun written(datatype: AstNode): WrittenType? {
         if (datatype.type !== PlSqlGrammar.DATATYPE) return null
         typeUses[datatype.token.line to datatype.token.column]?.let { return WrittenType(it, walk.written(it)) }
         val position = datatype.parentOrNull?.type ?: return null
@@ -601,7 +602,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
 
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
-    private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
+    fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
         val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
         outcome.regionReasons.forEach {
             reasons += it.usageUncertainty()
@@ -636,4 +637,17 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
             LocalReferenceContext.CALL_EXPRESSION, LocalReferenceContext.SQL_CALL
         )
     }
+}
+
+internal fun collectionKind(collection: LocalDeclaration): CollectionKind? = when ((collection.details as? LocalCollectionType)?.form) {
+    LocalCollectionForm.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY
+    LocalCollectionForm.NESTED_TABLE -> CollectionKind.NESTED_TABLE
+    LocalCollectionForm.VARRAY -> CollectionKind.VARRAY
+    null -> null
+}
+
+private fun collectionKind(kind: PublicCollectionKind): CollectionKind = when (kind) {
+    PublicCollectionKind.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY
+    PublicCollectionKind.NESTED_TABLE -> CollectionKind.NESTED_TABLE
+    PublicCollectionKind.VARRAY -> CollectionKind.VARRAY
 }

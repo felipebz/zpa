@@ -5,6 +5,7 @@
 
 package com.felipebz.zpa.project
 
+
 /**
  * A variable or constant declared directly in a package specification. Only the declared type
  * syntax is retained: no initializer, `NOT NULL`, tokens or source text. [owner] is the package
@@ -16,16 +17,18 @@ class PackageValueDeclaration(
     val constant: Boolean,
     val typeRef: TypeRef,
     override val fileId: FileId,
-    override val sourceRange: SourceRange
+    override val sourceRange: SourceRange,
+    /** For a constant initialized with a signed integer literal, that integer. */
+    val staticDefault: Long? = null
 ) : ProjectDeclaration {
     override val kind = if (constant) ProjectDeclarationKind.PACKAGE_CONSTANT else ProjectDeclarationKind.PACKAGE_VARIABLE
     override val role = DeclarationRole.SPECIFICATION
 
     override fun equals(other: Any?): Boolean = other is PackageValueDeclaration &&
         owner == other.owner && name == other.name && constant == other.constant &&
-        typeRef == other.typeRef && fileId == other.fileId && sourceRange == other.sourceRange
+        typeRef == other.typeRef && fileId == other.fileId && sourceRange == other.sourceRange && staticDefault == other.staticDefault
 
-    override fun hashCode(): Int = listOf(owner, name, constant, typeRef, fileId, sourceRange).hashCode()
+    override fun hashCode(): Int = listOf(owner, name, constant, typeRef, fileId, sourceRange, staticDefault).hashCode()
 
     override fun toString(): String = "PackageValueDeclaration($owner.$name, constant=$constant, $typeRef, $fileId, $sourceRange)"
 }

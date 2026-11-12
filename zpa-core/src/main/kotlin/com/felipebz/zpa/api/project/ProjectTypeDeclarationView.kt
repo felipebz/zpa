@@ -12,6 +12,10 @@ import java.util.*
 @ZpaExperimentalApi
 interface ProjectTypeDeclarationView : ProjectDeclarationView
 
+/** The kind of a collection type. */
+@ZpaExperimentalApi
+enum class ProjectCollectionKind { ASSOCIATIVE_ARRAY, NESTED_TABLE, VARRAY }
+
 /** Type declaration whose extractor-retained shape may be known. */
 @ZpaExperimentalApi
 interface ProjectShapedTypeView : ProjectTypeDeclarationView {
@@ -20,6 +24,12 @@ interface ProjectShapedTypeView : ProjectTypeDeclarationView {
 
     /** Direct, unresolved collection element type; empty when absent or unsupported. */
     val elementType: Optional<ProjectTypeReference>
+
+    /**
+     * The kind of a COLLECTION: `TABLE OF … INDEX BY` is an associative array, `TABLE OF` a nested table, `VARRAY` or
+     * `VARYING ARRAY` a VARRAY. Empty for another shape, or when the extractor did not recognize the collection's head.
+     */
+    val collectionKind: Optional<ProjectCollectionKind>
 }
 
 /** Standalone (schema-level) `CREATE TYPE` declaration. */

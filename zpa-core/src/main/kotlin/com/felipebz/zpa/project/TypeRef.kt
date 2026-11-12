@@ -24,16 +24,21 @@ class NamedTypeRef private constructor(
     override val name: QualifiedName,
     override val sourceRange: SourceRange,
     internal val headerTypeIdentity: String?,
+    private val syntax: WrittenTypeSyntax?,
     @Suppress("UNUSED_PARAMETER") marker: Unit
 ) : TypeRef {
-    constructor(name: QualifiedName, sourceRange: SourceRange) : this(name, sourceRange, null, Unit)
+    constructor(name: QualifiedName, sourceRange: SourceRange) : this(name, sourceRange, null, null, Unit)
+
+    /** Derived from the name when the type is written as a plain name. */
+    internal val writtenSyntax: WrittenTypeSyntax get() = syntax ?: WrittenTypeSyntax.of(name)
 
     companion object {
         internal fun withHeaderTypeIdentity(
             name: QualifiedName,
             sourceRange: SourceRange,
-            headerTypeIdentity: String
-        ): NamedTypeRef = NamedTypeRef(name, sourceRange, headerTypeIdentity, Unit)
+            headerTypeIdentity: String,
+            syntax: WrittenTypeSyntax? = null
+        ): NamedTypeRef = NamedTypeRef(name, sourceRange, headerTypeIdentity, syntax, Unit)
     }
 
     override fun structuralKey() = "named:" + name.lookupKey()
@@ -58,6 +63,7 @@ class NamedTypeRef private constructor(
         name,
         sourceRange,
         if (name == this.name) headerTypeIdentity else null,
+        if (name == this.name) syntax else null,
         Unit
     )
 }

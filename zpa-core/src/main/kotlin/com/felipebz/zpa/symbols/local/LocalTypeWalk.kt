@@ -7,10 +7,15 @@
 
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.symbols.StaticArithmetic
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.*
+import java.math.BigDecimal
 import com.felipebz.zpa.api.project.ProjectTypeShape as PublicTypeShape
 import com.felipebz.zpa.project.ProjectCallArguments as InternalCallArguments
 
@@ -28,7 +33,14 @@ internal class LocalTypeEvidence(
     /** For a [Terminal.PROJECT] evidence, the project's description it classifies. */
     val description: ProjectExternalTypeDescription? = null,
     /** For an unknown evidence, the incomplete lookup that stopped the walk, when one did. */
-    val incomplete: LocalResolution.Incomplete? = null
+    val incomplete: LocalResolution.Incomplete? = null,
+    /** For a [Terminal.BUILT_IN] evidence, the written type the walk ended at; null for an index typed by its control. */
+    val terminalUse: LocalTypeUse? = null,
+    /**
+     * The first written type along the walk that writes constraints (`s_vc(20)` of a variable of the unconstrained subtype
+     * `s_vc`): Oracle applies the constraints written at the nearest use, those of a constrained subtype included.
+     */
+    val constrainedUse: LocalTypeUse? = null
 ) {
     enum class Terminal {
         /** A predefined type name, written or reached through local subtypes. */
@@ -469,6 +481,74 @@ internal class LocalTypeWalk(
         return resolution.status == ProjectValueResolution.Status.NOT_FOUND_IN_PROJECT && resolution.candidates.none { it is ProjectPackageCursorView }
     }
 
+    /**
+     * The value of the constant [name] (a `VARIABLE_NAME` or `MEMBER_EXPRESSION` written in [region]): a local constant
+     * whose default, given by [defaultOf], evaluates in turn, or a package constant of another file the project holds
+     * with an integer literal default. Null for anything else, and for a constant met again through [active].
+     */
+    fun constantValue(name: AstNode, region: LocalRegionId, defaultOf: (LocalDeclaration) -> AstNode?, active: MutableSet<LocalDeclarationId>): BigDecimal? {
+        val identifiers = when (name.type) {
+            PlSqlGrammar.VARIABLE_NAME -> listOf(name.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null)
+            PlSqlGrammar.MEMBER_EXPRESSION -> {
+                if (name.hasDirectChildren(PlSqlPunctuator.MOD, PlSqlPunctuator.REMOTE)) return null
+                val first = name.firstChild.takeIf { it.type === PlSqlGrammar.VARIABLE_NAME }?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
+                listOf(first) + name.getChildren(PlSqlGrammar.IDENTIFIER_NAME)
+            }
+            else -> return null
+        }
+        val segments = identifiers.map(LocalSyntax::identifier)
+        val reference = LocalReference(
+            segments.first(), LocalSyntax.range(model.fileId, name),
+            if (segments.size == 1) LocalReferenceContext.VALUE else LocalReferenceContext.QUALIFIER, region,
+            identifiers.drop(1).map { LocalSegment(LocalSyntax.identifier(it), false, LocalSyntax.range(model.fileId, it)) },
+            LocalReferenceContext.VALUE, false, null
+        )
+        val steps = outcomes.steps(reference)
+        val written = QualifiedName(segments)
+        if (LocalReferenceOutcomes.isAbsent(steps.first())) return projectConstant(written, region)
+        val member = steps.indexOfFirst(LocalReferenceOutcomes::isSpecificationMember)
+        if (member >= 0) return (if (member == 0) specificationMember(segments, region) else written)?.let { projectConstant(it, region) }
+        if (steps.size != segments.size) return null
+        val declaration = (covered(steps.last()) as? LocalResolution.Bound)?.let { model.declaration(it.declaration) } ?: return null
+        if (declaration.kind != VARIABLE || !declaration.isConstant || !active.add(declaration.id)) return null
+        return try {
+            StaticArithmetic.evaluate(defaultOf(declaration)) { constantValue(it, declaration.region, defaultOf, active) }
+        } finally {
+            active.remove(declaration.id)
+        }
+    }
+
+    private fun projectConstant(name: QualifiedName, region: LocalRegionId): BigDecimal? {
+        val snapshot = snapshot?.takeIf { prepared }?.preferring(compilationSchema(region)) ?: return null
+        val resolution = snapshot.resolvePackageValue(ProjectQualifiedName.wrap(name), packageOwner(region))
+        val value = resolution.value.orElse(null)?.takeIf { resolution.status == ProjectValueResolution.Status.RESOLVED } ?: return null
+        val fact = snapshot.occurrenceOf(value.id)?.declaration as? PackageValueDeclaration ?: return null
+        return fact.staticDefault?.takeIf { fact.constant }?.toBigDecimal()
+    }
+
+    /**
+     * The type reference the project retains for the declaration of this file whose written type starts at [line],
+     * [column]: a package specification's variable, constant, formal, record field or RETURN type, a cursor's RETURN
+     * type, a subtype's or collection's type, or a standalone unit's formal, RETURN type or attribute.
+     */
+    fun retainedReference(line: Int, column: Int): ProjectTypeReference? = retained[line to column]
+
+    private val retained: Map<Pair<Int, Int>, ProjectTypeReference> by lazy(LazyThreadSafetyMode.NONE) {
+        val snapshot = snapshot?.takeIf { prepared } ?: return@lazy emptyMap()
+        snapshot.declarationsFor(model.fileId.value).declarations.flatMap { declaration ->
+            when (declaration) {
+                is ProjectPackageValueView -> listOf(declaration.typeRef)
+                is ProjectFunctionView -> declaration.parameters.map { it.typeRef } + declaration.returnType
+                is ProjectSubprogramView -> declaration.parameters.map { it.typeRef }
+                is ProjectPackageCursorView -> declaration.parameters.map { it.typeRef } + listOfNotNull(declaration.returnType.orElse(null))
+                is ProjectPackageTypeView -> declaration.recordFields.map { it.typeRef } + listOfNotNull(declaration.elementType.orElse(null))
+                is ProjectStandaloneTypeView -> declaration.attributes.map { it.typeRef } + listOfNotNull(declaration.elementType.orElse(null))
+                is ProjectSubtypeView -> listOf(declaration.baseType)
+                else -> emptyList()
+            }
+        }.associateBy { it.sourceRange.startLine to it.sourceRange.startColumn }
+    }
+
     /** The package whose specification or body holds [region], as an owner for the project's name lookups. */
     fun packageOwner(region: LocalRegionId): ProjectQualifiedName? =
         LocalResolver.chain(model, region).firstOrNull { it.kind == LocalRegionKind.PACKAGE_SPEC || it.kind == LocalRegionKind.PACKAGE_BODY }
@@ -477,6 +557,7 @@ internal class LocalTypeWalk(
     private inner class Walk {
         private val followed = ArrayList<LocalDeclarationId>()
         private val fields = HashSet<Pair<LocalDeclarationId, Int>>()
+        private var constrained: LocalTypeUse? = null
 
         private fun unknown(reason: String, incomplete: LocalResolution.Incomplete? = null) =
             LocalTypeEvidence.unknown(reason, followed.toList(), incomplete)
@@ -549,6 +630,7 @@ internal class LocalTypeWalk(
 
         fun type(use: LocalTypeUse): LocalTypeEvidence {
             val typeRef = use.typeRef ?: return unknown("type not representable")
+            if (constrained == null && (typeRef as? NamedTypeRef)?.writtenSyntax?.groups?.isNotEmpty() == true) constrained = use
             if (typeRef is RefTypeRef) return unknown("REF type")
             val reference = LocalReferenceCollector.typeUseReference(use) ?: return unknown("type behind a database link")
             val steps = outcomes.steps(reference)
@@ -595,19 +677,19 @@ internal class LocalTypeWalk(
                 // type rejects it.
                 val kind = DatatypeFamilies.undeclaredTypeKind(name.last)
                 if (kind == CompositeKind.REF_CURSOR) {
-                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
+                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null, terminalUse = use, constrainedUse = constrained)
                 }
                 // A schema type never shadows a predefined name; any other one-segment name is a schema type.
                 if (DatatypeFamilies.ofTypeName(spelling) != null || snapshot == null && kind == null) {
-                    return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null)
+                    return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null, terminalUse = use, constrainedUse = constrained)
                 }
                 val described = snapshot?.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
                 val argumentType = described?.let { ProjectArgumentType.described(it, null) }
                 // A schema object the project does not describe is still composite: it rejects every scalar formal.
                 if (kind == CompositeKind.SCHEMA_OBJECT && argumentType?.familyOrNull == null) {
-                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
+                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
                 }
-                return LocalTypeEvidence(argumentType!!, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
+                return LocalTypeEvidence(argumentType!!, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
             }
             return project(name, (typeRef as? AnchoredTypeRef)?.anchor, use.lookupRegion)
         }
@@ -624,7 +706,7 @@ internal class LocalTypeWalk(
                     owner, metadata, compilationSchema(region)
                 )
             }
-            return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
+            return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
         }
 
         /**

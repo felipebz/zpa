@@ -388,10 +388,10 @@ class UsageEvidenceTest {
         val body = "create package body pkg is\n  procedure p is\n    l_list str_list;\n    l_other other_schema.str_list;\n  begin\n" +
             "    insert into t values v_recs(1);\n    insert into t values v_nums(1);\n    insert into t values v_rows(1);\n" +
             "    insert into t values l_list(1);\n    insert into t values l_other(1);\n  end;\nend;\n/\n"
-        // The project keeps no collection kind. A schema-qualified type it cannot place stays unknown.
+        // A schema-qualified type the project cannot place stays unknown.
         assertThat(valueCategories(body, "s.sql" to spec, "type.sql" to type, prepared = true)).containsExactly(
-            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar(NUMERIC))", "8:v_rows=Collection(? of Record(ROWTYPE, Named(t)))",
-            "9:l_list=Collection(? of Scalar(CHARACTER))", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
+            "6:v_recs=Collection(NESTED_TABLE of Record(RECORD_TYPE))", "7:v_nums=Collection(NESTED_TABLE of Scalar(NUMERIC))", "8:v_rows=Collection(NESTED_TABLE of Record(ROWTYPE, Named(t)))",
+            "9:l_list=Collection(NESTED_TABLE of Scalar(CHARACTER))", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
         )
     }
 
@@ -402,14 +402,14 @@ class UsageEvidenceTest {
             "  insert into t values la;\n  insert into t values lb;\n  insert into t values lx;\nend;\n/\n"
         // A collection reached again while its own element is being classified is unknown, as in the file.
         assertThat(valueCategories(proc, "types.sql" to types, prepared = true)).containsExactly(
-            "7:la=Collection(? of Unknown[UNSUPPORTED_REFERENCE])",
-            "8:lb=Collection(? of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))",
-            "9:lx=Collection(NESTED_TABLE of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))"
+            "7:la=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])",
+            "8:lb=Collection(NESTED_TABLE of Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE]))",
+            "9:lx=Collection(NESTED_TABLE of Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE]))"
         )
         val spec = "create package pkg is\n  type s is table of s;\n  type x is table of y;\n  type y is table of x;\n  vs s;\n  vx x;\n  procedure p;\nend;\n/\n"
         val body = "create package body pkg is\n  procedure p is\n  begin\n    insert into t values vs;\n    insert into t values vx;\n  end;\nend;\n/\n"
         assertThat(valueCategories(body, "s.sql" to spec, prepared = true)).containsExactly(
-            "4:vs=Collection(? of Unknown[UNSUPPORTED_REFERENCE])", "5:vx=Collection(? of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))"
+            "4:vs=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])", "5:vx=Collection(NESTED_TABLE of Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE]))"
         )
         assertThat(valueCategories("declare\n  type x is table of x;\n  l x;\nbegin\n  insert into t values l;\nend;\n/\n"))
             .containsExactly("5:l=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])")

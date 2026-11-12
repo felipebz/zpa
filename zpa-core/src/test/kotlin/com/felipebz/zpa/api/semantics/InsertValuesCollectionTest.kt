@@ -116,9 +116,9 @@ class InsertValuesCollectionTest {
             "end;\n/\n"
         // The name stays outside the file; its type comes from the project's specification.
         assertThat(values("b.sql", mapOf("s.sql" to declaring, "b.sql" to user))).containsExactly(
-            "5:samples(i).item_id name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(? of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
+            "5:samples(i).item_id name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
                 "value=Scalar(NUMERIC) field=Field",
-            "5:samples(i).sample_no name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(? of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
+            "5:samples(i).sample_no name=Unknown[DECLARATION_OUTSIDE_FILE]/Collection(ASSOCIATIVE_ARRAY of Record(RECORD_TYPE)) call=Unavailable(NOT_A_COVERED_NAME) " +
                 "value=Scalar(NUMERIC) field=Field"
         )
     }

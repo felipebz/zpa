@@ -46,6 +46,7 @@ internal class SchemaUnitExtractor(
         val declaration = StandaloneTypeDeclaration(
             name.first, shape, stream.fileId, stream.range(create, end),
             elementType = collection?.elementType?.takeIf { shape == ProjectTypeShape.COLLECTION },
+            collectionKind = collection?.kind?.takeIf { shape == ProjectTypeShape.COLLECTION },
             attributes = objectSyntax?.attributes.orEmpty(),
             methods = objectSyntax?.methods.orEmpty(),
             supertype = objectSyntax?.supertype,

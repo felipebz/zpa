@@ -441,17 +441,17 @@ class ProjectSymbolIndex private constructor(
         private fun declarationOrderingKey(declaration: ProjectDeclaration): String =
             declarationIdentityKey(declaration) + ":" + declaration.role + ":" + when (declaration) {
                 is PackageDeclaration -> ""
-                is StandaloneTypeDeclaration -> declaration.shape.toString() +
+                is StandaloneTypeDeclaration -> declaration.shape.toString() + (declaration.collectionKind?.let { ":$it" } ?: "") +
                     (declaration.elementType?.let { ":element:" + it.structuralKey() } ?: "")
                 is PackageTypeDeclaration -> declaration.shape.toString() + declaration.recordFields.joinToString("|") {
                     "${it.ordinal}:${it.name.originalSpelling}:${it.typeRef.structuralKey()}"
-                }  +
+                } + (declaration.collectionKind?.let { ":$it" } ?: "") +
                     (declaration.elementType?.let { ":element:" + it.structuralKey() } ?: "")
                 is PackageSubtypeDeclaration -> declaration.baseType.structuralKey()
                 is PackageProcedureDeclaration -> declaration.parameters.orderingKey()
                 is PackageFunctionDeclaration -> declaration.parameters.orderingKey() + ":" + declaration.returnType.structuralKey()
                 is SequenceDeclaration -> ""
-                is PackageValueDeclaration -> "${declaration.constant}:${declaration.typeRef.structuralKey()}"
+                is PackageValueDeclaration -> "${declaration.constant}:${declaration.typeRef.structuralKey()}:${declaration.staticDefault ?: ""}"
                 is PackageExceptionDeclaration -> ""
                 is PackageCursorDeclaration ->
                     declaration.parameters.orderingKey() + ":" + (declaration.returnType?.structuralKey() ?: "")

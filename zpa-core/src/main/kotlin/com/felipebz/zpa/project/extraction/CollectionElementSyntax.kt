@@ -8,12 +8,13 @@ package com.felipebz.zpa.project.extraction
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.TypeRef
+import com.felipebz.zpa.project.ProjectCollectionKind as CollectionKind
 
 /**
  * A structurally valid package collection head. [elementType] is the direct element datatype, present only when
  * the element and the rest of the declaration passed the strict checks.
  */
-internal class CollectionSyntax(val elementType: TypeRef?)
+internal class CollectionSyntax(val elementType: TypeRef?, val kind: CollectionKind)
 
 /**
  * Recognizes the head and the direct element of a package collection declaration
@@ -32,7 +33,12 @@ internal class CollectionElementSyntax(
      */
     fun parse(isIndex: Int, terminator: Int): CollectionSyntax? {
         val head = head(isIndex, terminator) ?: return null
-        return CollectionSyntax(element(head.elementStart, terminator, head.table))
+        val kind = when {
+            !head.table -> CollectionKind.VARRAY
+            stream.firstKeywordAtTopLevel(head.elementStart, setOf("INDEX"), terminator) != null -> CollectionKind.ASSOCIATIVE_ARRAY
+            else -> CollectionKind.NESTED_TABLE
+        }
+        return CollectionSyntax(element(head.elementStart, terminator, head.table), kind)
     }
 
     /**
@@ -44,19 +50,20 @@ internal class CollectionElementSyntax(
      */
     fun parseStandalone(isIndex: Int, limit: Int, terminator: Int?): CollectionSyntax? {
         val head = head(isIndex, limit) ?: return null
-        if (terminator == null) return CollectionSyntax(null)
+        val kind = if (head.table) CollectionKind.NESTED_TABLE else CollectionKind.VARRAY
+        if (terminator == null) return CollectionSyntax(null, kind)
         if (!stream.isPunctuator(head.elementStart, PlSqlPunctuator.LPARENTHESIS)) {
-            return CollectionSyntax(element(head.elementStart, terminator, false))
+            return CollectionSyntax(element(head.elementStart, terminator, false), kind)
         }
-        val close = stream.strictClose(head.elementStart, terminator) ?: return CollectionSyntax(null)
+        val close = stream.strictClose(head.elementStart, terminator) ?: return CollectionSyntax(null, kind)
         val start = head.elementStart + 1
         val end = datatypeShape.datatypeEnd(start, close) { stream.isKeyword(it, "NOT") || stream.isKeyword(it, "NULL") }
-        if (end == null || !isAdmittedDatatype(start, end) || nullability(end) != close) return CollectionSyntax(null)
+        if (end == null || !isAdmittedDatatype(start, end) || nullability(end) != close) return CollectionSyntax(null, kind)
         var cursor = close + 1
         if (stream.isKeyword(cursor, "NOT") && stream.isKeyword(cursor + 1, "PERSISTABLE")) cursor += 2
         else if (stream.isKeyword(cursor, "PERSISTABLE")) cursor++
-        if (cursor != terminator) return CollectionSyntax(null)
-        return CollectionSyntax(typeReferences.typeReference(start, end))
+        if (cursor != terminator) return CollectionSyntax(null, kind)
+        return CollectionSyntax(typeReferences.typeReference(start, end), kind)
     }
 
     private class Head(val elementStart: Int, val table: Boolean)

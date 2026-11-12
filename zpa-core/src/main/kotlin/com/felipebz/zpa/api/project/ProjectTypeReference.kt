@@ -6,6 +6,8 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.semantics.WrittenTypeConstraint
+import com.felipebz.zpa.api.semantics.WrittenTypeConstraints
 import com.felipebz.zpa.project.*
 import java.util.*
 
@@ -21,8 +23,18 @@ class ProjectTypeReference private constructor(
     anchor: Anchor?,
     link: ProjectQualifiedName?,
     /** The normalized tokens of a named type written as more than a plain name (`TIMESTAMP(6) WITH TIME ZONE`). */
-    @get:JvmSynthetic internal val writtenIdentity: String? = null
+    @get:JvmSynthetic internal val writtenIdentity: String? = null,
+    @get:JvmSynthetic internal val writtenSyntax: WrittenTypeSyntax? = null
 ) {
+    /**
+     * For a [Kind.NAMED] reference written as a predefined type, its written length, length semantics, precision and
+     * scale (see [WrittenTypeConstraints]). The index keeps no constant's value, so a constraint written as a constant
+     * or an expression is [WrittenTypeConstraint.Unknown]. Empty for an anchor, a `REF`, and a name that is not a
+     * predefined type (a subtype or a type the source declares, whose constraints the declaration decides).
+     */
+    val constraints: Optional<WrittenTypeConstraints>
+        get() = Optional.ofNullable(writtenSyntax?.constraints { WrittenTypeConstraint.Unknown })
+
     /** Present only for [Kind.ANCHORED] references. */
     val anchor: Optional<Anchor> = Optional.ofNullable(anchor)
 
@@ -51,7 +63,7 @@ class ProjectTypeReference private constructor(
             val range = ref.sourceRange.toPublic()
             val name = ProjectQualifiedName.wrap(ref.name)
             return when (ref) {
-                is NamedTypeRef -> ProjectTypeReference(Kind.NAMED, name, range, null, null, ref.headerTypeIdentity)
+                is NamedTypeRef -> ProjectTypeReference(Kind.NAMED, name, range, null, null, ref.headerTypeIdentity, ref.writtenSyntax)
                 is RefTypeRef -> ProjectTypeReference(Kind.REF, name, range, null, null)
                 is AnchoredTypeRef -> ProjectTypeReference(
                     Kind.ANCHORED, name, range,

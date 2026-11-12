@@ -731,7 +731,7 @@ class ProjectApiJavaConsumerTest {
         // A record has no element; bounds and index domains are not part of the contract.
         assertThat(((ProjectShapedTypeView) snapshot.resolveNamedType(name("rec_t"), p).getDeclaration().orElseThrow()).getElementType()).isEmpty();
         assertThat(Arrays.stream(ProjectShapedTypeView.class.getMethods()).map(java.lang.reflect.Method::getName))
-            .containsExactlyInAnyOrder("getShape", "getElementType", "getId", "getKind", "getRole", "getQualifiedName", "getFileId", "getSourceRange");
+            .containsExactlyInAnyOrder("getShape", "getElementType", "getCollectionKind", "getId", "getKind", "getRole", "getQualifiedName", "getFileId", "getSourceRange");
 
         // Standalone collections use the standalone namespace (null package context).
         ProjectShapedTypeView ids = (ProjectShapedTypeView) snapshot.resolveNamedType(name("ids")).getDeclaration().orElseThrow();
