@@ -122,10 +122,12 @@ class PlSqlSquidSensorOracleIT {
                 "hr_api.v_hired" to "RESOLVED DATE",
                 "hr_api.r_employee" to "RESOLVED (ID NUMBER(6,0), NAME VARCHAR2(40 CHAR), CODE CHAR(3 BYTE), SALARY NUMBER(10,2), HIRED DATE, NOTE CLOB)",
                 "hr_api.r_view" to "RESOLVED (ID NUMBER(6,0), NAME VARCHAR2(40 CHAR), ANNUAL NUMBER)",
-                // Inconclusive, never guessed: an absent column, a synonym Oracle resolves, a schema read for one relation only.
+                // A private synonym of the owner is followed to its table, as Oracle does.
+                "gaps.v_synonym" to "RESOLVED NUMBER(10,2)",
+                // Inconclusive, never guessed: an absent column, and a schema qualifier a public synonym the scan
+                // did not read may take.
                 "gaps.v_bonus" to "COLUMN_NOT_FOUND",
-                "gaps.v_synonym" to "RELATION_NOT_FOUND",
-                "gaps.v_city" to "INCOMPLETE",
+                "gaps.v_city" to "CAPTURE_NOT_EXCLUDED",
                 // An explicitly owned unit compiles in its own schema, whatever the default.
                 "otherapp.billing.v_salary" to "INCOMPLETE"
             )

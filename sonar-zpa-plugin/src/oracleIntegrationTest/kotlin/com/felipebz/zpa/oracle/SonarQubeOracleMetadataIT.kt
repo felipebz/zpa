@@ -83,8 +83,8 @@ class SonarQubeOracleMetadataIT {
                 "hr_api.v_salary" to "RESOLVED NUMBER(10,2)",
                 "hr_api.v_name" to "RESOLVED VARCHAR2(40 CHAR)",
                 "hr_api.r_employee" to "RESOLVED (ID NUMBER(6,0), NAME VARCHAR2(40 CHAR), CODE CHAR(3 BYTE), SALARY NUMBER(10,2), HIRED DATE, NOTE CLOB)",
-                "gaps.v_synonym" to "RELATION_NOT_FOUND",
-                "gaps.v_city" to "INCOMPLETE",
+                "gaps.v_synonym" to "RESOLVED NUMBER(10,2)",
+                "gaps.v_city" to "CAPTURE_NOT_EXCLUDED",
                 "otherapp.billing.v_salary" to "INCOMPLETE"
             )
         )
