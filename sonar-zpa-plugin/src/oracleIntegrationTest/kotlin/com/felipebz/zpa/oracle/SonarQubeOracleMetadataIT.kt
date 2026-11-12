@@ -84,7 +84,9 @@ class SonarQubeOracleMetadataIT {
                 "hr_api.v_name" to "RESOLVED VARCHAR2(40 CHAR)",
                 "hr_api.r_employee" to "RESOLVED (ID NUMBER(6,0), NAME VARCHAR2(40 CHAR), CODE CHAR(3 BYTE), SALARY NUMBER(10,2), HIRED DATE, NOTE CLOB)",
                 "gaps.v_synonym" to "RESOLVED NUMBER(10,2)",
-                "gaps.v_city" to "CAPTURE_NOT_EXCLUDED",
+                // Every public synonym was read and none takes the qualifier, so it names the reference schema,
+                // whose CITIES the metadata does not cover.
+                "gaps.v_city" to "INCOMPLETE",
                 "otherapp.billing.v_salary" to "INCOMPLETE"
             )
         )
