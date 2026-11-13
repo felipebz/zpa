@@ -13,9 +13,9 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.semantics.*
-import com.felipebz.zpa.project.*
 import com.felipebz.zpa.metadata.FormsHostVariables
 import com.felipebz.zpa.metadata.FormsMetadata
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.callArguments
 import java.util.*
 import com.felipebz.zpa.api.project.ProjectCollectionKind as PublicCollectionKind
@@ -543,6 +543,11 @@ internal class LocalValueCategories(
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.declaredType]. */
     fun declaredType(datatype: AstNode, fields: LocalFields?): DeclaredType = declaredTypes.describe(datatype, fields)
+
+    private val columnBindings by lazy(LazyThreadSafetyMode.NONE) { LocalColumnBindings(model, walk, facts.names::binding) }
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.columnBinding]. */
+    fun columnBinding(name: AstNode): ColumnBinding = columnBindings.binding(name)
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.projectTypeReference]. */
     fun projectTypeReference(datatype: AstNode): ProjectTypeReference? =

@@ -622,9 +622,10 @@ class UsageEvidenceTest {
         val text = "create or replace package shop as\n  procedure run;\nend;\n/\n" +
             "create or replace package body shop as\n  type rec_t is record (f number);\n  g_rec rec_t;\n  procedure run is\n    n number;\n  begin\n" +
             "    select g_rec.f into n from shop_orders g_rec;\n    select g_rec.f into n from shop_orders;\n  end;\nend;\n/\n"
-        // With no relation of that name, `g_rec.f` cannot be a column: an object column's attribute needs the table alias.
+        // The alias takes `g_rec.f` when its table has the column f, else the record does. With no relation of that name,
+        // `g_rec.f` cannot be a column: an object column's attribute needs the table alias.
         assertThat(chainBindings(text)).containsExactly(
-            "11:11:G_REC=NothingLocal(column possible)", "11:17:F=NothingLocal(column possible)",
+            "11:11:G_REC=ColumnOrLocal(VARIABLE@7:2)", "11:17:F=Unavailable(NOT_A_COVERED_NAME)",
             "12:11:G_REC=Local(VARIABLE@7:2)", "12:17:F=Unavailable(NOT_A_COVERED_NAME)"
         )
     }

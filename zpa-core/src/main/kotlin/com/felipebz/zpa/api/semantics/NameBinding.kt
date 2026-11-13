@@ -29,8 +29,9 @@ sealed interface NameBinding {
 
     /**
      * In SQL: a column of a relation in scope would take the name before [declaration], which binds it otherwise (a
-     * declaration of the file, or of the package's specification in another project file). The analysis does not know
-     * the relations' columns.
+     * declaration of the file, or of the package's specification in another project file). For the first segment of a
+     * qualified name, a relation named like it takes it when it has the column of the next segment. This answer does not
+     * read the relations' columns; `columnBinding` does, with the scan's external metadata.
      */
     class ColumnOrLocal(val declaration: NameDeclaration) : NameBinding {
         override fun equals(other: Any?) = other is ColumnOrLocal && declaration == other.declaration

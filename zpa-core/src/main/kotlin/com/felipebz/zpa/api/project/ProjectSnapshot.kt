@@ -457,6 +457,41 @@ class ProjectSnapshot private constructor(
         return method.returnType?.let { ProjectMemberType(ProjectTypeReference.from(it), null) }
     }
 
+    /**
+     * Whether no schema object is named [name] for a name written in a unit compiling in [schema]: no project unit may
+     * be an object of [schema], and [metadata] holds [schema] and the public synonyms complete, with no object or public
+     * synonym of that name. False when a project source failed.
+     */
+    internal fun provesNoObjectNamed(name: OracleIdentifier, schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): Boolean {
+        if (schema == null || preparationState == ProjectPreparationState.NOT_PREPARED || preparationState == ProjectPreparationState.PREPARED_WITH_FAILURES) return false
+        if (preparationResult.index.hasUnitPossiblyIn(schema.identifier, name)) return false
+        val id = ProjectIdentifier.wrap(name)
+        return metadata.isSchemaComplete(schema) && metadata.isPublicSynonymsComplete &&
+            metadata.findObject(schema, id).isEmpty && metadata.findObject(ProjectExternalSynonym.PUBLIC, id).isEmpty
+    }
+
+    /**
+     * Whether no package variable or constant `first.member` exists for a name written in a unit compiling in [schema]:
+     * no object is named [first] ([provesNoObjectNamed]), or [first] is one package specification of the project, the
+     * only unit of that name, whose members named [member] are all subprograms.
+     */
+    internal fun provesNoPackageValue(first: OracleIdentifier, member: OracleIdentifier, schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): Boolean {
+        if (provesNoObjectNamed(first, schema, metadata)) return true
+        if (schema == null || preparationState == ProjectPreparationState.NOT_PREPARED || preparationState == ProjectPreparationState.PREPARED_WITH_FAILURES) return false
+        val index = preparationResult.index
+        val spec = index.findOccurrences(QualifiedName(first))
+            .filter { val d = it.declaration; d !is PackageDeclaration || d.role == DeclarationRole.SPECIFICATION }
+            .singleOrNull()?.takeIf { it.declaration is PackageDeclaration } ?: return false
+        val evidence = PackageMemberNames.at(index, spec, member, null)
+        return when (evidence.status) {
+            MemberNameStatus.NOT_DECLARED -> true
+            MemberNameStatus.DECLARED_BEFORE -> PackageMemberNames.members(index, spec, member).let { retained ->
+                retained.size == evidence.members.size && retained.all { it is PackageSubprogramDeclaration }
+            }
+            else -> false
+        }
+    }
+
     /** The canonical occurrence behind an ID issued by this snapshot, or null. */
     @JvmSynthetic
     internal fun occurrenceOf(id: ProjectDeclarationId): IndexedDeclaration? =

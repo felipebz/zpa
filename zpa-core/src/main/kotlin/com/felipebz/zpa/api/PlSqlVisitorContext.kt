@@ -160,7 +160,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * Each written segment of such a qualified name, and of a method call statement (`v.delete;`), is answered on its
      * own node, whatever follows it:
      * - the first, a `VARIABLE_NAME`: what that name binds (`g_rec` of `g_rec.f`, `g_tab` of `g_tab.delete;`, `pkg` of
-     *   `pkg.v`). In SQL, a table, view or alias of the statement that takes it gives [NameBinding.NothingLocal];
+     *   `pkg.v`). In SQL, a table, view or alias of the statement that takes it gives [NameBinding.NothingLocal], or
+     *   [NameBinding.ColumnOrLocal] when a declaration of the file also has the name: Oracle reads the declaration
+     *   (`l.qty` of a loop record `l`) when that relation has no column of the next segment ([columnBinding] decides it);
      * - a later one, an `IDENTIFIER_NAME`: the declaration it binds when every segment before it names a unit or a block
      *   (`g_rec` of `pkg.g_rec.f`, `p` of `fn.p`). A record field, a collection method or an object member after a
      *   value, an attribute after `%`, and the procedure a call statement names are [NameBinding.Unavailable].
@@ -185,6 +187,42 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     @ZpaExperimentalApi
     fun typeBinding(name: AstNode): NameBinding =
         localSemanticFacts?.names?.typeBinding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+
+    /**
+     * What [name], a `VARIABLE_NAME` or `MEMBER_EXPRESSION` written in static SQL of this file, reads, as Oracle resolves
+     * it: an inner query before an outer one, a column of a source before a PL/SQL name, and a qualified name through the
+     * source its qualifier names (an alias, else the relation's name or `schema.relation`). A source known to lack the
+     * column passes the name to the enclosing query, then to PL/SQL. The scopes are those [nameBinding] uses.
+     *
+     * The answers:
+     * - [ColumnBinding.Column]: a column of a relation of the statement. Its source carries the `TABLE_REFERENCE`, the
+     *   alias and the project's reading of the relation through its synonyms and the scan's external metadata; whether
+     *   the column exists is known when the metadata covers the relation. A name the metadata proves missing is still
+     *   this column when no PL/SQL name takes it (Oracle rejects it, ORA-00904);
+     * - [ColumnBinding.QueryColumn]: a column of an inline view or a `WITH` query, with the select item that gives it;
+     * - [ColumnBinding.SelectItem]: an `ORDER BY` name that names a select item, which Oracle prefers to a column;
+     * - [ColumnBinding.Source]: the qualifier of `t.*`, or the argument of `REF(t)` or `VALUE(t)`;
+     * - [ColumnBinding.Pseudocolumn], [ColumnBinding.Joined] (a `USING` or `NATURAL` join column),
+     *   [ColumnBinding.Ambiguous] (ORA-00918, ORA-00960);
+     * - [ColumnBinding.PlSqlName]: no column takes it, for example when every source is known to lack it or the only
+     *   relation is `DUAL`; [nameBinding] answers what it binds;
+     * - [ColumnBinding.Unknown]: a source whose columns are not known may take it, a `*` covers a relation the metadata
+     *   does not cover, hidden text lies inside the statement, or it is a name of a dynamic SQL text.
+     *
+     * A column written by `INSERT (…)`, the left side of `SET` or a `MERGE` insert list is the target's column. A call
+     * (`f(x)`, `q.f(x)`) is [ColumnBinding.Unavailable]: [callBinding] answers it; `q.col.method(x)` is the column
+     * `q.col`. Any other node, and a name outside static SQL, is [ColumnBinding.Unavailable].
+     */
+    @ZpaExperimentalApi
+    fun columnBinding(name: AstNode): ColumnBinding {
+        if (localSemanticFacts == null) return ColumnBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        val root = generateSequence(name) { it.parentOrNull }.last()
+        if (root !== rootTree) {
+            return if (dynamicSqlSupport?.isTextRoot(root) == true) ColumnBinding.Unknown(setOf(ColumnUncertainty.DYNAMIC_SQL))
+            else ColumnBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+        }
+        return valueCategories?.columnBinding(name) ?: ColumnBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+    }
 
     /**
      * What the file's local analysis decided for the call whose name is [name], computed for every call of the file

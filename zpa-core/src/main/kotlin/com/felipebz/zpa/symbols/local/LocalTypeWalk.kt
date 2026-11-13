@@ -137,6 +137,26 @@ internal class LocalTypeWalk(
         if (!prepared) null else projectView(region)?.resolvePackageValue(ProjectQualifiedName.wrap(name), packageOwner(region))
 
     /**
+     * Whether a package variable or constant takes [segments] read as a PL/SQL name from [region] (`pk.v`, `pk.v.f`,
+     * `schema.pk.v`): true when the project knows one; false only for `q.v` when the project proves that no object is
+     * named `q` or that `q` is a package of the project whose members named `v` are all subprograms; null otherwise.
+     */
+    fun packageValueTakes(segments: List<OracleIdentifier>, region: LocalRegionId): Boolean? {
+        if (!prepared) return null
+        val view = projectView(region) ?: return null
+        for (size in 2..minOf(3, segments.size)) {
+            val status = view.resolvePackageValue(ProjectQualifiedName.wrap(QualifiedName(segments.take(size))), null).status
+            if (status == ProjectValueResolution.Status.RESOLVED || status == ProjectValueResolution.Status.AMBIGUOUS) return true
+        }
+        if (segments.size != 2) return null
+        return false.takeIf { view.provesNoPackageValue(segments[0], segments[1], compilationSchema(region), metadata) }
+    }
+
+    /** Whether the project and the metadata prove that no schema object is named [name] from [region]. */
+    fun provesNoObjectNamed(name: OracleIdentifier, region: LocalRegionId): Boolean =
+        prepared && projectView(region)?.provesNoObjectNamed(name, compilationSchema(region), metadata) == true
+
+    /**
      * The select list the fields of the row [evidence] gives follow: a package cursor's, a local cursor's (its
      * `%ROWTYPE`), or a cursor `FOR` loop's query. Null for any other value, and for a query whose row is a relation's
      * columns (`SELECT *` from one relation).
@@ -602,6 +622,34 @@ internal class LocalTypeWalk(
             }
         }.associateBy { it.sourceRange.startLine to it.sourceRange.startColumn }
     }
+
+    /**
+     * The project's reading of the relation [name] written in a SQL statement at [region]: `name%ROWTYPE`, through its
+     * synonyms and the run's external metadata. A SQL statement sees no PL/SQL declaration, so no package owner applies.
+     */
+    fun relationRow(name: QualifiedName, region: LocalRegionId): ProjectExternalTypeDescription? = snapshot?.describeExternalType(
+        ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(name), ProjectTypeReference.Anchor.ROWTYPE), null, metadata, compilationSchema(region)
+    )
+
+    /**
+     * Whether the relation [description] found has [column], and that column: true or false when the metadata covers the
+     * relation's columns, null otherwise.
+     */
+    fun relationColumn(description: ProjectExternalTypeDescription?, column: OracleIdentifier): Pair<Boolean?, ProjectExternalColumn?> {
+        val relation = description?.takeIf { it.status == ProjectExternalTypeDescription.Status.RESOLVED }?.lookup?.orElse(null)?.relation?.orElse(null)
+            ?: return null to null
+        val lookup = metadata.findColumn(relation.schema, relation.name, ProjectIdentifier.wrap(column))
+        return when (lookup.status) {
+            ProjectExternalLookup.Status.FOUND -> true to lookup.column.orElse(null)
+            ProjectExternalLookup.Status.COLUMN_NOT_FOUND -> false to null
+            else -> null to null
+        }
+    }
+
+    /** The relation [description] found, when the metadata covers all of its columns. */
+    fun coveredRelation(description: ProjectExternalTypeDescription?): ProjectExternalRelation? =
+        description?.takeIf { it.status == ProjectExternalTypeDescription.Status.RESOLVED }?.lookup?.orElse(null)?.relation?.orElse(null)
+            ?.takeIf { it.isColumnsComplete }
 
     /** The package whose specification or body holds [region], as an owner for the project's name lookups. */
     fun packageOwner(region: LocalRegionId): ProjectQualifiedName? =
