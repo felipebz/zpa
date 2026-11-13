@@ -45,21 +45,23 @@ internal object LocalSemanticModelBuilder {
     /**
      * Builds the model of the file whose parse tree is [root]. [source] is the text given to the parser; it lets the
      * completeness evidence rule out discarded text. Without it every region is incomplete
-     * ([LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE]).
+     * ([LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE]), unless [tokensAreWholeText]: a dynamic SQL text built from known
+     * parts only, whose tokens and trivia are all of its text.
      */
-    fun build(root: AstNode, fileId: FileId, source: String?): LocalSemanticModel = Construction(fileId).build(root, source)
+    fun build(root: AstNode, fileId: FileId, source: String?, tokensAreWholeText: Boolean = false): LocalSemanticModel =
+        Construction(fileId).build(root, source, tokensAreWholeText)
 
     private class Construction(private val fileId: FileId) {
         private val regions = ArrayList<RegionDraft>()
         private val declarations = ArrayList<DeclarationDraft>()
 
-        fun build(root: AstNode, source: String?): LocalSemanticModel {
+        fun build(root: AstNode, source: String?, tokensAreWholeText: Boolean): LocalSemanticModel {
             val file = open(null, LocalRegionKind.FILE, "FILE", LocalSyntax.fileRange(fileId, root))
             walk(root, file)
             val linker = LocalDeclarationLinker(regions, declarations)
             linker.linkForwardDeclarations()
             linker.linkUnits()
-            val evidence = LocalCompletenessEvidence.of(root, source)
+            val evidence = LocalCompletenessEvidence.of(root, source, tokensAreWholeText)
             return freeze(fileId, regions, declarations, evidence.attribute(regions), evidence.hiddenText(fileId), evidence.conditionalMentions())
         }
 

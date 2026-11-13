@@ -8,6 +8,7 @@ package com.felipebz.zpa.api.dynamicsql
 import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.PlSqlVisitorContext
 import java.util.*
 
 /** A part of a dynamic statement whose text is not known statically, written into the built text as [placeholder]. */
@@ -52,10 +53,20 @@ class DynamicSqlText internal constructor(
      */
     val holesDropped: Boolean,
     private val holesByToken: Map<Token, List<DynamicSqlHole>>,
-    private val exactByToken: Map<Token, DynamicSqlHole>
+    private val exactByToken: Map<Token, DynamicSqlHole>,
+    /** The visitor context the text was analyzed with: its local semantic facts. */
+    @get:JvmSynthetic internal val context: PlSqlVisitorContext? = null
 ) {
     val parts: List<AstNode> = Collections.unmodifiableList(ArrayList(parts))
     val holes: List<DynamicSqlHole> = Collections.unmodifiableList(ArrayList(holes))
+
+    /** The tokens of [root] that write [hole]'s placeholder. */
+    @JvmSynthetic
+    internal fun tokensOf(hole: DynamicSqlHole): List<Token> = holesByToken.filterValues { hole in it }.keys.toList()
+
+    /** Whether [token] is exactly [hole]'s placeholder. */
+    @JvmSynthetic
+    internal fun isExactly(token: Token, hole: DynamicSqlHole): Boolean = exactByToken[token] === hole
 
     /**
      * The hole [node] stands for when the node is a placeholder: its tokens are exactly one token whose text is a whole

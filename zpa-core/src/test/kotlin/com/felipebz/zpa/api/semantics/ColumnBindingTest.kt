@@ -427,22 +427,103 @@ class ColumnBindingTest {
         )
     }
 
-    @Test
-    fun aNameOfADynamicText() {
-        val text = procedure("execute immediate 'select qty from order_line';")
-        val answers = ArrayList<String>()
+    /**
+     * `line:name=column binding / name binding` for each name of each dynamic text of [text]: the text of every
+     * `EXECUTE IMMEDIATE`, and the second argument of every `DBMS_SQL.PARSE`.
+     */
+    private fun dynamicAnswers(text: String): List<String> {
         val external = ProjectExternalContext.of(metadata, ProjectIdentifier.fromSource("SHOP"), ProjectSchemaPaths.none())
         val context = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(), external).prepare(listOf(ProjectSource(FileId("u.sql")) { text }), concurrent = false)
         )
+        val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
-                val dynamic = this.context.dynamicSql(node.getFirstDescendant(PlSqlGrammar.EXECUTE_IMMEDIATE_STATEMENT)!!.getFirstChild(PlSqlGrammar.EXPRESSION, PlSqlGrammar.LITERAL))!!
-                dynamic.root.getDescendants(PlSqlGrammar.VARIABLE_NAME).forEach { answers += "${it.tokenOriginalValue}=${this.context.columnBinding(it)}" }
+                val expressions = node.getDescendants(PlSqlGrammar.EXECUTE_IMMEDIATE_STATEMENT).map { it.children[2] } +
+                    node.getDescendants(PlSqlGrammar.METHOD_CALL).filter { it.firstChild.tokens.joinToString("") { t -> t.value }.equals("DBMS_SQL.PARSE", ignoreCase = true) }
+                        .map { it.getFirstChild(PlSqlGrammar.ARGUMENTS).getChildren(PlSqlGrammar.ARGUMENT)[1].firstChild }
+                for (expression in expressions) {
+                    val dynamic = this.context.dynamicSql(expression) ?: continue
+                    dynamic.root.getDescendants(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)
+                        .filter { !(it.type === PlSqlGrammar.VARIABLE_NAME && it.parent.type === PlSqlGrammar.MEMBER_EXPRESSION) }
+                        .forEach { name ->
+                            val written = name.tokens.joinToString("") { it.originalValue }
+                            rows += "${name.token.line}:$written=${render(this.context.columnBinding(name))} / ${this.context.nameBinding(if (name.type === PlSqlGrammar.MEMBER_EXPRESSION) name.firstChild else name)}"
+                        }
+                }
             }
         }
         AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, context).scanFile(Source("u.sql", text), listOf(check), FileId("u.sql"))
-        assertThat(answers).containsExactly("qty=Unknown[DYNAMIC_SQL]")
+        return rows
+    }
+
+    @Test
+    fun theNamesOfADynamicText() {
+        // The text sees no declaration of the procedure: zz there is no local variable, l.amount2 is the missing column.
+        assertThat(dynamicAnswers(procedure(
+            "execute immediate 'select qty, zz, l.amount2 from order_line l where order_id = :id' into v using 1;",
+            "execute immediate 'select qty from stock_x';"
+        ))).containsExactly(
+            "8:qty=column SHOP.ORDER_LINE.QTY / NothingLocal(column possible)",
+            "8:zz=plsql NO_SOURCE_HAS_IT / NothingLocal(column possible)",
+            "8:l.amount2=column SHOP.ORDER_LINE.AMOUNT2 missing / NothingLocal(column possible)",
+            "8:order_id=column SHOP.ORDER_LINE.ORDER_ID / NothingLocal(column possible)",
+            "8::id=plsql BIND_VARIABLE / Unavailable(NOT_A_COVERED_NAME)",
+            "9:qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column stock_x.QTY unverified / NothingLocal(column possible)"
+        )
+    }
+
+    @Test
+    fun aPlSqlBlockOfADynamicTextSeesItsOwnDeclarations() {
+        // order_head has no qty: Oracle reads the field of the loop record l, as in static SQL; it has status.
+        assertThat(dynamicAnswers(procedure(
+            "execute immediate 'begin for l in (select 7 qty from dual) loop select l.qty into :x from order_head l; end loop; end;' using out v;",
+            "execute immediate 'begin for l in (select 7 qty from dual) loop select l.status into :x from order_head l; end loop; end;' using out v;"
+        )).filter { "l." in it }).containsExactly(
+            "8:l.qty=plsql NO_SOURCE_HAS_IT / ColumnOrLocal(LOOP_INDEX@8:31)",
+            "9:l.status=column SHOP.ORDER_HEAD.STATUS / ColumnOrLocal(LOOP_INDEX@9:31)"
+        )
+    }
+
+    @Test
+    fun aHoleOfADynamicText() {
+        assertThat(dynamicAnswers(procedure(
+            // A number standing as an operand, or a value inside a string literal of the text: only a value.
+            "execute immediate 'select qty from order_line where order_id = ' || v into v;",
+            "execute immediate 'select qty from order_line where amount = ''' || status || '''' into v;",
+            // Any other value may write a condition, a source or an alias.
+            "execute immediate 'select qty from order_line where ' || status into v;"
+        )).map { it.substringBefore(" / ") }).containsExactly(
+            "8:qty=column SHOP.ORDER_LINE.QTY",
+            "8:order_id=column SHOP.ORDER_LINE.ORDER_ID",
+            "8:ZPA$1=Unknown[DYNAMIC_SQL_HOLE]",
+            "9:qty=column SHOP.ORDER_LINE.QTY",
+            "9:amount=column SHOP.ORDER_LINE.AMOUNT",
+            "10:qty=Unknown[DYNAMIC_SQL_HOLE]",
+            "10:ZPA$1=Unknown[DYNAMIC_SQL_HOLE]"
+        )
+    }
+
+    @Test
+    fun aTextOfDbmsSqlParse() {
+        // status of the text is the column: the procedure's variable is not visible there.
+        assertThat(dynamicAnswers(procedure(
+            "dbms_sql.parse(v, 'delete from order_head where status = ''X''', dbms_sql.native);"
+        )).map { it.substringBefore(" / ") }).containsExactly("8:status=column SHOP.ORDER_HEAD.STATUS")
+    }
+
+    @Test
+    fun theKnownMatchesOfOuterScopesAreCandidates() {
+        // When stock_x lacks status, Oracle reads the one of order_head.
+        assertThat(answers(procedure(
+            "select count(*) into v from order_head h where exists (select 1 from stock_x where flag = status);",
+            "select count(*) into v from order_line l where exists (select 1 from order_head h where exists (select 1 from stock_x where qty = 1));"
+        )).filter { !it.contains("INTO_TARGET") && !it.contains("Unavailable") }).containsExactly(
+            "8:flag=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column stock_x.FLAG unverified",
+            "8:status=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column stock_x.STATUS unverified maybe column SHOP.ORDER_HEAD.STATUS",
+            // order_head lacks qty: the next scope out has it.
+            "9:qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column stock_x.QTY unverified maybe column SHOP.ORDER_LINE.QTY"
+        )
     }
 
     @Test

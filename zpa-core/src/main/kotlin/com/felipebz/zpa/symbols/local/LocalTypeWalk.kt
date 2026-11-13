@@ -98,8 +98,16 @@ internal class LocalTypeWalk(
     private val external: ProjectExternalContext = ProjectExternalContext.none(),
     /** The outcomes of its lookups: the resolver's, refined with the project's specification coverage. */
     private val outcomes: LocalReferenceOutcomes =
-        LocalReferenceOutcomes(model, snapshot?.let { LocalSpecificationCoverage.of(model, it) })
+        LocalReferenceOutcomes(model, snapshot?.let { LocalSpecificationCoverage.of(model, it) }),
+    /** For a dynamic SQL text, the compilation schema of the unit that runs it, for every region of the text. */
+    private val heldSchema: HeldSchema? = null
 ) {
+    class HeldSchema(val schema: ProjectIdentifier?)
+
+    /** A walk over [text], a dynamic SQL text that the unit holding [region] of this walk's file runs. */
+    fun forText(text: LocalSemanticModel, region: LocalRegionId): LocalTypeWalk =
+        LocalTypeWalk(text, snapshot, external, LocalReferenceOutcomes(text, null), HeldSchema(compilationSchema(region)))
+
     private val metadata = external.metadata
 
     /** The project as seen from the unit holding [region]: its compilation schema first, and the run's synonyms. */
@@ -109,9 +117,11 @@ internal class LocalTypeWalk(
      * The schema the file-level unit holding [region] compiles in, from the run's external context: its written schema,
      * else its file's configured schema path, else the configured default. Code outside a named unit (an anonymous
      * block of a script) runs in the session's schema, which the configuration gives for its file. Null when nothing
-     * establishes it: the project then keeps the uncertainty.
+     * establishes it: the project then keeps the uncertainty. A dynamic SQL text compiles in the schema of the unit
+     * that runs it.
      */
     fun compilationSchema(region: LocalRegionId): ProjectIdentifier? {
+        heldSchema?.let { return it.schema }
         val fileSchema = { external.fileSchema(model.fileId.value).orElse(null) }
         val top = LocalResolver.chain(model, region).firstOrNull { it.parent == model.root.id } ?: return fileSchema()
         val name = model.declarationsOf(model.root.id).firstNotNullOfOrNull { declaration ->

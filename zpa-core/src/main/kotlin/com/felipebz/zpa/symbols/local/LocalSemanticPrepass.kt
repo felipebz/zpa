@@ -33,7 +33,7 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
         context.cursors = null
         (node as? SemanticFileNode)?.localAnalysis = null
         context.localSemanticFacts = guarded("computing") {
-            val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents())
+            val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents(), context.tokensAreWholeText)
             val references = LocalReferenceCollector.collect(node, model)
             val analysis = projectAnalysis()
             val coverage = LocalSpecificationCoverage.of(model, analysis.snapshot)

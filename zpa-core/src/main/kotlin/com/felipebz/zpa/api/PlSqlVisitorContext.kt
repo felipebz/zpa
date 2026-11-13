@@ -81,6 +81,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     /** Installed by the scanner with the file's configuration and project; created on first use otherwise. */
     internal var dynamicSqlSupport: DynamicSqlSupport? = null
 
+    /** For a dynamic SQL text built from known parts only: its tokens and their trivia are all of its text. */
+    internal var tokensAreWholeText: Boolean = false
+
     private fun dynamicSqlSupport(): DynamicSqlSupport =
         dynamicSqlSupport ?: DynamicSqlSupport.standalone(plSqlFile).also { dynamicSqlSupport = it }
 
@@ -166,10 +169,22 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * - a later one, an `IDENTIFIER_NAME`: the declaration it binds when every segment before it names a unit or a block
      *   (`g_rec` of `pkg.g_rec.f`, `p` of `fn.p`). A record field, a collection method or an object member after a
      *   value, an attribute after `%`, and the procedure a call statement names are [NameBinding.Unavailable].
+     *
+     * A name of a dynamic SQL text this context parsed ([dynamicSql]) is answered among the text's own declarations, as
+     * Oracle compiles the text on its own: no declaration of the file is visible there.
      */
     @ZpaExperimentalApi
-    fun nameBinding(name: AstNode): NameBinding =
-        localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+    fun nameBinding(name: AstNode): NameBinding {
+        val facts = localSemanticFacts ?: return NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        if (name.parentOrNull != null && rootTree != null) {
+            val root = generateSequence(name) { it.parentOrNull }.last()
+            if (root !== rootTree) {
+                val text = dynamicSqlSupport?.textOf(root) ?: return NameBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+                return text.context?.localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+            }
+        }
+        return facts.names.binding(name)
+    }
 
     /**
      * What the datatype name [name] binds among the file's declarations: the `VARIABLE_NAME`, or the `MEMBER_EXPRESSION`
@@ -207,8 +222,20 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * - [ColumnBinding.PlSqlName]: no column takes it, for example when every source is known to lack it or the only
      *   relation is `DUAL`, or it is a bind variable (`:x`, `:new.col`); [nameBinding] answers what it binds;
      * - [ColumnBinding.Unknown]: a source whose columns are not known may take it, a `*` covers a relation the metadata
-     *   does not cover, hidden text lies inside the statement, or it is a name of a dynamic SQL text. Its candidates are
-     *   the columns the name would read if such a source has it, never a proof.
+     *   does not cover, or hidden text lies inside the statement. Its candidates are the columns the name would read if
+     *   such a source has it, then the columns of enclosing queries known to have it, never a proof.
+     *
+     * A name of a dynamic SQL text this context parsed ([dynamicSql]) is answered by the same rules, with the text's
+     * statement as the outermost scope and its relations read in the compilation schema of the unit that holds the
+     * text. Oracle compiles the text on its own: no declaration of the file takes a name. In a text that is a SQL
+     * statement no PL/SQL declaration exists: a name no column takes is [ColumnBinding.PlSqlName], and [nameBinding]
+     * answers [NameBinding.NothingLocal] for it there (at run time a function called without parentheses, or Oracle
+     * rejects the statement, ORA-00904), and a qualified name whose source lacks the column is that missing column. In
+     * a text that is a PL/SQL block, the block's own declarations are visible to its static SQL, and its names follow
+     * the rules of static SQL with the text's [nameBinding]. A placeholder of a concatenated value zpa could not read, and
+     * every name of the text when such a value may write more than a value (it is not inside a string literal of the
+     * text, or not a number standing as an operand), is [ColumnBinding.Unknown] with [ColumnUncertainty.DYNAMIC_SQL_HOLE].
+     * [ColumnUncertainty.DYNAMIC_SQL] remains for a text whose analysis is not available.
      *
      * A column written by `INSERT (…)`, the left side of `SET` or a `MERGE` insert list is the target's column. A name
      * marked for an outer join (`t.col(+)`, `col(+)`) is the name without the marker. A call (`f(x)`, `q.f(x)`) is
@@ -221,8 +248,8 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
         if (localSemanticFacts == null) return ColumnBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
         val root = generateSequence(name) { it.parentOrNull }.last()
         if (root !== rootTree) {
-            return if (dynamicSqlSupport?.isTextRoot(root) == true) ColumnBinding.Unknown(setOf(ColumnUncertainty.DYNAMIC_SQL))
-            else ColumnBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+            val text = dynamicSqlSupport?.textOf(root) ?: return ColumnBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+            return valueCategories?.columnBinding(text, name) ?: ColumnBinding.Unknown(setOf(ColumnUncertainty.DYNAMIC_SQL))
         }
         return valueCategories?.columnBinding(name) ?: ColumnBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
     }

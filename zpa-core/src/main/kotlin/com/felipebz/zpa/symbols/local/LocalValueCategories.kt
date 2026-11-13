@@ -10,6 +10,7 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.*
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.semantics.*
@@ -548,6 +549,26 @@ internal class LocalValueCategories(
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.columnBinding]. */
     fun columnBinding(name: AstNode): ColumnBinding = columnBindings.binding(name)
+
+    private val textBindings = IdentityHashMap<AstNode, LocalColumnBindings?>()
+
+    /**
+     * [columnBinding] of [name] in the dynamic SQL [text] this file runs, with the compilation schema of the unit that
+     * holds the text's expression; null when the text was not analyzed.
+     */
+    fun columnBinding(text: DynamicSqlText, name: AstNode): ColumnBinding? = textBindings.getOrPut(text.root) {
+        val textFacts = text.context?.localSemanticFacts ?: return@getOrPut null
+        val anchor = text.expression ?: text.parts.first()
+        val region = LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, anchor))
+        LocalColumnBindings(textFacts.model, walk.forText(textFacts.model, region), textFacts.names::binding, LocalDynamicText(text, ::isNumber))
+    }?.binding(name)
+
+    /** A numeric literal, or a value whose declared type is a number. */
+    private fun isNumber(expression: AstNode): Boolean {
+        if (expression.type === PlSqlGrammar.LITERAL && expression.firstChild.type === PlSqlGrammar.NUMERIC_LITERAL) return true
+        val category = category(expression)
+        return category is ValueCategory.Scalar && category.family == ScalarFamily.NUMERIC
+    }
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.projectTypeReference]. */
     fun projectTypeReference(datatype: AstNode): ProjectTypeReference? =

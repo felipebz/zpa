@@ -278,9 +278,10 @@ internal class LocalCompletenessEvidence private constructor(
         /**
          * Reads the evidence of the file whose parse tree is [root] and whose text is [source] (null when unknown):
          * conditional-compilation trivia from its token types, other discarded text through [DiscardedSourceText],
-         * and recovery nodes from the tree.
+         * and recovery nodes from the tree. [tokensAreWholeText] when the tokens and their trivia are all of the text,
+         * as for a dynamic SQL text built from known parts only.
          */
-        fun of(root: AstNode, source: String?): LocalCompletenessEvidence {
+        fun of(root: AstNode, source: String?, tokensAreWholeText: Boolean = false): LocalCompletenessEvidence {
             val recovery = ArrayList<AstNode>()
             val tokens = parserTokens(root, recovery)
             val global = EnumSet.noneOf(LocalIncompleteness::class.java)
@@ -308,7 +309,7 @@ internal class LocalCompletenessEvidence private constructor(
             // Other discarded text, including before the first token and after the last one.
             var dollarFallback = false
             if (source == null) {
-                global += LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE
+                if (!tokensAreWholeText) global += LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE
             } else if (LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS !in global) {
                 for (segment in DiscardedSourceText(source).fileSegments(tokens)) {
                     when (segment.kind) {

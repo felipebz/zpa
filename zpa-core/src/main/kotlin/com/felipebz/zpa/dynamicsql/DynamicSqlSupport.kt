@@ -66,9 +66,10 @@ internal class DynamicSqlSupport(
     fun fromExpression(expression: AstNode): DynamicSqlText? =
         byExpression.getOrPut(expression) { Cached(build(expression, operands(expression))) }.text
 
-    /** Whether [root] is the root of a text this support built. */
-    fun isTextRoot(root: AstNode): Boolean =
-        byExpression.values.any { it.text?.root === root } || byParts.values.any { it.text?.root === root }
+    /** The text this support built whose root is [root], or null. */
+    fun textOf(root: AstNode): DynamicSqlText? =
+        byExpression.values.firstNotNullOfOrNull { it.text?.takeIf { text -> text.root === root } }
+            ?: byParts.values.firstNotNullOfOrNull { it.text?.takeIf { text -> text.root === root } }
 
     fun fromParts(parts: List<AstNode>): DynamicSqlText? {
         val copy = parts.toList()
@@ -245,9 +246,10 @@ internal class DynamicSqlSupport(
         if (root.children.count { it.type !== GenericTokenType.EOF } != 1 || root.hasDescendant(PlSqlGrammar.RECOVERY)) return null
 
         val context = PlSqlVisitorContext(root, null as PlSqlFile?, null)
+        context.tokensAreWholeText = holes.isEmpty()
         PlSqlAstWalker(pipeline.create(treeFileId).all).walk(context, capabilities)
         return DynamicSqlText(
-            root, expression, parts, built.text, holes, dropHoles, holesByToken, exactByToken
+            root, expression, parts, built.text, holes, dropHoles, holesByToken, exactByToken, context
         )
     }
 

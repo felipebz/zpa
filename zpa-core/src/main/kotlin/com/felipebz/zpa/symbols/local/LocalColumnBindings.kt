@@ -14,20 +14,38 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.*
+import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.api.dynamicsql.DynamicSqlHole
+import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import java.util.*
+
+/** A dynamic SQL text the column walk answers, and whether a hole's expression of the running file is a number. */
+internal class LocalDynamicText(val text: DynamicSqlText, val isNumber: (AstNode) -> Boolean) {
+    /**
+     * The text is a SQL statement, with no PL/SQL in it: no PL/SQL name takes a name of its SQL. A PL/SQL block (or a
+     * `WITH` function) declares names its static SQL sees, as in a file.
+     */
+    val isSqlStatement: Boolean by lazy(LazyThreadSafetyMode.NONE) { !text.root.hasDescendant(PlSqlGrammar.STATEMENTS_SECTION) }
+}
 
 /**
  * What the names of the file's static SQL read, as Oracle resolves them: the sources each SQL scope owns, an inner scope
  * before an outer one, a column of a source before a PL/SQL name, and a source known to lack the column passing the
  * name outward and then to PL/SQL. The scopes follow those `nameBinding` uses: an inline view without `LATERAL` and
  * the query of `INSERT … SELECT` do not see the scope that holds them.
+ *
+ * Over a dynamic SQL text ([dynamic]) the same walk answers the text's names, with its statement as the outermost
+ * scope: Oracle compiles the text on its own, so no PL/SQL name of the code that runs it takes one. A text that is a
+ * SQL statement has no PL/SQL name at all; in a text that is a PL/SQL block, the block's declarations take names as
+ * in a file.
  */
 internal class LocalColumnBindings(
     private val model: LocalSemanticModel,
     private val walk: LocalTypeWalk,
-    private val nameBinding: (AstNode) -> NameBinding
+    private val nameBinding: (AstNode) -> NameBinding,
+    private val dynamic: LocalDynamicText? = null
 ) {
     private class Source(
         val source: ColumnSource,
@@ -54,6 +72,7 @@ internal class LocalColumnBindings(
         val start = startScope(name) ?: return unavailable()
         if (name.getFirstAncestorOrNull(DmlGrammar.INTO_CLAUSE)?.let { isBelow(it, start) } == true) return ColumnBinding.PlSqlName(PlSqlNameReason.INTO_TARGET)
         if (isBindVariable(name)) return ColumnBinding.PlSqlName(PlSqlNameReason.BIND_VARIABLE)
+        dynamicHole(name)?.let { return it }
         hidden(start)?.let { return it }
         if (parent.type === PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild === name) objectReference(name, parent, start)?.let { return it }
         val segments = segments(name) ?: return unavailable()
@@ -79,8 +98,8 @@ internal class LocalColumnBindings(
         if (segments.size < 3) return unavailable()
         return when (val capture = qualified(name, start, segments.dropLast(1))) {
             is Capture.Found -> capture.binding
-            // A PL/SQL call may take the whole name (`schema.pkg.f`, `pkg.v.method`).
-            is Capture.Lacking -> plSqlNameUndecided(capture)
+            // A PL/SQL call may take the whole name (`schema.pkg.f`, `pkg.v.method`); in a SQL statement text none does.
+            is Capture.Lacking -> if (dynamic?.isSqlStatement == true) columnOf(capture.source, capture.column, false) else plSqlNameUndecided(capture)
             null -> unavailable()
         }
     }
@@ -103,9 +122,11 @@ internal class LocalColumnBindings(
      * A qualified name whose source lacks the column. Oracle then reads it as a PL/SQL name: a declaration of the file
      * that takes the first name (as `nameBinding` answers), else a package variable or constant (`pk.v`, `pk.v.f`,
      * `schema.pk.v`; a function of that name does not take it). It is the missing column, which Oracle rejects, only
-     * when the project proves that neither can.
+     * when the project proves that neither can. A dynamic text that is a SQL statement sees no PL/SQL name: always the
+     * missing column.
      */
     private fun lacking(name: AstNode, capture: Capture.Lacking, segments: List<OracleIdentifier>): ColumnBinding {
+        if (dynamic?.isSqlStatement == true) return columnOf(capture.source, capture.column, false)
         when (val first = nameBinding(firstName(name))) {
             is NameBinding.Local -> return declared(name, capture, first.declaration)
             is NameBinding.ColumnOrLocal -> return declared(name, capture, first.declaration)
@@ -201,6 +222,8 @@ internal class LocalColumnBindings(
      * An unqualified name: a pseudocolumn or SQL function no column can hide, the name of an `ORDER BY` select item,
      * else the column of the one source of the innermost scope that has it, else the next scope out while every source
      * of this one is known to lack it. `ORA_ROWSCN` a source lacks is the pseudocolumn of the innermost scope's rows.
+     * A scope whose sources may have it, while none is known to, leaves it undecided: the candidates are its own, then
+     * the known matches of the scopes further out, which Oracle reads when those sources lack it.
      */
     private fun unqualified(name: AstNode, start: AstNode, column: OracleIdentifier): ColumnBinding {
         if (!column.quoted && column.lookupName in BARE_PSEUDOCOLUMNS) return ColumnBinding.Pseudocolumn
@@ -215,7 +238,8 @@ internal class LocalColumnBindings(
                 // Another source may have the column too (ORA-00918): not decided.
                 known.any { it == null } -> return ColumnBinding.Unknown(
                     uncertainty(sources.filterIndexed { index, _ -> known[index] == null }),
-                    sources.indices.filter { known[it] != false }.map { columnOf(sources[it], column, has(sources[it], column)) }
+                    sources.indices.filter { known[it] != false }.map { columnOf(sources[it], column, has(sources[it], column)) } +
+                        if (matches.isEmpty()) outerMatches(name, scope, column) else emptyList()
                 )
                 matches.size == 1 -> return columnOf(matches.single(), column, true)
                 matches.size > 1 -> {
@@ -227,6 +251,20 @@ internal class LocalColumnBindings(
             scope = enclosing(scope)
         }
         return ColumnBinding.PlSqlName(PlSqlNameReason.NO_SOURCE_HAS_IT)
+    }
+
+    /**
+     * The sources known to have [column] in the scopes around [scope], from the inside out, up to the first scope that
+     * has one: the name reaches them when every source of the scopes before lacks it.
+     */
+    private fun outerMatches(name: AstNode, scope: AstNode, column: OracleIdentifier): List<ColumnBinding> {
+        var outer = enclosing(scope)
+        while (outer != null) {
+            val matches = mergeValuesSources(name, outer, column, sourcesFor(outer, name, qualified = false)).filter { presence(it, column) == true }
+            if (matches.isNotEmpty()) return matches.map { columnOf(it, column, true) }
+            outer = enclosing(outer)
+        }
+        return emptyList()
     }
 
     private fun uncertainty(sources: List<Source>): Set<ColumnUncertainty> {
@@ -569,6 +607,30 @@ internal class LocalColumnBindings(
     }
 
     private fun before(line: Int, column: Int, otherLine: Int, otherColumn: Int) = line < otherLine || line == otherLine && column < otherColumn
+
+    /**
+     * A name of a dynamic text whose value a hole may change: a placeholder itself, or any name when some hole may write
+     * more than a value (a source, an alias, a column), or when the holes were left out to parse the text. A hole inside
+     * a string literal of the text, or one that stands as an operand and whose expression is a number, writes a value.
+     */
+    private fun dynamicHole(name: AstNode): ColumnBinding? {
+        val dynamic = dynamic ?: return null
+        val text = dynamic.text
+        if (text.holes.isEmpty()) return null
+        if (text.holesDropped || text.holesIn(name).isNotEmpty() || text.holes.any { !writesValue(dynamic, it) }) {
+            return ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.DYNAMIC_SQL_HOLE))
+        }
+        return null
+    }
+
+    private fun writesValue(dynamic: LocalDynamicText, hole: DynamicSqlHole): Boolean {
+        val text = dynamic.text
+        val tokens = text.tokensOf(hole)
+        if (tokens.isNotEmpty() && tokens.all { it.type === PlSqlTokenType.STRING_LITERAL }) return true
+        val operand = text.root.getDescendants(PlSqlGrammar.VARIABLE_NAME)
+            .any { text.holeOf(it) === hole && it.parent.type !== PlSqlGrammar.MEMBER_EXPRESSION && it.parent.type !== PlSqlGrammar.METHOD_CALL }
+        return operand && dynamic.isNumber(hole.expression)
+    }
 
     // Names.
 

@@ -92,7 +92,11 @@ sealed interface ColumnBinding {
         override fun toString() = "Ambiguous$candidates"
     }
 
-    /** No column takes the name: it is a PL/SQL name, which `nameBinding` answers. [reason] says why. */
+    /**
+     * No column takes the name: it is a PL/SQL name, which `nameBinding` answers. [reason] says why. In a dynamic SQL
+     * text that is a SQL statement no PL/SQL declaration exists: there it is a function called without parentheses, or
+     * Oracle rejects the statement (ORA-00904). In a text that is a PL/SQL block, the block's declarations take names.
+     */
     class PlSqlName(val reason: PlSqlNameReason) : ColumnBinding {
         override fun equals(other: Any?) = other is PlSqlName && reason == other.reason
 
@@ -109,10 +113,13 @@ sealed interface ColumnBinding {
      *   [ColumnUncertainty.STAR_NOT_COVERED]): for each source of the innermost scope that leaves it undecided, in the
      *   order of the statement, the [Column] of a relation or of another table expression (`exists` null), or the
      *   [QueryColumn] of an inline view or `WITH` query whose columns are not all known; and the sources of that scope
-     *   known to have the column (`exists` true), which Oracle would find ambiguous (ORA-00918) beside another one;
+     *   known to have the column (`exists` true), which Oracle would find ambiguous (ORA-00918) beside another one. When
+     *   no source of that scope is known to have it, then the sources of the enclosing scopes the name reaches if those
+     *   lack it that are known to have it (`exists` true), from the inside out, up to the first scope that has one;
      * - for [ColumnUncertainty.PLSQL_NAME_UNDECIDED]: the [Column] of the source the qualifier names, which lacks it
      *   (`exists` false): what Oracle reads, and rejects, when no PL/SQL name takes the name;
-     * - otherwise (text the analysis cannot see, dynamic SQL) none: the scopes are not walked.
+     * - otherwise (text the analysis cannot see, a hole of a dynamic text, a text not analyzed) none: the scopes are not
+     *   walked.
      */
     class Unknown(reasons: Set<ColumnUncertainty>, candidates: List<ColumnBinding> = emptyList()) : ColumnBinding {
         val reasons: Set<ColumnUncertainty> = reasons.toSet()
@@ -214,6 +221,12 @@ enum class ColumnUncertainty {
     /** Other text inside the statement the analysis discarded. */
     INCOMPLETE_SOURCE,
 
-    /** A name of a dynamic SQL text, whose statement is built at run time. */
-    DYNAMIC_SQL
+    /** A name of a dynamic SQL text whose analysis is not available. */
+    DYNAMIC_SQL,
+
+    /**
+     * A name of a dynamic SQL text that a concatenated value zpa could not read may change: the placeholder of that
+     * value, or any name of the text when such a value may write more than a value (a source, an alias, a column).
+     */
+    DYNAMIC_SQL_HOLE
 }
