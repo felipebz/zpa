@@ -1,0 +1,23 @@
+{
+    "alerts": ["confirm_exit"],
+    "blocks": [
+        {
+            "name": "orders",
+            "items": [
+                "note",
+                { "name": "order_id", "dataType": "NUMBER", "maxLength": 10 },
+                { "name": "customer" },
+                { "name": "placed_on", "dataType": "DATE" },
+                { "name": "label", "dataType": "CHAR", "maxLength": 40 },
+                { "name": "legacy_qty", "dataType": "RNUMBER" }
+            ]
+        },
+        { "name": "lines", "items": ["line_no", "amount"] }
+    ],
+    "lovs": ["lov_customers"],
+    "parameters": [
+        { "name": "p_mode", "dataType": "CHAR", "maxLength": 10 },
+        { "name": "p_order", "dataType": "NUMBER" },
+        { "name": "p_any" }
+    ]
+}

@@ -25,7 +25,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
     private val memberParser = PackageMemberParser(stream, typeReferences, collectionElements, datatypeShape, callSpecifications)
     private val schemaUnits = SchemaUnitExtractor(stream, typeReferences, bounds, collectionElements, ObjectMethodSyntax(stream, typeReferences, memberParser), discardedText)
     private val callableProperties = CallableProperties(stream)
-    private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences, bounds)
+    private val packageBodies = PackageBodyExtractor(stream, bodyBoundaries, memberParser, typeReferences, bounds, discardedText)
     private val packageSpecifications = PackageSpecificationExtractor(stream, bounds, packageValues, memberParser, discardedText)
     private val standaloneCallables = StandaloneCallableExtractor(
         stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
@@ -33,18 +33,20 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
 
     fun extract(): ProjectFileExtraction {
         val result = mutableListOf<ProjectDeclaration>()
+        val bodies = mutableListOf<PackageBodyMemberNames>()
         var cursor = 0
         while (cursor < stream.tokens.size) {
             val create = stream.nextValue(cursor, "CREATE") ?: break
             val parsed = parseCreate(create)
             if (parsed != null) {
                 result += parsed.declarations
+                parsed.bodyNames?.let(bodies::add)
                 cursor = parsed.nextIndex.coerceAtLeast(create + 1)
             } else {
                 cursor = create + 1
             }
         }
-        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, alteredTypes())
+        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, alteredTypes(), immutableList(bodies))
     }
 
     private fun alteredTypes(): AlteredTypes {

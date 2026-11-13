@@ -6,19 +6,24 @@
 package com.felipebz.zpa.oracle
 
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.testcontainers.DockerClientFactory
+import org.testcontainers.oracle.OracleContainer
+import org.testcontainers.utility.DockerImageName
 import java.net.URLClassLoader
 import java.nio.file.Path
 import java.security.SecureRandom
 import java.sql.Connection
 import java.sql.Driver
 import java.sql.SQLException
+import java.time.Duration
 import java.util.*
 
 /**
- * Disposable Oracle users and the fixture schema shared by the database-backed tests. The database is reached through
- * `ZPA_ORACLE_JDBC_URL`, `ZPA_ORACLE_ADMIN_USER` and `ZPA_ORACLE_ADMIN_PASSWORD` (tests are skipped when unset); the
- * Oracle JDBC driver is loaded from the JAR given by the `zpa.oracle.driverJar` system property, never from the
- * class path. Passwords are random and never printed.
+ * Disposable Oracle users and the fixture schema shared by the database-backed tests. The database is the one named
+ * by `ZPA_ORACLE_JDBC_URL`, `ZPA_ORACLE_ADMIN_USER` and `ZPA_ORACLE_ADMIN_PASSWORD` when they are set, otherwise a
+ * container started once per test run (Testcontainers); tests are skipped when neither is [available]. The Oracle
+ * JDBC driver is loaded from the JAR given by the `zpa.oracle.driverJar` system property, never from the class path.
+ * Passwords are random and never printed.
  */
 class OracleFixture private constructor(val jdbcUrl: String, private val adminUser: String, private val adminPassword: String) : AutoCloseable {
     val driverJar: Path = Path.of(System.getProperty("zpa.oracle.driverJar"))
@@ -62,7 +67,7 @@ class OracleFixture private constructor(val jdbcUrl: String, private val adminUs
 
     fun createUser(prefix: String, vararg privileges: String): User {
         val name = prefix + "_" + (1..6).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
-        val password = "P" + (1..24).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
+        val password = secret(random)
         connect(adminUser, adminPassword).use { c ->
             c.createStatement().use { s ->
                 s.execute("CREATE USER $name IDENTIFIED BY \"$password\" QUOTA UNLIMITED ON users")
@@ -139,12 +144,29 @@ class OracleFixture private constructor(val jdbcUrl: String, private val adminUs
             END hr_api;
             """.trimIndent()
 
+        // The image (from gradle.properties) has both a tag and a digest, which is not recognized as the module's image.
+        private val container: OracleContainer by lazy {
+            val image = System.getenv("ZPA_ORACLE_IMAGE") ?: System.getProperty("zpa.oracle.image")
+            OracleContainer(DockerImageName.parse(image).asCompatibleSubstituteFor("gvenzl/oracle-free"))
+                .withPassword(secret(SecureRandom())).withStartupTimeout(Duration.ofMinutes(5)).also { it.start() }
+        }
+
+        @JvmStatic
+        fun available(): Boolean = System.getenv("ZPA_ORACLE_JDBC_URL") != null || DockerClientFactory.instance().isDockerAvailable
+
+        private fun secret(random: SecureRandom) = "P" + (1..24).map { ALPHABET[random.nextInt(ALPHABET.length)] }.joinToString("")
+
         fun create(): OracleFixture {
-            val url = System.getenv("ZPA_ORACLE_JDBC_URL")
-            val user = System.getenv("ZPA_ORACLE_ADMIN_USER")
-            val password = System.getenv("ZPA_ORACLE_ADMIN_PASSWORD")
-            assumeTrue(url != null && user != null && password != null, "ZPA_ORACLE_JDBC_URL/ADMIN_USER/ADMIN_PASSWORD not set")
-            val fixture = OracleFixture(url!!, user!!, password!!)
+            assumeTrue(available(), "neither ZPA_ORACLE_JDBC_URL nor Docker is available")
+            val configured = System.getenv("ZPA_ORACLE_JDBC_URL")
+            val (url, user, password) = if (configured != null) {
+                Triple(configured, System.getenv("ZPA_ORACLE_ADMIN_USER"), System.getenv("ZPA_ORACLE_ADMIN_PASSWORD"))
+            } else {
+                // The image sets the SYSTEM password from the container's password.
+                Triple(container.jdbcUrl, "system", container.password)
+            }
+            assumeTrue(user != null && password != null, "ZPA_ORACLE_ADMIN_USER/ADMIN_PASSWORD not set")
+            val fixture = OracleFixture(url, user!!, password!!)
             try {
                 fixture.createSchema()
             } catch (e: Throwable) {

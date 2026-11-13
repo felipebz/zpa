@@ -45,6 +45,7 @@ final class ProjectCallExample {
             case INCOMPLETE_INDEX -> report.add("unknown: sources failed " + resolution.getFailures().stream()
                 .map(ProjectPreparationFailure::getFileId).toList());
             case UNKNOWN_PACKAGE, NOT_FOUND_IN_PROJECT -> report.add("not in the supplied sources");
+            case SYNONYM_TARGET_NOT_IN_PROJECT -> report.add("a synonym for " + resolution.getSynonymTarget().map(Object::toString).orElse("an object in another database"));
             case NOT_PREPARED -> report.add("no project was prepared");
         }
         for (ProjectCallCandidate candidate : resolution.getCandidates()) {
@@ -82,6 +83,7 @@ final class ProjectCallExample {
             case AMBIGUOUS_TARGET, PARTIAL_DECLARATIONS -> System.out.println("target not settled: " + resolution.getUncertainties());
             case INCOMPLETE_INDEX -> System.out.println("unknown: " + resolution.getFailures().size() + " source(s) failed");
             case UNKNOWN_PACKAGE, NOT_FOUND_IN_PROJECT -> System.out.println("not in the supplied sources");
+            case SYNONYM_TARGET_NOT_IN_PROJECT -> System.out.println("a synonym for an object outside the supplied sources");
             case NOT_PREPARED -> System.out.println("no project was prepared");
         }
         for (ProjectCallCandidate candidate : resolution.getCandidates()) {

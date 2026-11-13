@@ -29,13 +29,25 @@ class ProjectExternalTypeDescription private constructor(
     relationName: ProjectQualifiedName?,
     lookup: ProjectExternalLookup?,
     sourceCandidates: List<ProjectDeclarationView>,
-    externalCandidates: List<ProjectExternalRelation>
+    externalCandidates: List<ProjectExternalRelation>,
+    synonyms: List<ProjectExternalSynonym>,
+    capturingObject: ProjectExternalObject?
 ) {
     enum class Status {
-        /** The unqualified reading binds to the found relation (and column): scope captures are excluded. */
+        /**
+         * The reading binds to the found relation (and column): scope captures are excluded. An unqualified relation
+         * name is an object of the compilation schema, else its private synonym, else a public synonym ([synonyms]); a
+         * schema-qualified anchor is read as a schema only when no object of the compilation schema and no public
+         * synonym takes its first segment, which needs the compilation schema and the public synonyms complete.
+         */
         RESOLVED,
 
-        /** The external reading does not apply: the source walk, a proven capture, a rejected anchor or the shape decides. */
+        /**
+         * The external reading does not apply: the source walk, a proven capture, a rejected anchor or the shape decides.
+         * An object of the compilation schema, or a public synonym, that takes the first segment of a schema-qualified
+         * anchor is [capturingObject]; a synonym chain that ends at an object other than a table or view is
+         * [capturingObject] too, and one that resolves to itself (Oracle's ORA-01775) has none.
+         */
         NOT_EXTERNAL,
 
         /** An external reading may be correct, but a capture or a source alternative the evidence cannot see is not excluded. */
@@ -53,17 +65,17 @@ class ProjectExternalTypeDescription private constructor(
         /** An unqualified reading needs the current schema, which was not supplied. */
         SCHEMA_CONTEXT_MISSING,
 
-        /** Two external readings were both found: the current-schema relation and the schema-qualified relation. */
-        AMBIGUOUS,
-
-        /** The supplied metadata neither confirms nor refutes the reading (coverage not declared, or partial columns). */
+        /**
+         * The supplied metadata neither confirms nor refutes the reading: coverage not declared, partial columns, a
+         * synonym whose target the metadata does not hold, or a name a public synonym may take when public synonyms are
+         * not complete.
+         */
         INCOMPLETE,
 
         /**
-         * The relation is absent from the supplied metadata of its schema under declared complete schema coverage.
-         * Oracle may still resolve the written name through a private or public synonym or another name-resolution
-         * path the metadata does not model (for example `dual.dummy%TYPE`), so this is not proof that the reference
-         * is invalid.
+         * No relation, private synonym or public synonym takes the name: its schema is complete and, for an unqualified
+         * name, so are the public synonyms. Oracle may still resolve the written name through a path the metadata does
+         * not model (for example `dual.dummy%TYPE`), so this is not proof that the reference is invalid.
          */
         RELATION_NOT_FOUND,
 
@@ -71,16 +83,21 @@ class ProjectExternalTypeDescription private constructor(
         COLUMN_NOT_FOUND,
 
         /**
-         * The source walk stopped at an anchor behind a database link (`t.c@link%TYPE`). The supplied metadata
-         * describes the local database only, so no lookup is performed; [anchor] and [anchorName] give the anchor.
+         * The source walk stopped at an anchor behind a database link (`t.c@link%TYPE`), or a synonym leads to one. The
+         * supplied metadata describes the local database only, so no lookup is performed; [anchor] and [anchorName]
+         * give the anchor, [synonyms] the synonyms followed.
          */
         REMOTE
     }
 
-    /** The anchor kind interpreted: the stopped anchor, or a followed anchor that competes with a relation. */
+    /**
+     * The anchor kind interpreted: the stopped anchor, or a followed anchor that competes with a relation. A source walk
+     * that stopped with a pending [ProjectTypeDescription.fieldPath] is interpreted as a `%TYPE` anchor: a field of a
+     * `%ROWTYPE` value (`g_cust.name%TYPE`, `g_cust customer%ROWTYPE`) is read as the column `customer.name%TYPE`.
+     */
     val anchor: Optional<ProjectTypeReference.Anchor> = Optional.ofNullable(anchor)
 
-    /** The written name of that anchor. */
+    /** The written name of that anchor, followed by the pending field path of the source walk, if any. */
     val anchorName: Optional<ProjectQualifiedName> = Optional.ofNullable(anchorName)
 
     /** The interpreted relation reading as `[schema, relation]`. */
@@ -96,8 +113,18 @@ class ProjectExternalTypeDescription private constructor(
      */
     val sourceCandidates: List<ProjectDeclarationView> = immutableList(sourceCandidates)
 
-    /** Competing or capturing external relations (see [Status.CONFLICT], [Status.AMBIGUOUS]). Runtime-unmodifiable. */
+    /** Competing external relations (see [Status.CONFLICT]). Runtime-unmodifiable. */
     val externalCandidates: List<ProjectExternalRelation> = immutableList(externalCandidates)
+
+    /**
+     * The synonyms the relation reading went through, in order: the synonym the written name found first, then the
+     * synonym each target is, up to [relationName] (or to the database link or object it ends at). Empty when the
+     * name is a relation itself. Runtime-unmodifiable.
+     */
+    val synonyms: List<ProjectExternalSynonym> = immutableList(synonyms)
+
+    /** The external object that takes the anchor instead of a relation (see [Status.NOT_EXTERNAL]). */
+    val capturingObject: Optional<ProjectExternalObject> = Optional.ofNullable(capturingObject)
 
     init {
         require((anchor == null) == (anchorName == null)) { "Anchor kind and name come together" }
@@ -109,9 +136,6 @@ class ProjectExternalTypeDescription private constructor(
             Status.NOT_EXTERNAL -> require(relationName == null && lookup == null && externalCandidates.isEmpty()) { "Invalid NOT_EXTERNAL description" }
             Status.CONFLICT -> require(anchored() && lookupStatus == ProjectExternalLookup.Status.FOUND &&
                 sourceCandidates.isNotEmpty() && externalCandidates.isNotEmpty()) { "Invalid CONFLICT description" }
-            Status.AMBIGUOUS -> require(anchored() && lookupStatus == ProjectExternalLookup.Status.FOUND && externalCandidates.size == 2) {
-                "Invalid AMBIGUOUS description"
-            }
             Status.UNAVAILABLE -> require(anchor != null && (lookup == null || lookupStatus == ProjectExternalLookup.Status.UNAVAILABLE) &&
                 externalCandidates.isEmpty()) { "Invalid UNAVAILABLE description" }
             Status.SCHEMA_CONTEXT_MISSING -> require(anchor != null && relationName == null && lookup == null && externalCandidates.isEmpty()) {
@@ -130,6 +154,7 @@ class ProjectExternalTypeDescription private constructor(
             Status.REMOTE -> require(anchor != null && relationName == null && lookup == null && sourceCandidates.isEmpty() &&
                 externalCandidates.isEmpty()) { "Invalid REMOTE description" }
         }
+        require(capturingObject == null || status == Status.NOT_EXTERNAL || status == Status.CAPTURE_NOT_EXCLUDED) { "Only a capture has a capturing object" }
     }
 
     override fun toString(): String =
@@ -145,7 +170,11 @@ class ProjectExternalTypeDescription private constructor(
             relationName: ProjectQualifiedName?,
             lookup: ProjectExternalLookup?,
             sourceCandidates: List<ProjectDeclarationView>,
-            externalCandidates: List<ProjectExternalRelation>
-        ) = ProjectExternalTypeDescription(status, source, anchor, anchorName, relationName, lookup, sourceCandidates, externalCandidates)
+            externalCandidates: List<ProjectExternalRelation>,
+            synonyms: List<ProjectExternalSynonym> = emptyList(),
+            capturingObject: ProjectExternalObject? = null
+        ) = ProjectExternalTypeDescription(
+            status, source, anchor, anchorName, relationName, lookup, sourceCandidates, externalCandidates, synonyms, capturingObject
+        )
     }
 }

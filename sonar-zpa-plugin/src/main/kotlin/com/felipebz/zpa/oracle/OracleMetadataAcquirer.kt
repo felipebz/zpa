@@ -105,8 +105,9 @@ internal class JdbcOracleMetadataAcquirer : OracleMetadataAcquirer {
     }
 
     private fun acquire(settings: OracleMetadataSettings, driver: Driver): AcquiredOracleMetadata {
-        logger.info("ZPA Oracle metadata: reading schemas ${settings.schemas} and relations " +
-            "${settings.relations.map { "${it.first}.${it.second}" }} as ${settings.user}")
+        logger.info("ZPA Oracle metadata: reading schemas ${settings.schemas}, relations " +
+            "${settings.relations.map { "${it.first}.${it.second}" }}" +
+            (if (settings.publicSynonyms) " and public synonyms" else "") + " as ${settings.user}")
         val result = try {
             OracleMetadataAcquisition.acquire(DriverDataSource(driver, settings), settings.request())
         } catch (e: OracleMetadataException) {

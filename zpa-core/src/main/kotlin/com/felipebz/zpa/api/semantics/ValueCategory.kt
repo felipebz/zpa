@@ -17,13 +17,16 @@ sealed interface ValueCategory {
     /**
      * A record: a `%ROWTYPE` of a table, view or cursor, or a variable of a `RECORD` type. [relation] tells, for a
      * [RecordOrigin.ROWTYPE] record, the relation whose columns its fields follow, when the analysis knows it.
+     * [selectList] is, for the row of a cursor's query (or of a cursor `FOR` loop's query), the select list its fields
+     * follow; null when the record follows none the analysis read: a relation's columns, a `RECORD` type, a cursor's
+     * `RETURN` type.
      */
-    class Record(val origin: RecordOrigin, val relation: RecordRelation? = null) : ValueCategory {
-        override fun equals(other: Any?) = other is Record && origin == other.origin && relation == other.relation
+    class Record(val origin: RecordOrigin, val relation: RecordRelation? = null, val selectList: RecordSelectList? = null) : ValueCategory {
+        override fun equals(other: Any?) = other is Record && origin == other.origin && relation == other.relation && selectList == other.selectList
 
-        override fun hashCode() = origin.hashCode() * 31 + (relation?.hashCode() ?: 0)
+        override fun hashCode() = (origin.hashCode() * 31 + (relation?.hashCode() ?: 0)) * 31 + (selectList?.hashCode() ?: 0)
 
-        override fun toString() = "Record($origin${relation?.let { ", $it" } ?: ""})"
+        override fun toString() = "Record($origin${relation?.let { ", $it" } ?: ""}${selectList?.let { ", $it" } ?: ""})"
     }
 
     /**
@@ -127,6 +130,38 @@ sealed interface RecordRelation {
     object QueryColumns : RecordRelation {
         override fun toString() = "QueryColumns"
     }
+}
+
+/**
+ * The select list a cursor row's fields follow, in order: one [items] entry per select item, named as Oracle names the
+ * field (a column's name, or the alias). A `*`, a `t.*` and an expression without an alias give an item without a name:
+ * the record may have fields this does not list. [complete] when every item has a name: the record has exactly those
+ * fields. Oracle rejects a record whose select list repeats a name (PLS-00402), while the cursor itself compiles.
+ */
+@ZpaExperimentalApi
+class RecordSelectList internal constructor(items: List<SelectListItem>) {
+    val items: List<SelectListItem> = java.util.List.copyOf(items)
+
+    val complete: Boolean get() = items.all { it.name != null }
+
+    override fun equals(other: Any?) = other is RecordSelectList && items == other.items
+
+    override fun hashCode() = items.hashCode()
+
+    override fun toString() = items.joinToString(", ", "[", "]") { it.name ?: "?" }
+}
+
+/**
+ * One item of a [RecordSelectList]: the field [name] Oracle gives it (an unquoted name in upper case, a quoted alias with
+ * its spelling), null when not known, and the [declaration] [FieldBinding.Field] gives for it.
+ */
+@ZpaExperimentalApi
+class SelectListItem internal constructor(val name: String?, val declaration: FieldDeclaration) {
+    override fun equals(other: Any?) = other is SelectListItem && name == other.name && declaration == other.declaration
+
+    override fun hashCode() = (name?.hashCode() ?: 0) * 31 + declaration.hashCode()
+
+    override fun toString() = "${name ?: "?"}=$declaration"
 }
 
 /** Where a record's type comes from. */

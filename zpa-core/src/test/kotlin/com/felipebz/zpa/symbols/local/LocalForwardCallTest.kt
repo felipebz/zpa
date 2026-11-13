@@ -337,6 +337,33 @@ class LocalForwardCallTest {
         assertThat(reached.filterIsInstance<String>()).noneMatch { it.contains("BEGIN") }
     }
 
+    @Test
+    fun callsThroughASynonymReachTheTargetInPlSqlAndInSql() {
+        val core = ProjectSnapshots.prepare(
+            listOf(ProjectSourceInput.ofText("core.sql", "create package core_a.pk_tax as\n  function rate(p number) return number;\nend;\n/\n")), false
+        )
+        val metadata = ProjectExternalMetadata.builder("fixture").completeSchema("APP_B").completePublicSynonyms()
+            .synonym(ProjectExternalSynonym.of("APP_B", "TAX", "CORE_A", "PK_TAX", null))
+            .synonym(ProjectExternalSynonym.of("PUBLIC", "RATES", "CORE_A", "PK_TAX", null)).build()
+        val source = "create procedure p_bill is\n  v number;\nbegin\n  v := tax.rate(1);\n  v := rates.rate(1);\n  select tax.rate(1) into v from dual;\nend;\n/\n"
+        val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(source)
+        val model = LocalSemanticModelBuilder.build(root, FileId("bill.sql"), source)
+        val references = LocalReferenceCollector.collect(root, model)
+        val facts = LocalCallCollector.collect(root)
+        val external = ProjectExternalContext.of(metadata, ProjectIdentifier.fromSource("APP_B"))
+        val calls = LocalForwardCalls(model, references, facts, core, external).analyze()
+        // Oracle runs CORE_A.PK_TAX.RATE for each call.
+        assertThat(calls.map(::render)).containsExactly(
+            "4: PROJECT tax.rate(BUILT_IN NUMERIC) -> RESOLVED number",
+            "5: PROJECT rates.rate(BUILT_IN NUMERIC) -> RESOLVED number",
+            "6: PROJECT tax.rate(BUILT_IN NUMERIC) -> RESOLVED number"
+        )
+        assertThat(calls.map { it.typed!!.structural.synonyms.single().name.identifier.lookupName }).containsExactly("TAX", "RATES", "TAX")
+        // Without the metadata the package is not found.
+        assertThat(LocalForwardCalls(model, references, facts, core).analyze().map { it.typed!!.structural.status })
+            .containsOnly(ProjectCallResolution.Status.NOT_FOUND_IN_PROJECT)
+    }
+
     /** Objects reachable through fields, stopping at library internals and at the project's API values. */
     private fun reachable(root: Any): List<Any> {
         val seen = Collections.newSetFromMap(IdentityHashMap<Any, Boolean>())

@@ -76,7 +76,7 @@ class PlSqlSquidSensorOracleTest {
     private val secret = "s3cr3t-Pa55"
     private val environment = mapOf("ZPA_ORACLE_PASSWORD" to secret)
 
-    private val metadata = ProjectExternalMetadata.builder("test fixture").completeSchema("HR").relation(
+    private val metadata = ProjectExternalMetadata.builder("test fixture").completeSchema("HR").completePublicSynonyms().relation(
         ProjectExternalRelation.of(
             "HR", "EMPLOYEES", true, listOf(
                 ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 6, 0)),
@@ -209,6 +209,8 @@ class PlSqlSquidSensorOracleTest {
 
         // One acquisition for the whole concurrent analysis; every check saw that metadata and one snapshot.
         assertThat(acquirer.calls).hasValue(1)
+        assertThat(acquirer.settings!!.request().publicSynonyms).isTrue
+        assertThat(acquirer.settings!!.request().publicSynonymTargets).isEmpty()
         assertThat(acquirer.settings.toString()).doesNotContain(secret).doesNotContain("db.internal")
         val external = ExternalTypeProbeCheck.contexts.single()
         assertThat(external.metadata).isSameAs(metadata)
@@ -278,6 +280,9 @@ class PlSqlSquidSensorOracleTest {
         assertThat(failure(oracle + (OracleMetadataSettings.DRIVER_PATH_KEY to "missing/ojdbc17.jar"))).contains("does not name a JAR file")
         assertThat(failure(oracle, env = emptyMap())).contains("'ZPA_ORACLE_PASSWORD' is not set")
         assertThat(failure(oracle + (OracleMetadataSettings.PASSWORD_ENV_KEY to "MY_DB_PASSWORD"))).contains("'MY_DB_PASSWORD' is not set")
+        assertThat(failure(oracle + (OracleMetadataSettings.PUBLIC_SYNONYMS_KEY to "yes")))
+            .contains("invalid sonar.zpa.oracle.publicSynonyms value 'yes': expected true or false")
+        assertThat(failure(mapOf(OracleMetadataSettings.PUBLIC_SYNONYMS_KEY to "false"))).contains("require sonar.zpa.oracle.url")
         for (url in listOf("jdbc:oracle:thin:scott/$secret@//db:1521/FREEPDB1", "jdbc:oracle:thin:@db?oracle.jdbc.password=$secret")) {
             val message = failure(oracle + (OracleMetadataSettings.URL_KEY to url))
             assertThat(message).contains("must not contain credentials").doesNotContain(secret)
@@ -294,6 +299,18 @@ class PlSqlSquidSensorOracleTest {
         assertThat(settings.password).isEqualTo("other")
         assertThat(settings.schemas).containsExactly("HR")
         assertThat(settings.relations).containsExactly("REF" to "COUNTRIES", "REF" to "CITIES")
+    }
+
+    @Test
+    fun publicSynonymsCanBeLeftOut() {
+        val acquirer = StubAcquirer()
+        sensor(oracle + (OracleMetadataSettings.PUBLIC_SYNONYMS_KEY to "false"), acquirer).execute(context("hr_api.pks" to hrApi))
+        assertThat(acquirer.settings!!.publicSynonyms).isFalse
+        assertThat(acquirer.settings!!.request().publicSynonyms).isFalse
+
+        val explicit = StubAcquirer()
+        sensor(oracle + (OracleMetadataSettings.PUBLIC_SYNONYMS_KEY to "TRUE"), explicit).execute(context("hr_api.pks" to hrApi))
+        assertThat(explicit.settings!!.request().publicSynonyms).isTrue
     }
 
     @Test

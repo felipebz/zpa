@@ -44,7 +44,10 @@ class OracleDictionaryDialectTest {
     @Test
     fun legacyDialectAvoidsTwelveCDictionaryColumns() {
         val d = OracleDictionaryDialect.LEGACY
-        val all = listOf(d.sessionSql, d.schemaRelationsSql, d.schemaColumnsSql, d.targetedRelationsSql(2), d.targetedColumnsSql(2))
+        val all = listOf(
+            d.sessionSql, d.schemaRelationsSql, d.schemaColumnsSql, d.targetedRelationsSql(2), d.targetedColumnsSql(2),
+            d.schemaObjectsSql, d.schemaSynonymsSql, d.publicSynonymsSql, d.targetedPublicSynonymsSql(2)
+        )
         assertThat(all).noneMatch { it.contains("CON_NAME", ignoreCase = true) || it.contains("user_generated", ignoreCase = true) }
         // Same four session columns, in the same order; the container is NULL.
         assertThat(d.sessionSql).isEqualTo(
@@ -61,9 +64,25 @@ class OracleDictionaryDialectTest {
         assertThat(d.targetedRelationsSql(3)).isEqualTo(OracleDictionaryDialect.CURRENT.targetedRelationsSql(3))
     }
 
+    @Test
+    fun objectAndSynonymQueriesBindNamesAndDoNotDiffer() {
+        val d = OracleDictionaryDialect.CURRENT
+        assertThat(d.schemaObjectsSql).isEqualTo(
+            "SELECT owner, object_name, object_type FROM all_objects WHERE owner = ? AND object_type IN " +
+                "('TABLE', 'MATERIALIZED VIEW', 'VIEW', 'SYNONYM', 'PACKAGE', 'TYPE', 'SEQUENCE', 'PROCEDURE', 'FUNCTION')"
+        )
+        assertThat(d.schemaSynonymsSql).isEqualTo(SYNONYM_LIST + "WHERE owner = ?")
+        assertThat(d.publicSynonymsSql).isEqualTo(SYNONYM_LIST + "WHERE owner = 'PUBLIC'")
+        assertThat(d.targetedPublicSynonymsSql(3)).isEqualTo(SYNONYM_LIST + "WHERE owner = 'PUBLIC' AND table_owner IN (?, ?, ?)")
+        val legacy = OracleDictionaryDialect.LEGACY
+        assertThat(listOf(legacy.schemaObjectsSql, legacy.schemaSynonymsSql, legacy.publicSynonymsSql, legacy.targetedPublicSynonymsSql(2)))
+            .isEqualTo(listOf(d.schemaObjectsSql, d.schemaSynonymsSql, d.publicSynonymsSql, d.targetedPublicSynonymsSql(2)))
+    }
+
     private companion object {
         const val COLUMN_LIST =
             "SELECT owner, table_name, column_name, column_id, data_type, data_type_owner, data_length, char_length, " +
                 "char_used, data_precision, data_scale FROM all_tab_cols "
+        const val SYNONYM_LIST = "SELECT owner, synonym_name, table_owner, table_name, db_link FROM all_synonyms "
     }
 }

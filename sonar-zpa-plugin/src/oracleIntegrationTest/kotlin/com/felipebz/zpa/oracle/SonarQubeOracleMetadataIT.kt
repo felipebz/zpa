@@ -12,7 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
+import org.junit.jupiter.api.condition.EnabledIf
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.sonarqube.ws.client.HttpConnector
 import org.sonarqube.ws.client.WsClientFactories
@@ -27,7 +27,7 @@ import java.nio.file.Files
  * driver from `sonar.zpa.oracle.driverPath`, and a check of a separate, test-only rules plugin (compiled against the
  * relocated API, as third-party rules are) resolves the types through the scanner lifecycle.
  */
-@EnabledIfEnvironmentVariable(named = "ZPA_ORACLE_JDBC_URL", matches = ".+")
+@EnabledIf("com.felipebz.zpa.oracle.OracleFixture#available")
 class SonarQubeOracleMetadataIT {
 
     private fun scanner(projectKey: String, password: String, vararg properties: Pair<String, String>): SonarScanner =
@@ -83,7 +83,9 @@ class SonarQubeOracleMetadataIT {
                 "hr_api.v_salary" to "RESOLVED NUMBER(10,2)",
                 "hr_api.v_name" to "RESOLVED VARCHAR2(40 CHAR)",
                 "hr_api.r_employee" to "RESOLVED (ID NUMBER(6,0), NAME VARCHAR2(40 CHAR), CODE CHAR(3 BYTE), SALARY NUMBER(10,2), HIRED DATE, NOTE CLOB)",
-                "gaps.v_synonym" to "RELATION_NOT_FOUND",
+                "gaps.v_synonym" to "RESOLVED NUMBER(10,2)",
+                // Every public synonym was read and none takes the qualifier, so it names the reference schema,
+                // whose CITIES the metadata does not cover.
                 "gaps.v_city" to "INCOMPLETE",
                 "otherapp.billing.v_salary" to "INCOMPLETE"
             )

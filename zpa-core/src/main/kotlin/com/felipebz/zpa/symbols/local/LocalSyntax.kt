@@ -16,6 +16,8 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.SelectItem
+import com.felipebz.zpa.project.SelectList
 import com.felipebz.zpa.project.SourceRange
 import com.felipebz.zpa.project.extraction.TokenStream
 import com.felipebz.zpa.project.extraction.TypeReferences
@@ -28,6 +30,20 @@ internal object LocalSyntax {
         while (current.parentOrNull?.type == PlSqlGrammar.METHOD_CALL && current.parent.firstChild === current) current = current.parent
         val parent = current.parentOrNull ?: return false
         return parent.type == PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild !== current
+    }
+
+    /**
+     * The qualifier and name of a Forms host variable written `:qualifier.name` (`:orders.order_id`, `:parameter.p_mode`,
+     * `:global.user_id`, `:system.cursor_record`); null for any other node.
+     */
+    fun hostVariable(node: AstNode): Pair<OracleIdentifier, OracleIdentifier>? {
+        if (node.type !== PlSqlGrammar.MEMBER_EXPRESSION || node.children.size != 3) return null
+        val (variable, dot, name) = node.children
+        val host = variable.takeIf { it.type === PlSqlGrammar.VARIABLE_NAME && it.children.size == 1 }?.firstChild
+        if (host?.type !== PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE || dot.type !== PlSqlPunctuator.DOT || name.type !== PlSqlGrammar.IDENTIFIER_NAME) return null
+        val qualifier = host.children.takeIf { it.size == 2 && it[0].type === PlSqlPunctuator.COLON }?.get(1)
+            ?.takeIf { it.type === PlSqlGrammar.IDENTIFIER_NAME } ?: return null
+        return identifier(qualifier) to identifier(name)
     }
 
     /** The iteration control of a FOR loop [iterator] with one implicitly typed index and one control, if recognized. */
@@ -43,25 +59,43 @@ internal object LocalSyntax {
             expression.children.all { it.type === DmlGrammar.SELECT_EXPRESSION || it.type === PlSqlPunctuator.LPARENTHESIS || it.type === PlSqlPunctuator.RPARENTHESIS }
         if (query) {
             val select = if (expression.type === DmlGrammar.SELECT_EXPRESSION) expression else expression.getFirstChild(DmlGrammar.SELECT_EXPRESSION)
-            return LocalLoopControl(LocalLoopControl.Form.QUERY, null, null, queryRow(select))
+            return LocalLoopControl(LocalLoopControl.Form.QUERY, null, null, queryRow(fileId, select))
         }
-        val name = (if (expression.type === PlSqlGrammar.METHOD_CALL) expression.firstChild else expression)
-            .takeIf { it.type === PlSqlGrammar.VARIABLE_NAME }?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
-        return LocalLoopControl(LocalLoopControl.Form.NAME, identifier(name), range(fileId, name))
+        val named = if (expression.type === PlSqlGrammar.METHOD_CALL) expression.firstChild else expression
+        val first = when (named.type) {
+            PlSqlGrammar.VARIABLE_NAME -> named
+            // `pk.c`: names and dots only, no attribute and no database link.
+            PlSqlGrammar.MEMBER_EXPRESSION -> named.firstChild.takeIf { first ->
+                first.type === PlSqlGrammar.VARIABLE_NAME && named.children.drop(1).all { it.type === PlSqlPunctuator.DOT || it.type === PlSqlGrammar.IDENTIFIER_NAME }
+            }
+            else -> null
+        }
+        val name = first?.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: return null
+        val segments = if (named === first) emptyList()
+        else named.getChildren(PlSqlGrammar.IDENTIFIER_NAME).map { LocalSegment(identifier(it), false, range(fileId, it)) }
+        return LocalLoopControl(LocalLoopControl.Form.NAME, identifier(name), range(fileId, name), segments = segments)
     }
 
     /**
-     * The row of the query [select]: [LocalQueryRow.OwnColumns] when its first query block selects no `*`;
-     * [LocalQueryRow.AllOf] for a single query block `SELECT *` or `SELECT x.*` from one plain relation name (`x` its
-     * alias or name); null otherwise.
+     * The row of the query [select]: [LocalQueryRow.AllOf] for a single query block `SELECT *` or `SELECT x.*` from one
+     * plain relation name (`x` its alias or name); otherwise the names of its first query block's select list, which
+     * name the row's fields also for a compound query: [LocalQueryRow.OwnColumns] without a `*`, [LocalQueryRow.Mixed]
+     * with one. Null without a select list.
      */
-    fun queryRow(select: AstNode): LocalQueryRow? {
+    fun queryRow(fileId: FileId, select: AstNode): LocalQueryRow? {
         val block = select.getFirstChildOrNull(DmlGrammar.QUERY_BLOCK) ?: return null
         val columns = block.getChildren(DmlGrammar.SELECT_COLUMN)
-        fun star(column: AstNode) = column.hasDirectChildren(PlSqlPunctuator.MULTIPLICATION) ||
-            column.firstChild.let { it.type === PlSqlGrammar.OBJECT_REFERENCE && it.lastChild.type === PlSqlPunctuator.MULTIPLICATION }
-        if (columns.isNotEmpty() && columns.none(::star)) return LocalQueryRow.OwnColumns
-        val column = columns.singleOrNull()?.takeIf(::star) ?: return null
+        if (columns.isEmpty()) return null
+        val selectList = SelectList(columns.map { selectItem(fileId, it) })
+        if (columns.none(::isStar)) return LocalQueryRow.OwnColumns(selectList)
+        return allOf(select, block, columns) ?: LocalQueryRow.Mixed(selectList)
+    }
+
+    private fun isStar(column: AstNode) = column.hasDirectChildren(PlSqlPunctuator.MULTIPLICATION) ||
+        column.firstChild.let { it.type === PlSqlGrammar.OBJECT_REFERENCE && it.lastChild.type === PlSqlPunctuator.MULTIPLICATION }
+
+    private fun allOf(select: AstNode, block: AstNode, columns: List<AstNode>): LocalQueryRow.AllOf? {
+        val column = columns.singleOrNull()?.takeIf(::isStar) ?: return null
         if (select.getChildren(DmlGrammar.QUERY_BLOCK).size != 1 || select.children.any { it.type !== DmlGrammar.QUERY_BLOCK && it.type !== DmlGrammar.ORDER_BY_CLAUSE }) return null
         val sources =
             block.getFirstChildOrNull(DmlGrammar.FROM_CLAUSE)?.getChildren(DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE)
@@ -79,6 +113,26 @@ internal object LocalSyntax {
             if (identifier(prefix) != (alias?.let(::identifier) ?: name.last)) return null
         }
         return LocalQueryRow.AllOf(name)
+    }
+
+    /**
+     * The field name Oracle gives a select item: its alias (`AS` optional, a quoted one keeps its spelling), else the
+     * last name of a column written as `name(.name)*`. A `*`, a `t.*` and any other expression without an alias give
+     * no name: Oracle names such an expression by its text, which is not reproduced here.
+     */
+    private fun selectItem(fileId: FileId, column: AstNode): SelectItem {
+        val alias = column.children.drop(1).lastOrNull { it.type === PlSqlGrammar.IDENTIFIER_NAME || it.type === PlSqlKeyword.BEGIN || it.type === PlSqlKeyword.END }
+        if (alias != null) return SelectItem(identifier(alias), range(fileId, alias))
+        val expression = column.firstChild
+        val name = when {
+            isStar(column) -> null
+            expression.type === PlSqlGrammar.VARIABLE_NAME -> expression
+            expression.type === PlSqlGrammar.MEMBER_EXPRESSION && expression.firstChild.type === PlSqlGrammar.VARIABLE_NAME &&
+                expression.children.drop(1).all { it.type === PlSqlPunctuator.DOT || it.type === PlSqlGrammar.IDENTIFIER_NAME } ->
+                expression.lastChild
+            else -> null
+        }
+        return if (name == null) SelectItem(null, range(fileId, column)) else SelectItem(identifier(name), range(fileId, name))
     }
 
     /** The written datatype [datatype], looked up from [lookupRegion]. */

@@ -13,20 +13,35 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.project.ProjectTypeShape
 import com.felipebz.zpa.api.semantics.*
+import com.felipebz.zpa.metadata.FormsHostVariables
+import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.callArguments
 import java.util.*
+import com.felipebz.zpa.api.project.ProjectCollectionKind as PublicCollectionKind
 
 /**
  * The category of the type of a named value written in a file, from the file's reference outcomes and the type walk
  * over the scan's project. Computed per name when asked; it holds the project through [walk], so it lives on the visitor
  * context, never in the detached facts.
  */
-internal class LocalValueCategories(private val facts: LocalSemanticFacts, private val walk: LocalTypeWalk) {
+internal class LocalValueCategories(
+    private val facts: LocalSemanticFacts,
+    private val walk: LocalTypeWalk,
+    /** The Oracle Forms metadata of the scan, which types host variables; null without one. */
+    private val forms: FormsMetadata? = null
+) {
     private val model = facts.model
     private val referencesByStart = referenceStarts(facts.references) { it.lastSegmentContext in CONTEXTS }
 
-    fun category(name: AstNode): ValueCategory = valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
+    fun category(name: AstNode): ValueCategory = hostVariable(name) ?: valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
+
+    /** A Forms host variable `:qualifier.name` whose type the [forms] metadata gives; null for any other node, or no type. */
+    private fun hostVariable(name: AstNode): ValueCategory? {
+        val (qualifier, member) = LocalSyntax.hostVariable(name) ?: return null
+        val type = forms?.let { FormsHostVariables.type(it, qualifier.lookupName, member.lookupName) } ?: return null
+        return ProjectArgumentType.builtIn(type).familyOrNull?.let { ValueCategory.Scalar(scalarFamily(it)) }
+    }
 
     /**
      * [category] of a member expression or a member item of a receiver whose last name is one field or attribute of a
@@ -389,25 +404,16 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
 
     /** A local record, collection or ref cursor type, a cursor's row, a query loop's record, or `SELF`. */
     private fun composite(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory {
+        // The row of a package cursor's query: its relation is not known.
+        evidence.selectList?.let { return ValueCategory.Record(RecordOrigin.ROWTYPE, null, recordSelectList(it, model.fileId)) }
         val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return ValueCategory.ObjectInstance
         return when (last.kind) {
             LocalDeclarationKind.RECORD_TYPE -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
-            LocalDeclarationKind.CURSOR -> {
-                // A loop over a cursor with a RETURN type has the RETURN type's row.
-                val loop = evidence.followed.first().let(model::declaration).kind == LocalDeclarationKind.LOOP_INDEX
-                (last.details as? LocalCursor)?.returnType?.takeIf { loop }?.let { of(region, walk.written(it)) } ?: queryRow(last)
-            }
-            LocalDeclarationKind.LOOP_INDEX -> loopRow((last.details as? LocalLoopIndex)?.control)
+            // A loop over a cursor with a RETURN type has the RETURN type's row, which the walk follows.
+            LocalDeclarationKind.CURSOR -> row((last.details as? LocalCursor)?.row)
+            LocalDeclarationKind.LOOP_INDEX -> row((last.details as? LocalLoopIndex)?.control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row)
             LocalDeclarationKind.REF_CURSOR_TYPE -> ValueCategory.CursorVariable
-            LocalDeclarationKind.COLLECTION_TYPE -> {
-                val kind = when ((last.details as? LocalCollectionType)?.form) {
-                    LocalCollectionForm.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY
-                    LocalCollectionForm.NESTED_TABLE -> CollectionKind.NESTED_TABLE
-                    LocalCollectionForm.VARRAY -> CollectionKind.VARRAY
-                    null -> null
-                }
-                ValueCategory.Collection(kind, of(region, walk.written(last.type)))
-            }
+            LocalDeclarationKind.COLLECTION_TYPE -> ValueCategory.Collection(collectionKind(last), of(region, walk.written(last.type)))
             else -> unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
         }
     }
@@ -422,8 +428,9 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         return when (source.status) {
             ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(region, source.declaration.orElse(null) as? ProjectShapedTypeView, seen)
             ProjectTypeDescription.Status.BUILT_IN -> ValueCategory.Scalar(DatatypeFamilies.ofDescription(description, null, null)?.let(::scalarFamily))
+            // A field of a `%ROWTYPE` value stops at the row's anchor: the field, not the row, is meant.
             ProjectTypeDescription.Status.ANCHORED_REFERENCE ->
-                if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE) rowtype(region, description)
+                if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE && source.fieldPath.isEmpty()) rowtype(region, description)
                 else unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
             else -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
         }
@@ -439,30 +446,25 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
     }
 
     /**
-     * `c%ROWTYPE` of the local cursor [cursor]: the row of its query, a RETURN type notwithstanding. Its fields are the
-     * query's select list (`select b, a` gives the fields `b, a`), which a fetch fills by position.
+     * The row of a query: of a local cursor (its `%ROWTYPE`, the query's row a RETURN type notwithstanding) or of a query
+     * loop. Its fields are the query's select list (`select b, a` gives the fields `b, a`), which a fetch fills by
+     * position.
      */
-    private fun queryRow(cursor: LocalDeclaration) = ValueCategory.Record(RecordOrigin.ROWTYPE, relation((cursor.details as? LocalCursor)?.row))
-
-    private fun relation(row: LocalQueryRow?): RecordRelation? = when (row) {
-        is LocalQueryRow.AllOf -> RecordRelation.Named(ProjectQualifiedName.wrap(row.relation))
-        LocalQueryRow.OwnColumns -> RecordRelation.QueryColumns
-        null -> null
+    private fun row(row: LocalQueryRow?) = when (row) {
+        is LocalQueryRow.AllOf -> ValueCategory.Record(RecordOrigin.ROWTYPE, RecordRelation.Named(ProjectQualifiedName.wrap(row.relation)))
+        is LocalQueryRow.OwnColumns -> ValueCategory.Record(RecordOrigin.ROWTYPE, RecordRelation.QueryColumns, recordSelectList(row.selectList, model.fileId))
+        is LocalQueryRow.Mixed -> ValueCategory.Record(RecordOrigin.ROWTYPE, null, recordSelectList(row.selectList, model.fileId))
+        null -> ValueCategory.Record(RecordOrigin.ROWTYPE)
     }
-
-    /** The record of a query loop; the walk follows a cursor loop's index to its cursor. */
-    private fun loopRow(control: LocalLoopControl?) =
-        ValueCategory.Record(RecordOrigin.ROWTYPE, relation(control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row))
 
     private fun shaped(region: LocalRegionId, type: ProjectShapedTypeView?, seen: Set<ProjectDeclarationId>): ValueCategory = when (type?.shape?.orElse(null)) {
         ProjectTypeShape.RECORD -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
         ProjectTypeShape.OBJECT -> ValueCategory.ObjectInstance
         ProjectTypeShape.REF_CURSOR -> ValueCategory.CursorVariable
-        // The project keeps no collection kind; its element is classified like any type it describes.
         ProjectTypeShape.COLLECTION ->
             // A collection whose element leads back to it (Oracle rejects it, the index may still hold it) is unknown.
             if (type.id in seen) unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-            else ValueCategory.Collection(null, walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
+            else ValueCategory.Collection(type.collectionKind.orElse(null)?.let(::collectionKind), walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
                 ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
         null -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
     }
@@ -537,21 +539,35 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
         return (projectTypeName(evidence.description?.source) as? LocalTypeName.Project)?.declaration
     }
 
+    private val declaredTypes by lazy(LazyThreadSafetyMode.NONE) { LocalDeclaredTypes(facts, walk, this) }
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.declaredType]. */
+    fun declaredType(datatype: AstNode, fields: LocalFields?): DeclaredType = declaredTypes.describe(datatype, fields)
+
+    private val columnBindings by lazy(LazyThreadSafetyMode.NONE) { LocalColumnBindings(model, walk, facts.names::binding) }
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.columnBinding]. */
+    fun columnBinding(name: AstNode): ColumnBinding = columnBindings.binding(name)
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.projectTypeReference]. */
+    fun projectTypeReference(datatype: AstNode): ProjectTypeReference? =
+        datatype.takeIf { it.type === PlSqlGrammar.DATATYPE }?.let { walk.retainedReference(it.token.line, it.token.column) }
+
     /** The schema the unit holding [node] compiles in (see [LocalTypeWalk.compilationSchema]); null when unknown. */
     fun compilationSchema(node: AstNode): ProjectIdentifier? =
         walk.compilationSchema(LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, node)))
 
     /** A written type, the use it records and the walk's evidence of it. */
-    private class WrittenType(val use: LocalTypeUse, val evidence: LocalTypeEvidence, val external: Boolean = false)
+    internal class WrittenType(val use: LocalTypeUse, val evidence: LocalTypeEvidence, val external: Boolean = false)
 
     /** `SYS_REFCURSOR` that no local declaration takes: the predefined weak cursor type. */
-    private fun isRefCursorName(written: WrittenType): Boolean {
+    fun isRefCursorName(written: WrittenType): Boolean {
         val name = (written.use.typeRef as? NamedTypeRef)?.name ?: return false
         return name.segments.size == 1 && name.last.lookupName == "SYS_REFCURSOR" && written.evidence.followed.isEmpty() &&
             (written.evidence.terminal == LocalTypeEvidence.Terminal.PROJECT || written.evidence.terminal == LocalTypeEvidence.Terminal.BUILT_IN)
     }
 
-    private fun written(datatype: AstNode): WrittenType? {
+    fun written(datatype: AstNode): WrittenType? {
         if (datatype.type !== PlSqlGrammar.DATATYPE) return null
         typeUses[datatype.token.line to datatype.token.column]?.let { return WrittenType(it, walk.written(it)) }
         val position = datatype.parentOrNull?.type ?: return null
@@ -601,7 +617,7 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
 
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
-    private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
+    fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
         val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
         outcome.regionReasons.forEach {
             reasons += it.usageUncertainty()
@@ -636,4 +652,24 @@ internal class LocalValueCategories(private val facts: LocalSemanticFacts, priva
             LocalReferenceContext.CALL_EXPRESSION, LocalReferenceContext.SQL_CALL
         )
     }
+}
+
+/** [selectList] as the public record answers it, its items placed in [fileId] or in the project file that declares them. */
+internal fun recordSelectList(selectList: SelectList, fileId: FileId): RecordSelectList =
+    RecordSelectList(selectList.items.mapIndexed { ordinal, item -> SelectListItem(item.name?.lookupName, selectItemDeclaration(item, ordinal, fileId)) })
+
+internal fun selectItemDeclaration(item: SelectItem, ordinal: Int, fileId: FileId): FieldDeclaration =
+    FieldDeclaration(FieldDeclarationKind.SELECT_ITEM, ordinal, item.range.startLine, item.range.startColumn, item.range.fileId.takeUnless { it == fileId }?.value)
+
+internal fun collectionKind(collection: LocalDeclaration): CollectionKind? = when ((collection.details as? LocalCollectionType)?.form) {
+    LocalCollectionForm.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY
+    LocalCollectionForm.NESTED_TABLE -> CollectionKind.NESTED_TABLE
+    LocalCollectionForm.VARRAY -> CollectionKind.VARRAY
+    null -> null
+}
+
+private fun collectionKind(kind: PublicCollectionKind): CollectionKind = when (kind) {
+    PublicCollectionKind.ASSOCIATIVE_ARRAY -> CollectionKind.ASSOCIATIVE_ARRAY
+    PublicCollectionKind.NESTED_TABLE -> CollectionKind.NESTED_TABLE
+    PublicCollectionKind.VARRAY -> CollectionKind.VARRAY
 }

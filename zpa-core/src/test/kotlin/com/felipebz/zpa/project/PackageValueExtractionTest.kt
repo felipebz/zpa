@@ -392,7 +392,7 @@ class PackageValueExtractionTest {
         // Only value-like model types; FileId is an inline class and is stored as its String.
         assertThat(PackageValueDeclaration::class.java.declaredFields.map { it.type.name }).containsExactlyInAnyOrder(
             "com.felipebz.zpa.project.QualifiedName", "com.felipebz.zpa.project.OracleIdentifier", "boolean",
-            "com.felipebz.zpa.project.TypeRef", "java.lang.String", "com.felipebz.zpa.project.SourceRange",
+            "com.felipebz.zpa.project.TypeRef", "java.lang.String", "com.felipebz.zpa.project.SourceRange", "java.lang.Long",
             "com.felipebz.zpa.project.ProjectDeclarationKind", "com.felipebz.zpa.project.DeclarationRole"
         )
         assertThat(fact.toString()).doesNotContain("f(1, 2)")

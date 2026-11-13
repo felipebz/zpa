@@ -232,11 +232,11 @@ internal class LocalFields(
     }
 
     /** The fields of the record type named at [typeName], as [binding] answers them; null when it names none. */
-    fun recordFields(typeName: AstNode): List<DeclaredField>? {
-        val type = recordTypes[typeName.token.line to typeName.token.column] ?: return null
-        return (type.details as LocalRecordType).fields.mapIndexed { ordinal, field ->
-            DeclaredField(field.name.originalSpelling, fieldDeclaration(type.id, ordinal))
-        }
+    fun recordFields(typeName: AstNode): List<DeclaredField>? = recordTypes[typeName.token.line to typeName.token.column]?.let { recordFields(it.id) }
+
+    fun recordFields(type: LocalDeclarationId): List<DeclaredField>? {
+        val record = model.declaration(type).details as? LocalRecordType ?: return null
+        return record.fields.mapIndexed { ordinal, field -> DeclaredField(field.name.originalSpelling, fieldDeclaration(type, ordinal)) }
     }
 
     /** An attribute of an object type of this file, or null for another declaration. */
@@ -255,29 +255,46 @@ internal class LocalFields(
     }
 
     /**
-     * The member [segment] names of the value the local type walk reaches before it. Of a record type of this file: its
-     * field, wherever the walk reached the value (after an element or a call result, in SQL or not); a name the record
-     * does not have is left to the caller. Of a local collection type: not a field. Of a type the project declares: a
-     * field or attribute, not a field for a method or a collection method, and outside the file for a name the type
-     * does not have once (or a type whose members are not known). Text this file may hold differently leaves the
-     * value, and so the member, undecided. Null when the walk reaches no such value: an anchor, a value it does not
-     * model.
+     * The member [segment] names of the value the local type walk reaches before it. Of a cursor row whose select list
+     * the analysis read: the item of that name. Of a record type of this file: its field, wherever the walk reached the
+     * value (after an element or a call result, in SQL or not); a name the record does not have is left to the caller.
+     * Of a local collection type: not a field. Of a type the project declares: a field or attribute, not a field for a
+     * method or a collection method, and outside the file for a name the type does not have once (or a type whose
+     * members are not known). Text this file may hold differently leaves the value, and so the member, undecided. Null
+     * when the walk reaches no such value: an anchor, a value it does not model.
      */
     private fun project(segment: AstNode): FieldBinding? {
         val walk = typeWalk ?: return null
         val (_, base) = categories?.memberBase(segment) ?: return null
         // The value is undecided by text this file may hold differently (a `$IF`, a substitution): so is its member.
         base.incomplete?.takeIf { base.terminal == LocalTypeEvidence.Terminal.UNKNOWN && it.regionReasons.isNotEmpty() }?.let { return FieldBinding.Unknown(reasons(it)) }
+        val name = LocalSyntax.identifier(segment.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: segment)
+        walk.selectListOf(base)?.let { return selectItem(it, name) }
         // A value of a local collection type: its members are methods, or names it does not have (as the local steps say).
         val local = base.followed.lastOrNull()?.takeIf { base.terminal == LocalTypeEvidence.Terminal.COMPOSITE }?.let(model::declaration)
         if (local?.details is LocalCollectionType) return NOT_A_FIELD
         // A value of a record type of this file, wherever the walk reached it (an element, a call result, in SQL or not).
         recordOf(base)?.let { record -> return fieldOrdinal(record, segment)?.let { FieldBinding.Field(fieldDeclaration(record, it)) } }
-        val name = LocalSyntax.identifier(segment.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME) ?: segment)
         walk.projectMember(base, name)?.let { return member(it) }
         // A value of a type the project names but does not declare (not found, a predefined type): no field of the file.
         val description = base.description ?: return null
         return OUTSIDE_FILE.takeIf { base.terminal == LocalTypeEvidence.Terminal.PROJECT && !description.anchor.isPresent }
+    }
+
+    /**
+     * The item named [name] of a cursor row's select list. Oracle rejects the record of a select list that repeats a
+     * name (PLS-00402), whatever field is named. A name the list does not have is not a field when every item has a
+     * known name, and undecided when a `*` or an expression without an alias may give it.
+     */
+    private fun selectItem(list: SelectList, name: OracleIdentifier): FieldBinding {
+        val names = list.items.mapNotNull { it.name }
+        if (names.toSet().size != names.size) return NOT_A_FIELD
+        val ordinal = list.positionsOf(name).singleOrNull()
+        return when {
+            ordinal != null -> FieldBinding.Field(selectItemDeclaration(list.items[ordinal], ordinal, model.fileId))
+            list.complete -> NOT_A_FIELD
+            else -> UNSUPPORTED
+        }
     }
 
     private fun member(resolution: ProjectRecordMemberResolution): FieldBinding = when (resolution) {

@@ -8,6 +8,7 @@ package com.felipebz.zpa.api.project
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.*
 import java.util.*
+import com.felipebz.zpa.project.ProjectCollectionKind as FactCollectionKind
 import com.felipebz.zpa.project.ProjectDeclarationKind as FactKind
 import com.felipebz.zpa.project.ProjectTypeShape as FactShape
 
@@ -86,6 +87,7 @@ internal object ProjectSnapshotDeclarations {
         BackedDeclarationView(id, fact), ProjectStandaloneTypeView {
         override val shape: Optional<ProjectTypeShape> = fact.shape.toPublicShape()
         override val elementType: Optional<ProjectTypeReference> = fact.elementType.toPublicReference()
+        override val collectionKind: Optional<ProjectCollectionKind> = fact.collectionKind.toPublicKind()
         override val attributes: List<ProjectRecordFieldView> =
             immutableList(fact.attributes.map { BackedRecordFieldView(it) })
         override val attributesComplete: Boolean = fact.attributesComplete && !fact.conditional
@@ -95,6 +97,7 @@ internal object ProjectSnapshotDeclarations {
         BackedDeclarationView(id, typeFact), ProjectPackageTypeView {
         override val shape: Optional<ProjectTypeShape> = typeFact.shape.toPublicShape()
         override val elementType: Optional<ProjectTypeReference> = typeFact.elementType.toPublicReference()
+        override val collectionKind: Optional<ProjectCollectionKind> = typeFact.collectionKind.toPublicKind()
         override val owner: ProjectQualifiedName get() = ProjectQualifiedName.wrap(typeFact.owner)
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(typeFact.name)
         override val recordFields: List<ProjectRecordFieldView> =
@@ -144,6 +147,14 @@ internal object ProjectSnapshotDeclarations {
         override val localName: ProjectIdentifier get() = ProjectIdentifier.wrap(cursorFact.name)
         override val parameters: List<ProjectParameterView> = cursorFact.parameters.toParameterViews()
         override val returnType: Optional<ProjectTypeReference> = cursorFact.returnType.toPublicReference()
+        override val selectList: Optional<List<ProjectSelectItemView>> = Optional.ofNullable(cursorFact.selectList).map { list ->
+            immutableList(list.items.mapIndexed { ordinal, item -> BackedSelectItemView(ordinal, item) })
+        }
+    }
+
+    private class BackedSelectItemView(override val ordinal: Int, private val item: SelectItem) : ProjectSelectItemView {
+        override val name: Optional<ProjectIdentifier> get() = Optional.ofNullable(item.name).map { ProjectIdentifier.wrap(it) }
+        override val sourceRange: ProjectSourceRange get() = item.range.toPublic()
     }
 
     /** Standalone callables are never package members: no `packageOwner`, no schema inference. */
@@ -188,6 +199,15 @@ internal object ProjectSnapshotDeclarations {
 
     private fun TypeRef?.toPublicReference(): Optional<ProjectTypeReference> =
         Optional.ofNullable(this?.let { ProjectTypeReference.from(it) })
+
+    private fun FactCollectionKind?.toPublicKind(): Optional<ProjectCollectionKind> = Optional.ofNullable(
+        when (this) {
+            null -> null
+            FactCollectionKind.ASSOCIATIVE_ARRAY -> ProjectCollectionKind.ASSOCIATIVE_ARRAY
+            FactCollectionKind.NESTED_TABLE -> ProjectCollectionKind.NESTED_TABLE
+            FactCollectionKind.VARRAY -> ProjectCollectionKind.VARRAY
+        }
+    )
 
     private fun FactShape?.toPublicShape(): Optional<ProjectTypeShape> = Optional.ofNullable(
         when (this) {

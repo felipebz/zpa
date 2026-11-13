@@ -5,6 +5,7 @@
 
 package com.felipebz.zpa.api.project
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.QualifiedName
 
 /**
@@ -99,6 +100,13 @@ internal enum class OverloadRank(val group: Group) {
             return if (word == "TIMESTAMP" || word == "INTERVAL") null else names[word]
         }
 
+        /**
+         * The rank of a data dictionary `DATA_TYPE` with its parenthesized groups removed, as [words]: the dictionary
+         * writes `TIMESTAMP(6)` for a timestamp without time zone, so a lone TIMESTAMP is that type there.
+         */
+        fun ofDictionaryText(words: List<String>): OverloadRank? =
+            if (words.size == 1 && words[0] == "TIMESTAMP") phrases["TIMESTAMP"] else ofText(words)
+
         /** Within a group, the formals a value of [actual] prefers, best first; ties share a position. */
         private fun preference(actual: OverloadRank): List<Set<OverloadRank>> = when (actual) {
             PLS_INTEGER -> listOf(setOf(PLS_INTEGER), setOf(NUMBER), setOf(BINARY_FLOAT), setOf(BINARY_DOUBLE))
@@ -157,4 +165,17 @@ internal enum class CompositeKind {
 
     /** A type created with CREATE TYPE, or a synonym of one. */
     SCHEMA_OBJECT
+}
+
+/**
+ * A formal of a declared record or collection type accepts only a value of that same declared type: another declared
+ * type with the same fields or element is rejected (PLS-00306). A `%ROWTYPE`, which Oracle compares field by field, an
+ * object type and a ref cursor have none.
+ */
+internal sealed interface DeclaredCompositeType {
+    @OptIn(ZpaExperimentalApi::class)
+    data class Project(val id: ProjectDeclarationId) : DeclaredCompositeType
+
+    /** A type the project does not hold (in a block, a subprogram, a body without index fact): distinct from every project type. */
+    data class Local(val fileId: String, val ordinal: Int) : DeclaredCompositeType
 }

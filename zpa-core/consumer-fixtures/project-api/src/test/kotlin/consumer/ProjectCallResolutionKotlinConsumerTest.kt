@@ -30,6 +30,7 @@ class ProjectCallResolutionKotlinConsumerTest {
         ProjectCallResolution.Status.INCOMPLETE_INDEX -> "incomplete"
         ProjectCallResolution.Status.INVALID_NOTATION -> "invalid notation"
         ProjectCallResolution.Status.NOT_PREPARED -> "not prepared"
+        ProjectCallResolution.Status.SYNONYM_TARGET_NOT_IN_PROJECT -> "synonym target not in project"
     }
 
     private fun label(applicability: ProjectCallCandidate.Applicability): String = when (applicability) {

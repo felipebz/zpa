@@ -25,6 +25,7 @@ class ProjectCallDiscoveryJavaConsumerTest {
             case PARTIAL_DECLARATIONS -> "callable headers may be missing";
             case INCOMPLETE_INDEX -> "some sources failed";
             case NOT_PREPARED -> "no project";
+            case SYNONYM_TARGET_NOT_IN_PROJECT -> "synonym for an object outside the sources";
         };
     }
 

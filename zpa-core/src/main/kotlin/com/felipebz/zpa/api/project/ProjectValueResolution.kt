@@ -25,7 +25,8 @@ class ProjectValueResolution private constructor(
     packageOwner: ProjectQualifiedName?,
     value: ProjectPackageValueView?,
     candidates: List<ProjectDeclarationView>,
-    failures: List<ProjectPreparationFailure>
+    failures: List<ProjectPreparationFailure>,
+    synonyms: List<ProjectExternalSynonym> = emptyList()
 ) {
     enum class Status {
         /** Exactly one known declaration has the name and it is a package value. */
@@ -56,6 +57,13 @@ class ProjectValueResolution private constructor(
     /** Runtime-unmodifiable preparation failures; nonempty only for [Status.INCOMPLETE_INDEX]. */
     val failures: List<ProjectPreparationFailure> = immutableList(failures)
 
+    /**
+     * The synonyms the qualifier of [name] was read through, in order, when the snapshot follows synonyms
+     * ([ProjectSnapshot.preferring] with metadata); the lookup was made for their target. A synonym target the project
+     * does not hold leaves the status [Status.NOT_FOUND_IN_PROJECT] with the synonyms listed. Runtime-unmodifiable.
+     */
+    val synonyms: List<ProjectExternalSynonym> = immutableList(synonyms)
+
     init {
         val values = candidates.count { it is ProjectPackageValueView }
         when (status) {
@@ -81,14 +89,15 @@ class ProjectValueResolution private constructor(
             name: ProjectQualifiedName,
             packageOwner: ProjectQualifiedName?,
             candidates: List<ProjectDeclarationView>,
-            failures: List<ProjectPreparationFailure>
+            failures: List<ProjectPreparationFailure>,
+            synonyms: List<ProjectExternalSynonym> = emptyList()
         ): ProjectValueResolution = when {
-            failures.isNotEmpty() -> ProjectValueResolution(Status.INCOMPLETE_INDEX, name, packageOwner, null, candidates, failures)
+            failures.isNotEmpty() -> ProjectValueResolution(Status.INCOMPLETE_INDEX, name, packageOwner, null, candidates, failures, synonyms)
             candidates.none { it is ProjectPackageValueView } ->
-                ProjectValueResolution(Status.NOT_FOUND_IN_PROJECT, name, packageOwner, null, candidates, failures)
+                ProjectValueResolution(Status.NOT_FOUND_IN_PROJECT, name, packageOwner, null, candidates, failures, synonyms)
             candidates.size == 1 ->
-                ProjectValueResolution(Status.RESOLVED, name, packageOwner, candidates.single() as ProjectPackageValueView, candidates, failures)
-            else -> ProjectValueResolution(Status.AMBIGUOUS, name, packageOwner, null, candidates, failures)
+                ProjectValueResolution(Status.RESOLVED, name, packageOwner, candidates.single() as ProjectPackageValueView, candidates, failures, synonyms)
+            else -> ProjectValueResolution(Status.AMBIGUOUS, name, packageOwner, null, candidates, failures, synonyms)
         }
 
         @JvmSynthetic

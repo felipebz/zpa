@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //
 
+@file:OptIn(ZpaExperimentalApi::class)
+
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.flr.api.GenericTokenType
@@ -10,6 +12,8 @@ import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.semantics.LengthSemantics
 import com.felipebz.zpa.project.*
 
 /** Reserved words retain their syntactic distinction from quoted identifiers in datatype headers. */
@@ -113,7 +117,7 @@ internal class DatatypeShape(private val stream: TokenStream) {
         ) index++
         index = when {
             stream.tokens.getOrNull(index)?.type === PlSqlTokenType.INTEGER_LITERAL || stream.isPunctuator(index, PlSqlPunctuator.MULTIPLICATION) -> index + 1
-            index <= part.last && stream.isName(stream.tokens[index]) -> index + 1
+            index <= part.last && stream.isName(stream.tokens[index]) -> stream.strictQualifiedNameAnyLength(index, part.last + 1) ?: (index + 1)
             else -> return false
         }
         if (index <= part.last && (stream.isKeyword(index, "CHAR") || stream.isKeyword(index, "BYTE"))) index++
@@ -168,8 +172,58 @@ internal class TypeReferences(private val stream: TokenStream) {
         return if (headerTypeIdentity == null) {
             NamedTypeRef(name, sourceRange)
         } else {
-            NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity)
+            NamedTypeRef.withHeaderTypeIdentity(name, sourceRange, headerTypeIdentity, writtenSyntax(start + parsedName.second, end, name))
         }
+    }
+
+    private fun writtenSyntax(start: Int, endExclusive: Int, name: QualifiedName): WrittenTypeSyntax? {
+        val words = mutableListOf(if (name.segments.size == 1) name.last.lookupName else name.lookupKey())
+        val groups = mutableListOf<ConstraintGroup>()
+        var index = start
+        while (index < endExclusive) {
+            if (stream.isPunctuator(index, PlSqlPunctuator.LPARENTHESIS)) {
+                val close = stream.strictClose(index, endExclusive) ?: return null
+                groups += ConstraintGroup(words.size - 1, arguments(index + 1, close))
+                index = close + 1
+            } else {
+                words += stream.valueAt(index)
+                index++
+            }
+        }
+        return WrittenTypeSyntax(words, groups)
+    }
+
+    private fun arguments(start: Int, close: Int): List<ConstraintArgument> {
+        val arguments = mutableListOf<ConstraintArgument>()
+        var partStart = start
+        var depth = 0
+        for (index in start..close) {
+            when {
+                index == close || depth == 0 && stream.isPunctuator(index, PlSqlPunctuator.COMMA) -> {
+                    if (index > partStart) arguments += argument(partStart, index)
+                    partStart = index + 1
+                }
+                stream.isOpener(index) -> depth++
+                stream.isCloser(index) -> depth--
+            }
+        }
+        return arguments
+    }
+
+    private fun argument(start: Int, endExclusive: Int): ConstraintArgument {
+        val semantics = when {
+            endExclusive - 1 > start && stream.isKeyword(endExclusive - 1, "CHAR") -> LengthSemantics.CHAR
+            endExclusive - 1 > start && stream.isKeyword(endExclusive - 1, "BYTE") -> LengthSemantics.BYTE
+            else -> null
+        }
+        val end = if (semantics == null) endExclusive else endExclusive - 1
+        val negative = stream.isPunctuator(start, PlSqlPunctuator.MINUS) || stream.isPunctuator(start, PlSqlPunctuator.SUBTRACTION)
+        val signed = negative || stream.isPunctuator(start, PlSqlPunctuator.PLUS)
+        val digits = if (signed) start + 1 else start
+        val literal = stream.tokens[digits].takeIf { digits + 1 == end && it.type === PlSqlTokenType.INTEGER_LITERAL }
+            ?.value?.toLongOrNull()?.let { if (negative) -it else it }
+        val star = start + 1 == end && stream.isPunctuator(start, PlSqlPunctuator.MULTIPLICATION)
+        return ConstraintArgument(literal, star, stream.range(start, end - 1), semantics)
     }
 
     /** The `%TYPE`/`%ROWTYPE` anchor when the `%` at [percent] is followed by exactly one anchor keyword, else null. */
@@ -213,7 +267,8 @@ internal class TypeReferences(private val stream: TokenStream) {
         return NamedTypeRef.withHeaderTypeIdentity(
             base.name,
             stream.range(start, endExclusive - 1),
-            fullIdentity
+            fullIdentity,
+            base.writtenSyntax
         )
     }
 

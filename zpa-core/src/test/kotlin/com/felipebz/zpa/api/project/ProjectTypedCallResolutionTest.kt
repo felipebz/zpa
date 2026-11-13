@@ -30,7 +30,7 @@ class ProjectTypedCallResolutionTest {
 
     private fun metadata(vararg relations: ProjectExternalRelation, complete: Boolean = true): ProjectExternalMetadata {
         val builder = ProjectExternalMetadata.builder("fixture")
-        if (complete) builder.completeSchema("HR")
+        if (complete) builder.completeSchema("HR").completePublicSynonyms()
         relations.forEach { builder.relation(it) }
         return builder.build()
     }
@@ -122,10 +122,103 @@ class ProjectTypedCallResolutionTest {
         assertThat(selected(call(source, "put2", listOf(positional()), listOf(ProjectArgumentType.composite())).typed)).isEqualTo("(t tab_t)")
         assertThat(selected(call(source, "put2", listOf(positional()), listOf(ProjectArgumentType.builtIn("NUMBER"))).typed)).isEqualTo("(n NUMBER)")
         assertThat(call(source, "put2", listOf(positional()), listOf(ProjectArgumentType.builtIn("DATE"))).typed.status).isEqualTo(Status.NO_COMPATIBLE_CANDIDATE)
-        // Two composites are never told apart.
+        // Two composites whose declared types are not known are never told apart.
         val both = call(spec("TYPE r1 IS RECORD (a NUMBER);", "TYPE r2 IS RECORD (a NUMBER);", "PROCEDURE put(x r1);", "PROCEDURE put(x r2);"), "put", listOf(positional()), listOf(ProjectArgumentType.composite()))
         assertThat(both.typed.status).isEqualTo(Status.AMBIGUOUS)
         assertThat(both.typed.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
+    }
+
+    private val ship = "CREATE PACKAGE pk_ship AS\n" +
+        "  TYPE t_head IS RECORD (id NUMBER, code VARCHAR2(10));\n" +
+        "  TYPE t_line IS RECORD (id NUMBER, code VARCHAR2(10));\n" +
+        "  TYPE t_ids IS TABLE OF NUMBER INDEX BY PLS_INTEGER;\n" +
+        "  TYPE t_nums IS TABLE OF NUMBER INDEX BY PLS_INTEGER;\n" +
+        "  SUBTYPE t_head2 IS t_head;\n" +
+        "  PROCEDURE save(p t_head);\n  PROCEDURE save(p t_line);\n" +
+        "  PROCEDURE load(p t_ids);\n  PROCEDURE load(p t_nums);\n" +
+        "  PROCEDURE save_row(p ship_head%ROWTYPE);\n  PROCEDURE save_row(p t_head);\n" +
+        "END pk_ship;"
+    private val withShipHead = metadata(
+        ProjectExternalRelation.of(
+            "HR", "SHIP_HEAD", true, listOf(
+                ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, null, null)),
+                ProjectExternalColumn.of("CODE", 2, ProjectExternalDatatype.of("VARCHAR2", null, 10, ProjectExternalDatatype.LengthSemantics.BYTE, null, null))
+            )
+        )
+    )
+
+    private fun narrowOne(s: ProjectSnapshot, pkg: String, name: String, type: ProjectArgumentType): ProjectTypedCallResolution {
+        val structural = s.resolveCall(
+            ProjectCallTarget.packageMember(ProjectQualifiedName.of(pkg), ProjectIdentifier.fromSource(name)),
+            ProjectCallKind.PROCEDURE, ProjectCallArguments.of(listOf(positional()))
+        )
+        return s.narrowCall(structural, listOf(type), withShipHead, hr)
+    }
+
+    private fun valueOf(s: ProjectSnapshot, vararg name: String) =
+        ProjectArgumentType.described(s.describeExternalType(ProjectQualifiedName.of(*name), null, withShipHead, hr))
+
+    @Test
+    fun aRecordOrCollectionFormalAcceptsOnlyItsOwnDeclaredType() {
+        val s = prepare("ship.sql" to ship)
+        // Oracle runs save(t_head) for a t_head value and save(t_line) for a t_line value, although their fields match.
+        val head = narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_head"))
+        assertThat(head.status).isEqualTo(Status.RESOLVED)
+        assertThat(head.ranked).isFalse
+        assertThat(selected(head)).isEqualTo("(p t_head)")
+        assertThat(head.evaluations.map { it.bindings.single().outcome }).containsExactly(Outcome.COMPATIBLE, Outcome.INCOMPATIBLE)
+        assertThat(selected(narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_line")))).isEqualTo("(p t_line)")
+        // A declared collection type accepts only that same type: load(t_ids) runs for a t_ids value.
+        assertThat(selected(narrowOne(s, "pk_ship", "load", valueOf(s, "pk_ship", "t_ids")))).isEqualTo("(p t_ids)")
+        assertThat(selected(narrowOne(s, "pk_ship", "load", valueOf(s, "pk_ship", "t_nums")))).isEqualTo("(p t_nums)")
+        // A subtype is its base type: a t_head2 value runs save(t_head).
+        assertThat(selected(narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_head2")))).isEqualTo("(p t_head)")
+        // A type of another snapshot is not one of this snapshot's declarations: undecided.
+        val other = prepare("ship.sql" to ship)
+        assertThat(narrowOne(s, "pk_ship", "save", valueOf(other, "pk_ship", "t_head")).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun aRowtypeSideIsComparedFieldByFieldAndStaysUndecided() {
+        val s = prepare("ship.sql" to ship)
+        // Oracle: PLS-00307 for save_row with a ship_head%ROWTYPE value and with a t_head value; both overloads match.
+        val row = ProjectArgumentType.described(
+            s.describeExternalType(ProjectWrittenAnchor.of(ProjectQualifiedName.of("ship_head"), ProjectTypeReference.Anchor.ROWTYPE), null, withShipHead, hr)
+        )
+        val byRow = narrowOne(s, "pk_ship", "save_row", row)
+        assertThat(byRow.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(byRow.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
+        val byHead = narrowOne(s, "pk_ship", "save_row", valueOf(s, "pk_ship", "t_head"))
+        assertThat(byHead.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(byHead.evaluations.map { it.bindings.single().outcome }).containsExactly(Outcome.UNKNOWN, Outcome.COMPATIBLE)
+        // A row value against two declared record types is not decided either.
+        assertThat(narrowOne(s, "pk_ship", "save", row).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun withoutADeclaredTypeCompositeFormalsStayUndecided() {
+        val s = prepare("ship.sql" to ship)
+        // Oracle: PLS-00307 for save(NULL).
+        val nul = narrowOne(s, "pk_ship", "save", ProjectArgumentType.nullLiteral())
+        assertThat(nul.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(nul.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.NULL_LITERAL)
+        assertThat(narrowOne(s, "pk_ship", "save", ProjectArgumentType.unknown()).status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(narrowOne(s, "pk_ship", "load", ProjectArgumentType.composite()).status).isEqualTo(Status.AMBIGUOUS)
+        // A name the project does not describe gives no declared type.
+        assertThat(narrowOne(s, "pk_ship", "save", valueOf(s, "pk_ship", "t_missing")).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun objectTypesAreNotToldApartByDeclaredType() {
+        // An instance of a subtype is accepted where its supertype is expected: both overloads receive a ship_sub value.
+        val s = prepare(
+            "obj.sql" to "CREATE TYPE ship_obj AS OBJECT (id NUMBER) NOT FINAL;",
+            "sub.sql" to "CREATE TYPE ship_sub UNDER ship_obj (code VARCHAR2(10));",
+            "keep.sql" to "CREATE PACKAGE pk_keep AS\n  PROCEDURE keep(p ship_obj);\n  PROCEDURE keep(p ship_sub);\nEND pk_keep;"
+        )
+        val c = narrowOne(s, "pk_keep", "keep", valueOf(s, "ship_sub"))
+        assertThat(c.status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(c.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
     }
 
     @Test
@@ -346,6 +439,70 @@ class ProjectTypedCallResolutionTest {
         assertThat(ProjectArgumentType.builtIn("LONG").family).isEmpty
         assertThat(s.narrowCall(structural, listOf(ProjectArgumentType.builtIn("LONG")), md, hr).evaluations.first().bindings.single().unknownReason)
             .contains(UnknownReason.UNCLASSIFIED_TYPE)
+    }
+
+    private val customer = ProjectExternalRelation.of(
+        "HR", "CUSTOMER", true, listOf(
+            ProjectExternalColumn.of("CUSTOMER_ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 7, 0)),
+            ProjectExternalColumn.of("TAX_CODE", 2, ProjectExternalDatatype.of("VARCHAR2", null, 14, ProjectExternalDatatype.LengthSemantics.BYTE, null, null)),
+            ProjectExternalColumn.of("SHIP_DATE", 3, ProjectExternalDatatype.of("DATE", null, null, null, null, null)),
+            ProjectExternalColumn.of("SHIP_TS", 4, ProjectExternalDatatype.of("TIMESTAMP(6)", null, null, null, null, 6)),
+            ProjectExternalColumn.of("SHIP_TZ", 5, ProjectExternalDatatype.of("TIMESTAMP(3) WITH TIME ZONE", null, null, null, null, 3)),
+            ProjectExternalColumn.of("WAIT_DS", 6, ProjectExternalDatatype.of("INTERVAL DAY(2) TO SECOND(6)", null, null, null, 2, 6)),
+            ProjectExternalColumn.of("WAIT_YM", 7, ProjectExternalDatatype.of("INTERVAL YEAR(2) TO MONTH", null, null, null, 2, 0)),
+            ProjectExternalColumn.of("RATE", 8, ProjectExternalDatatype.of("FLOAT", null, null, null, 126, null)),
+            ProjectExternalColumn.of("LABEL", 9, ProjectExternalDatatype.of("VARCHAR2", "APP", null, null, null, null))
+        )
+    )
+    private val withCustomer = metadata(customer)
+
+    @Test
+    fun columnAnchoredFormalsRankByTheirDictionaryType() {
+        val source = spec(
+            "PROCEDURE name_of(p_id IN customer.customer_id%TYPE);", "PROCEDURE name_of(p_tax IN customer.tax_code%TYPE);",
+            "PROCEDURE kind_of(p_d customer.ship_date%TYPE);", "PROCEDURE kind_of(p_ts customer.ship_ts%TYPE);",
+            "PROCEDURE zone_of(p_ts customer.ship_ts%TYPE);", "PROCEDURE zone_of(p_tz customer.ship_tz%TYPE);",
+            "PROCEDURE wait_of(p_ds customer.wait_ds%TYPE);", "PROCEDURE wait_of(p_ym customer.wait_ym%TYPE);",
+            "PROCEDURE rate_of(p_rate customer.rate%TYPE);", "PROCEDURE rate_of(p_tax customer.tax_code%TYPE);",
+            "PROCEDURE label_of(p_label customer.label%TYPE);", "PROCEDURE label_of(p_tax customer.tax_code%TYPE);"
+        )
+        fun pick(name: String, type: ProjectArgumentType) = call(source, name, listOf(positional()), listOf(type), withCustomer).typed
+
+        // A number value binds the NUMBER column overload, a character value the VARCHAR2 one, as Oracle does.
+        val number = pick("name_of", ProjectArgumentType.builtIn("NUMBER"))
+        assertThat(selected(number)).isEqualTo("(p_id customer.customer_id)")
+        assertThat(number.ranked).isTrue
+        assertThat(selected(pick("name_of", ProjectArgumentType.builtIn("CHAR")))).isEqualTo("(p_tax customer.tax_code)")
+        // A DATE value binds the DATE column rather than the TIMESTAMP(6) one, as Oracle does.
+        assertThat(selected(pick("kind_of", ProjectArgumentType.builtIn("DATE")))).isEqualTo("(p_d customer.ship_date)")
+        // The parenthesized parts of the dictionary spelling do not hide the variant.
+        assertThat(selected(pick("zone_of", ProjectArgumentType.builtIn("TIMESTAMP WITH TIME ZONE")))).isEqualTo("(p_tz customer.ship_tz)")
+        val wait = pick("wait_of", ProjectArgumentType.builtIn("INTERVAL DAY TO SECOND"))
+        assertThat(selected(wait)).isEqualTo("(p_ds customer.wait_ds)")
+        assertThat(wait.evaluations[1].bindings.single().outcome).isEqualTo(Outcome.INCOMPATIBLE)
+        // FLOAT is a NUMBER subtype.
+        assertThat(selected(pick("rate_of", ProjectArgumentType.builtIn("NUMBER")))).isEqualTo("(p_rate customer.rate)")
+        // An owned type keeps no rank, and NULL stays undecided.
+        assertThat(pick("label_of", ProjectArgumentType.builtIn("CHAR")).status).isEqualTo(Status.AMBIGUOUS)
+        assertThat(pick("name_of", ProjectArgumentType.nullLiteral()).status).isEqualTo(Status.AMBIGUOUS)
+    }
+
+    @Test
+    fun columnAnchoredActualsRankByTheirDictionaryType() {
+        val s = prepare("p.sql" to spec(
+            "PROCEDURE pick(n NUMBER);", "PROCEDURE pick(s VARCHAR2);", "PROCEDURE when_of(d DATE);", "PROCEDURE when_of(t TIMESTAMP);"
+        ))
+        fun column(name: String) = ProjectArgumentType.described(s.describeExternalType(
+            ProjectWrittenAnchor.of(ProjectQualifiedName.of("customer", name), ProjectTypeReference.Anchor.TYPE), null, withCustomer, hr
+        ))
+        fun narrow(name: String, type: ProjectArgumentType) = s.narrowCall(resolve(s, name, positional()), listOf(type), withCustomer, hr)
+
+        assertThat(selected(narrow("pick", column("customer_id")))).isEqualTo("(n NUMBER)")
+        assertThat(selected(narrow("pick", column("tax_code")))).isEqualTo("(s VARCHAR2)")
+        assertThat(selected(narrow("pick", column("rate")))).isEqualTo("(n NUMBER)")
+        assertThat(selected(narrow("when_of", column("ship_date")))).isEqualTo("(d DATE)")
+        assertThat(selected(narrow("when_of", column("ship_ts")))).isEqualTo("(t TIMESTAMP)")
+        assertThat(narrow("pick", column("label")).status).isEqualTo(Status.AMBIGUOUS)
     }
 
     @Test

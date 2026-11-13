@@ -37,6 +37,9 @@ internal class LocalCallBindings(private val facts: LocalSemanticFacts) {
                 when (call.outcome) {
                     LocalCallOutcome.INCOMPLETE -> CallKeptLocalReason.INCOMPLETE
                     LocalCallOutcome.UNSUPPORTED -> CallKeptLocalReason.UNSUPPORTED
+                    LocalCallOutcome.SQL_RELATION -> CallKeptLocalReason.SQL_RELATION
+                    LocalCallOutcome.SQL_RELATION_OR_PROJECT -> CallKeptLocalReason.SQL_RELATION_OR_PROJECT
+                    LocalCallOutcome.NOT_CALLABLE_IN_SQL -> CallKeptLocalReason.NOT_CALLABLE_IN_SQL
                     else -> CallKeptLocalReason.LOCAL_CAPTURE
                 }
             )

@@ -32,7 +32,7 @@ object OracleMetadataAcquisition {
     private const val BATCH = 200
 
     /**
-     * Acquires the requested schemas and relations.
+     * Acquires the requested schemas (relations, columns, object names and synonyms), relations and public synonyms.
      *
      * @throws SQLException if a dictionary query fails or times out
      * @throws OracleMetadataException if the dictionary rows cannot form valid descriptors
@@ -70,9 +70,13 @@ object OracleMetadataAcquisition {
             val version = databaseVersion(connection, timeout)
             val relations = ArrayList<RelationRow>()
             val columns = ArrayList<ColumnRow>()
+            val objects = ArrayList<ObjectRow>()
+            val synonyms = ArrayList<SynonymRow>()
             for (schema in request.schemas) {
                 query(connection, dialect.schemaRelationsSql, listOf(schema, schema), timeout) { relations += relationRow(it) }
                 query(connection, dialect.schemaColumnsSql, listOf(schema), timeout) { columns += columnRow(it) }
+                query(connection, dialect.schemaObjectsSql, listOf(schema), timeout) { objects += ObjectRow(it.getString(1), it.getString(2), it.getString(3)) }
+                query(connection, dialect.schemaSynonymsSql, listOf(schema), timeout) { synonyms += synonymRow(it) }
             }
             val targeted = request.relations.filter { it.schema !in request.schemas }
             for (chunk in targeted.chunked(BATCH)) {
@@ -80,7 +84,13 @@ object OracleMetadataAcquisition {
                 query(connection, dialect.targetedRelationsSql(chunk.size), pairs + pairs, timeout) { relations += relationRow(it) }
                 query(connection, dialect.targetedColumnsSql(chunk.size), pairs, timeout) { columns += columnRow(it) }
             }
-            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt, version)
+            if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) {
+                query(connection, dialect.publicSynonymsSql, emptyList(), timeout) { synonyms += synonymRow(it) }
+            }
+            for (chunk in request.publicSynonymTargets.chunked(BATCH)) {
+                query(connection, dialect.targetedPublicSynonymsSql(chunk.size), chunk, timeout) { synonyms += synonymRow(it) }
+            }
+            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt, version, objects, synonyms)
         } catch (e: Throwable) {
             failure = e
             throw e
@@ -147,6 +157,8 @@ object OracleMetadataAcquisition {
         precision = rs.getBigDecimal(10),
         scale = rs.getBigDecimal(11)
     )
+
+    private fun synonymRow(rs: ResultSet) = SynonymRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5))
 
     private inline fun query(connection: Connection, sql: String, parameters: List<String>, timeout: Int, row: (ResultSet) -> Unit) {
         connection.prepareStatement(sql).use { statement: PreparedStatement ->

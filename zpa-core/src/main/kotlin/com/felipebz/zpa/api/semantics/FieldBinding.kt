@@ -9,8 +9,8 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 
 /**
  * The field a segment written after a value names (`code` of `g_rec.code`, `items` of `g_rows(1).items`, `inner`
- * and `code` of `l_out.inner.code`): a field of a record type, or an attribute of an object type, as zpa resolves it
- * from the value's declared type. A guess is never a [Field].
+ * and `code` of `l_out.inner.code`): a field of a record type, an attribute of an object type, or an item of the select
+ * list a cursor row follows, as zpa resolves it from the value's declared type. A guess is never a [Field].
  */
 @ZpaExperimentalApi
 sealed interface FieldBinding {
@@ -36,8 +36,8 @@ sealed interface FieldBinding {
 
     /**
      * Not a field: the node is not a segment written after a value, or the segment is proven something else (a
-     * collection or object method, a name the value's type does not have, a column of a `%ROWTYPE`), or the file was
-     * not analyzed.
+     * collection or object method, a name the value's type does not have, a column of a table's or view's `%ROWTYPE`, a
+     * name a complete select list does not have), or the file was not analyzed.
      */
     class Unavailable(val reason: UsageUnavailability) : FieldBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
@@ -49,10 +49,12 @@ sealed interface FieldBinding {
 }
 
 /**
- * A field of a record type or an attribute of an object type, [ordinal] zero-based in written order (an attribute
- * among its own type's attributes). Declared in this file ([fileId] null), the position is the field name's, as
- * [NameDeclaration] places a name; declared in another project file [fileId], it is the start of the field as the
- * project's declaration views give it (`ProjectRecordFieldView.sourceRange`).
+ * A field of a record type, an attribute of an object type, or an item of a cursor's select list, [ordinal] zero-based
+ * in written order (an attribute among its own type's attributes, an item among the select list's). Declared in this
+ * file ([fileId] null), the position is the field name's, as [NameDeclaration] places a name; declared in another
+ * project file [fileId], it is the start of the field as the project's declaration views give it
+ * (`ProjectRecordFieldView.sourceRange`, `ProjectSelectItemView.sourceRange`). A select item is placed at its alias or
+ * column name, one without a name at its start.
  */
 @ZpaExperimentalApi
 class FieldDeclaration internal constructor(
@@ -83,5 +85,11 @@ enum class FieldDeclarationKind {
     RECORD_FIELD,
 
     /** An attribute of an object type. */
-    ATTRIBUTE
+    ATTRIBUTE,
+
+    /**
+     * An item of the select list of a cursor's query (or of the query of a cursor `FOR` loop): Oracle names the row's
+     * field after the item's alias or column.
+     */
+    SELECT_ITEM
 }

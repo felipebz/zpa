@@ -6,6 +6,7 @@
 package com.felipebz.zpa.project.extraction
 
 import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.project.PackageValueDeclaration
 import com.felipebz.zpa.project.QualifiedName
 
@@ -25,7 +26,8 @@ internal class PackageValueRecognizer(
      * `name [CONSTANT] datatype [NULL | NOT NULL] [(DEFAULT | :=) expression] ;` for the declaration
      * starting at [start] and ending at the real `;` at [semicolon]. The datatype slice stops at the
      * first depth-0 `NOT`, `NULL`, `DEFAULT` or `:=` and is fully validated by [DatatypeShape.strictDatatype] before
-     * [TypeReferences.typeReference] runs. The initializer is only shape-checked ([InitializerShape.initializerShapeOk]) and never kept.
+     * [TypeReferences.typeReference] runs. The initializer is only shape-checked ([InitializerShape.initializerShapeOk]); a
+     * constant's is kept only when it is a signed integer literal.
      * `PRAGMA` declarations, exceptions (`name EXCEPTION;`) and anything with an unsupported datatype
      * yield null.
      */
@@ -41,10 +43,19 @@ internal class PackageValueRecognizer(
         val cursor = nullabilityEnd(typeEnd) ?: return null
         if (!initializerOk(cursor, semicolon)) return null
         val type = typeReferences.typeReference(typeStart, typeEnd) ?: return null
+        val initializer = if (cursor < semicolon) cursor + 1 else semicolon
         val declaration = PackageValueDeclaration(
-            owner, stream.identifier(stream.tokens[start]), constant, type, stream.fileId, stream.range(start, semicolon)
+            owner, stream.identifier(stream.tokens[start]), constant, type, stream.fileId, stream.range(start, semicolon),
+            if (constant) integerLiteral(initializer, semicolon) else null
         )
         return ParsedDeclaration(declaration, semicolon + 1)
+    }
+
+    private fun integerLiteral(start: Int, endExclusive: Int): Long? {
+        val negative = stream.isPunctuator(start, PlSqlPunctuator.MINUS) || stream.isPunctuator(start, PlSqlPunctuator.SUBTRACTION)
+        val digits = if (negative || stream.isPunctuator(start, PlSqlPunctuator.PLUS)) start + 1 else start
+        if (digits + 1 != endExclusive || stream.tokenTypeAt(digits) !== PlSqlTokenType.INTEGER_LITERAL) return null
+        return stream.tokens[digits].value.toLongOrNull()?.let { if (negative) -it else it }
     }
 
     /** `[NULL | NOT NULL]` at [start]: the index after it (unchanged when absent), null for a `NOT` without `NULL`. */

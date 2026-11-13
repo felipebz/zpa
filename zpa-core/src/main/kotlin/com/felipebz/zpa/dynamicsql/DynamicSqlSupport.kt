@@ -66,6 +66,10 @@ internal class DynamicSqlSupport(
     fun fromExpression(expression: AstNode): DynamicSqlText? =
         byExpression.getOrPut(expression) { Cached(build(expression, operands(expression))) }.text
 
+    /** Whether [root] is the root of a text this support built. */
+    fun isTextRoot(root: AstNode): Boolean =
+        byExpression.values.any { it.text?.root === root } || byParts.values.any { it.text?.root === root }
+
     fun fromParts(parts: List<AstNode>): DynamicSqlText? {
         val copy = parts.toList()
         return byParts.getOrPut(PartsKey(copy)) { Cached(build(null, copy)) }.text

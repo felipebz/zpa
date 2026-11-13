@@ -12,6 +12,12 @@ enum class ProjectTypeShape {
     REF_CURSOR
 }
 
+enum class ProjectCollectionKind {
+    ASSOCIATIVE_ARRAY,
+    NESTED_TABLE,
+    VARRAY
+}
+
 data class ProjectRecordField(
     val name: OracleIdentifier,
     val ordinal: Int,
@@ -46,15 +52,16 @@ data class StandaloneTypeDeclaration(
      * True when conditional-compilation text the configured settings do not decide lies in the declaration: its
      * attributes and methods may not be those Oracle compiles.
      */
-    val conditional: Boolean = false
+    val conditional: Boolean = false,
+    val collectionKind: ProjectCollectionKind? = null
 ) : ProjectTypeDeclaration {
     override val kind = ProjectDeclarationKind.STANDALONE_TYPE
     override val role = DeclarationRole.STANDALONE
     override val qualifiedName: QualifiedName = name
 
     init {
-        require(elementType == null || shape == ProjectTypeShape.COLLECTION) {
-            "Only COLLECTION declarations may contain an element type"
+        require((elementType == null && collectionKind == null) || shape == ProjectTypeShape.COLLECTION) {
+            "Only COLLECTION declarations may contain an element type or a collection kind"
         }
         require(shape == ProjectTypeShape.OBJECT || (attributes.isEmpty() && methods.isEmpty() && supertype == null)) {
             "Only OBJECT declarations may contain attributes, methods or a supertype"
@@ -70,7 +77,8 @@ class PackageTypeDeclaration(
     override val fileId: FileId,
     override val sourceRange: SourceRange,
     /** Direct element type syntax of a COLLECTION, when the extractor admitted it. Unresolved. */
-    val elementType: TypeRef? = null
+    val elementType: TypeRef? = null,
+    val collectionKind: ProjectCollectionKind? = null
 ) : ProjectTypeDeclaration {
 
     val recordFields: List<ProjectRecordField> = immutableList(recordFields)
@@ -82,20 +90,20 @@ class PackageTypeDeclaration(
         require(shape == ProjectTypeShape.RECORD || recordFields.isEmpty()) {
             "Only RECORD declarations may contain record fields"
         }
-        require(elementType == null || shape == ProjectTypeShape.COLLECTION) {
-            "Only COLLECTION declarations may contain an element type"
+        require((elementType == null && collectionKind == null) || shape == ProjectTypeShape.COLLECTION) {
+            "Only COLLECTION declarations may contain an element type or a collection kind"
         }
     }
 
     override fun equals(other: Any?): Boolean = other is PackageTypeDeclaration &&
         owner == other.owner && name == other.name && shape == other.shape &&
-        recordFields == other.recordFields && elementType == other.elementType &&
+        recordFields == other.recordFields && elementType == other.elementType && collectionKind == other.collectionKind &&
         fileId == other.fileId && sourceRange == other.sourceRange
 
-    override fun hashCode(): Int = listOf(owner, name, shape, recordFields, elementType, fileId, sourceRange).hashCode()
+    override fun hashCode(): Int = listOf(owner, name, shape, recordFields, elementType, collectionKind, fileId, sourceRange).hashCode()
 
     override fun toString(): String =
-        "PackageTypeDeclaration($qualifiedName, $shape, $recordFields, $elementType, $fileId, $sourceRange)"
+        "PackageTypeDeclaration($qualifiedName, $shape, $recordFields, $elementType, $collectionKind, $fileId, $sourceRange)"
 }
 
 data class PackageSubtypeDeclaration(

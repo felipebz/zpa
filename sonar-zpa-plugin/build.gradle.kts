@@ -62,17 +62,19 @@ val oracleProbePluginJar = tasks.register<Jar>("oracleProbePluginJar") {
 
 testing {
     suites {
-        // Database-backed tests: never part of `check`/`build`; they need an Oracle instance (see README.md).
+        // Database-backed tests: never part of `check`/`build`. They start an Oracle container (Testcontainers) or use
+        // the database named by ZPA_ORACLE_* environment variables.
         register<JvmTestSuite>("oracleIntegrationTest") {
             useJUnitJupiter(libs.versions.junit.get())
             dependencies {
                 implementation(files(sourceSets.main.get().output, sourceSets.test.get().output))
                 implementation(libs.sonar.ws)
                 implementation(libs.sonar.orchestrator)
+                implementation(libs.testcontainers.oracle.free)
             }
             targets.all {
                 testTask.configure {
-                    description = "Runs the Oracle database integration tests (requires ZPA_ORACLE_* environment variables)."
+                    description = "Runs the Oracle database integration tests (needs Docker, or ZPA_ORACLE_* environment variables)."
                     val shadow = tasks.named<ShadowJar>("shadowJar")
                     dependsOn(shadow, oracleProbePluginJar)
                     val launcher = javaToolchains.launcherFor {
@@ -82,6 +84,7 @@ testing {
                     environment("JAVA_HOME", launcher.get().metadata.installationPath.asFile.toString())
                     systemProperty("java.awt.headless", "true")
                     systemProperty("zpa.oracle.driverJar", oracleJdbcDriver.singleFile.absolutePath)
+                    systemProperty("zpa.oracle.image", providers.gradleProperty("zpaOracleImage").get())
                     systemProperty("zpa.plugin.jar", shadow.get().archiveFile.get().asFile.absolutePath)
                     systemProperty("zpa.probePlugin.jar", oracleProbePluginJar.get().archiveFile.get().asFile.absolutePath)
                     System.getProperty("sonar.zipFile")?.let { systemProperty("sonar.zipFile", it) }

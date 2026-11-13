@@ -164,13 +164,13 @@ class LocalTypeNameTest {
             "end;\n/\n"
         assertThat(expressions(text)).containsExactly(
             // A local type of the name does not hide the schema type in SQL.
-            "6:t_nt=Project(STANDALONE_TYPE t_nt)|Collection(? of Scalar(NUMERIC))",
+            "6:t_nt=Project(STANDALONE_TYPE t_nt)|Collection(NESTED_TABLE of Scalar(NUMERIC))",
             // SQL does not see a package type (ORA-00902).
             "7:pk_t.t_ptab=Undecided[UNSUPPORTED_REFERENCE]|Unknown[UNSUPPORTED_REFERENCE]",
             "8:t_sub=Project(STANDALONE_TYPE t_sub)|ObjectInstance",
             // Nor a local subtype (ORA-00902).
             "9:ls=Unresolved(NOT_FOUND_IN_PROJECT)|Unknown[DECLARATION_OUTSIDE_FILE]",
-            "10:t_nt=Project(STANDALONE_TYPE t_nt)|Collection(? of Scalar(NUMERIC))",
+            "10:t_nt=Project(STANDALONE_TYPE t_nt)|Collection(NESTED_TABLE of Scalar(NUMERIC))",
             "10:number=BuiltIn(number)|Scalar(NUMERIC)"
         )
         assertThat(expressions(text, conditional = true)).allMatch { it.contains("CONDITIONAL_COMPILATION") }

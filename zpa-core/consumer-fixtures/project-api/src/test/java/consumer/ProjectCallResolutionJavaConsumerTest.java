@@ -49,6 +49,7 @@ class ProjectCallResolutionJavaConsumerTest {
             case INCOMPLETE_INDEX -> "incomplete";
             case INVALID_NOTATION -> "invalid notation";
             case NOT_PREPARED -> "not prepared";
+            case SYNONYM_TARGET_NOT_IN_PROJECT -> "synonym target not in project";
         };
     }
 

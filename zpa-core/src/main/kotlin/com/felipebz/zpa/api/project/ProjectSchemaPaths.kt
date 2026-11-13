@@ -40,8 +40,9 @@ class ProjectSchemaPaths private constructor(
     private fun relativePath(fileId: String): String {
         // A file identity is a path or a `file:` URI (as the Sonar plugin writes it).
         val path = runCatching { if (fileId.startsWith("file:")) Path.of(java.net.URI(fileId)) else Path.of(fileId) }.getOrNull()
-        val relative = if (baseDirectory != null && path != null && path.isAbsolute && path.normalize().startsWith(baseDirectory)) {
-            baseDirectory.relativize(path.normalize()).toString()
+        val absolute = path?.takeIf { it.root != null }?.toAbsolutePath()?.normalize()
+        val relative = if (baseDirectory != null && absolute != null && absolute.startsWith(baseDirectory)) {
+            baseDirectory.relativize(absolute).toString()
         } else fileId
         return relative.replace('\\', '/')
     }

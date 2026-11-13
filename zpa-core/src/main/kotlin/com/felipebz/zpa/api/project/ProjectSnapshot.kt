@@ -24,7 +24,8 @@ class ProjectSnapshot private constructor(
     failures: List<ProjectPreparationFailure>,
     fileIds: List<String>,
     // Plain identity token for declaration IDs; it holds no reference back to this snapshot.
-    private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue()
+    private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue(),
+    private val synonymScope: ProjectSynonymScope? = null
 ) {
     /**
      * This snapshot as seen from a unit compiling in [schema]: every lookup of the returned snapshot reads an
@@ -37,9 +38,29 @@ class ProjectSnapshot private constructor(
     fun preferring(schema: ProjectIdentifier?): ProjectSnapshot {
         if (schema == null) return this
         val index = preparationResult.index.preferring(schema.identifier)
-        if (index === preparationResult.index) return this
+        if (index === preparationResult.index && synonymScope == null) return this
         return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope)
     }
+
+    /**
+     * As [preferring], and the call, package value and type lookups of the returned snapshot ([findCallCandidates],
+     * [resolveCall], [resolvePackageValue], [resolveNamedType], and the walks of [describeType]) read the first segment
+     * of a written name through the synonyms of [metadata] as Oracle does from [schema]: an object of [schema] (in the
+     * project or in [metadata]) first, then a private synonym of [schema], then a public synonym when [schema] is
+     * complete in [metadata]. A synonym of a synonym is followed; the name is then looked up as the target followed by
+     * the rest of the written name, and each result lists the synonyms in its `synonyms`. A synonym over a database
+     * link, or one that resolves to itself, leads to no project declaration. Without a [schema] or without metadata
+     * (an empty [ProjectExternalMetadata.origin]) this is [preferring].
+     */
+    fun preferring(schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): ProjectSnapshot {
+        if (schema == null || !metadata.origin.isPresent) return preferring(schema)
+        val index = preparationResult.index.preferring(schema.identifier)
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(metadata, schema))
+    }
+
+    private fun synonymReading(name: ProjectQualifiedName): SynonymReading? =
+        synonymScope?.takeIf { preparationState != ProjectPreparationState.NOT_PREPARED }
+            ?.let { ProjectSynonymNames.read(preparationResult.index, it, name.name) }
 
     /**
      * The names of the standalone procedures and functions whose heading was identified in a project file but produced
@@ -119,9 +140,11 @@ class ProjectSnapshot private constructor(
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectNamedTypeResolution.notPrepared(name, packageOwner)
         }
-        val occurrences = ProjectTypeNameLookup.typeOccurrences(preparationResult.index, name.name, packageOwner?.name)
+        val reading = if (name.name.segments.size > 1 || packageOwner == null) synonymReading(name) else null
+        val occurrences = if (reading != null && reading.target == null) emptyList()
+        else ProjectTypeNameLookup.typeOccurrences(preparationResult.index, reading?.name ?: name.name, packageOwner?.name)
         val candidates = ProjectSnapshotDeclarations.views(scope, occurrences).map { it as ProjectTypeDeclarationView }
-        return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures)
+        return ProjectNamedTypeResolution.of(name, packageOwner, candidates, failures, reading?.synonyms.orEmpty())
     }
 
     /**
@@ -138,10 +161,20 @@ class ProjectSnapshot private constructor(
     /**
      * As the name overload for a retained [reference] (a field, element, subtype base, return or value type), keeping
      * the distinction between named, anchored and `REF` references. Supported source-backed `%TYPE` anchors are
-     * followed through package values; other anchors stop with [ProjectTypeDescription.Status.ANCHORED_REFERENCE]
-     * (including every `%ROWTYPE`) or [ProjectTypeDescription.Status.UNRESOLVED_VALUE], and `REF` stops with
+     * followed through package values, and through the fields an anchor names after a package value
+     * (`p.g_rec.f%TYPE`, or `g_rec.f%TYPE` in the specification or body of `p`, under the same scope rules as a
+     * one-segment name): each field is selected from the record or object type the value's type reaches, also when
+     * the field is itself a record. A field that type does not have stops with
+     * [ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND]; a field path that reaches a `%ROWTYPE` stops at that anchor
+     * with the remaining fields in [ProjectTypeDescription.fieldPath]. Other anchors stop with
+     * [ProjectTypeDescription.Status.ANCHORED_REFERENCE] (including every `%ROWTYPE`) or
+     * [ProjectTypeDescription.Status.UNRESOLVED_VALUE], and `REF` stops with
      * [ProjectTypeDescription.Status.REF_REFERENCE], even when the name matches a project type. [packageOwner] should
-     * be the owner of the declaration holding the reference.
+     * be the owner of the declaration holding the reference. For a reference retained by a subprogram of a package
+     * body, the declarations of the body's own level count as the specification's members do: one named like the
+     * first segment and declared before the subprogram captures it, one declared later makes Oracle reject it, and
+     * the anchor stops at the enclosing scope when the body's names are not known for it (unidentified text, or a
+     * declaration of the name under conditional compilation the configured settings do not decide).
      */
     fun describeType(reference: ProjectTypeReference, packageOwner: ProjectQualifiedName?): ProjectTypeDescription =
         ProjectTypeDescriber.describe(this, reference.name, reference, packageOwner)
@@ -165,9 +198,20 @@ class ProjectSnapshot private constructor(
 
     /**
      * Composes [describeType] for [name] with supplied external relation [metadata]. [currentSchema] is the schema in
-     * which the referencing unit compiles; it is needed only for unqualified relation readings (null gives
-     * [ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING] there). The source description is unchanged and
-     * returned in [ProjectExternalTypeDescription.source].
+     * which the referencing unit compiles (`ProjectExternalContext.compilationSchema`); it is needed for unqualified
+     * relation readings (null gives [ProjectExternalTypeDescription.Status.SCHEMA_CONTEXT_MISSING] there) and to decide
+     * schema-qualified ones. The source description is unchanged and returned in [ProjectExternalTypeDescription.source].
+     * A source walk stopped at a `%ROWTYPE` anchor with one pending field is read as that relation's column
+     * (`customer.name%TYPE` for `g_cust.name%TYPE` where `g_cust` is a `customer%ROWTYPE`); a longer pending path, or
+     * one after a column anchor, is no relation reading.
+     *
+     * Names are read as Oracle reads them. An unqualified relation name is an object of [currentSchema], then a private
+     * synonym of it, then a public synonym; synonyms are followed to their target (a synonym of a synonym too, a
+     * database link stopping as [ProjectExternalTypeDescription.Status.REMOTE]), and the description lists them in
+     * [ProjectExternalTypeDescription.synonyms]. The first segment of a schema-qualified anchor (`hr_app.customer.name`)
+     * is read as a schema only when no object of [currentSchema] and no public synonym takes it; an object or public
+     * synonym that does is [ProjectExternalTypeDescription.capturingObject]. Absence needs complete coverage: of the
+     * schema, and of the public synonyms for an unqualified name or a schema qualifier.
      */
     fun describeExternalType(
         name: ProjectQualifiedName,
@@ -175,7 +219,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema), name, null, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), name, null, packageOwner, null, metadata, currentSchema)
 
     // Every external description is made from the unit compiling in [currentSchema]: its unqualified names prefer the
     // declarations of that schema ([preferring]).
@@ -187,7 +231,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema), reference.name, reference, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), reference.name, reference, packageOwner, null, metadata, currentSchema)
 
     /**
      * As the name overload, for a caller-written [anchor], with the same lexical precondition as the written
@@ -199,7 +243,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema), anchor.name, null, packageOwner, anchor, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), anchor.name, null, packageOwner, anchor, metadata, currentSchema)
 
     /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
@@ -216,9 +260,14 @@ class ProjectSnapshot private constructor(
         if (preparationState == ProjectPreparationState.NOT_PREPARED) {
             return ProjectValueResolution.notPrepared(name, packageOwner)
         }
-        val effective = if (name.name.segments.size == 1) packageOwner?.name?.append(name.name.last) else name.name
+        val reading = if (name.name.segments.size > 1) synonymReading(name) else null
+        val effective = when {
+            reading != null -> reading.name.takeIf { reading.target != null }
+            name.name.segments.size == 1 -> packageOwner?.name?.append(name.name.last)
+            else -> name.name
+        }
         val occurrences = effective?.let { preparationResult.index.findOccurrences(it) }.orEmpty()
-        return ProjectValueResolution.of(name, packageOwner, ProjectSnapshotDeclarations.views(scope, occurrences), failures)
+        return ProjectValueResolution.of(name, packageOwner, ProjectSnapshotDeclarations.views(scope, occurrences), failures, reading?.synonyms.orEmpty())
     }
 
     /**
@@ -244,12 +293,16 @@ class ProjectSnapshot private constructor(
      * Call candidate discovery for [target] over this snapshot's prepared index, using the project's existing
      * namespace, coverage and precedence rules. Only package SPECIFICATION and STANDALONE procedures/functions are
      * candidates; bodies never are, and a standalone heading whose signature was not retained is evidence only. This
-     * is not call resolution: no argument is bound and nothing is selected. No schema, lexical scope or catalog is
-     * inferred, and no source is read again.
+     * is not call resolution: no argument is bound and nothing is selected. No lexical scope or catalog is inferred, and
+     * no source is read again. A view from [preferring] with metadata reads the target's first segment as Oracle does,
+     * through a private then a public synonym when the compilation schema has no object of that name, and reports the
+     * synonyms followed ([ProjectCallCandidates.synonyms]).
      */
     fun findCallCandidates(target: ProjectCallTarget): ProjectCallCandidates {
-        val result = ProjectCallCandidateFinder(callContext()).find(target.toInternal())
-        return ProjectCallCandidates.of(result, target, scope, failures)
+        val reading = synonymReading(target.name)
+        if (reading != null && reading.target == null) return ProjectCallCandidates.outsideProject(target, reading)
+        val result = ProjectCallCandidateFinder(callContext()).find(target.toInternal(reading?.name))
+        return ProjectCallCandidates.of(result, target, scope, failures, reading)
     }
 
     /**
@@ -264,8 +317,10 @@ class ProjectSnapshot private constructor(
             ProjectCallKind.PROCEDURE -> InternalCallKind.PROCEDURE
             ProjectCallKind.FUNCTION -> InternalCallKind.FUNCTION
         }
-        val result = ProjectCallBinder(callContext()).resolve(target.toInternal(), internalKind, arguments.internal)
-        return ProjectCallResolution.of(result, target, kind, arguments, scope, failures)
+        val reading = synonymReading(target.name)?.takeIf { arguments.notation == ProjectCallArguments.Notation.VALID }
+        if (reading != null && reading.target == null) return ProjectCallResolution.outsideProject(target, kind, arguments, reading)
+        val result = ProjectCallBinder(callContext()).resolve(target.toInternal(reading?.name), internalKind, arguments.internal)
+        return ProjectCallResolution.of(result, target, kind, arguments, scope, failures, reading)
     }
 
     /**
@@ -286,6 +341,15 @@ class ProjectSnapshot private constructor(
      * NUMBER, PLS_INTEGER; for a BINARY_FLOAT: BINARY_FLOAT, BINARY_DOUBLE, NUMBER, PLS_INTEGER). A predefined subtype
      * counts as its base type. Anything else stays undecided; nothing is chosen by order.
      *
+     * A record or collection value is told apart by its declared type, as Oracle does: a formal of a record or
+     * collection type declared with `TYPE … IS RECORD`, `IS TABLE OF` or `IS VARRAY` in a package of the project (a
+     * subtype counting as its base type) accepts only an actual of that same declared type, so a formal of another
+     * declared record or collection type is incompatible even when its fields or element are the same, and a type
+     * declared only in the analyzed file is distinct from every project type. The actual's declared type is known from
+     * a [ProjectArgumentType.described] description that reaches such a declaration. A `%ROWTYPE` on either side
+     * (table, view or cursor), which Oracle compares field by field, an object type (whose subtypes it accepts), a ref
+     * cursor, a NULL actual and an actual whose type is not known are never decided by declared type.
+     *
      * @throws IllegalArgumentException if a candidate was issued by another snapshot, if the list size differs from the
      * number of written actuals, or if it contains null
      */
@@ -294,7 +358,7 @@ class ProjectSnapshot private constructor(
         argumentTypes: List<ProjectArgumentType>,
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
-    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(preferring(currentSchema), structural, argumentTypes, metadata, currentSchema)
+    ): ProjectTypedCallResolution = ProjectCallNarrower.narrow(preferring(currentSchema, metadata), structural, argumentTypes, metadata, currentSchema)
 
     // An unprepared snapshot holds a placeholder empty result; it must stay NOT_PREPARED, not become "prepared".
     private fun callContext(): ProjectAnalysisContext =
@@ -391,6 +455,41 @@ class ProjectSnapshot private constructor(
         val method = selected.method
         if (method == null || method.returnsSelf) return ProjectMemberType(null, null, ProjectQualifiedName.wrap(selected.type.name))
         return method.returnType?.let { ProjectMemberType(ProjectTypeReference.from(it), null) }
+    }
+
+    /**
+     * Whether no schema object is named [name] for a name written in a unit compiling in [schema]: no project unit may
+     * be an object of [schema], and [metadata] holds [schema] and the public synonyms complete, with no object or public
+     * synonym of that name. False when a project source failed.
+     */
+    internal fun provesNoObjectNamed(name: OracleIdentifier, schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): Boolean {
+        if (schema == null || preparationState == ProjectPreparationState.NOT_PREPARED || preparationState == ProjectPreparationState.PREPARED_WITH_FAILURES) return false
+        if (preparationResult.index.hasUnitPossiblyIn(schema.identifier, name)) return false
+        val id = ProjectIdentifier.wrap(name)
+        return metadata.isSchemaComplete(schema) && metadata.isPublicSynonymsComplete &&
+            metadata.findObject(schema, id).isEmpty && metadata.findObject(ProjectExternalSynonym.PUBLIC, id).isEmpty
+    }
+
+    /**
+     * Whether no package variable or constant `first.member` exists for a name written in a unit compiling in [schema]:
+     * no object is named [first] ([provesNoObjectNamed]), or [first] is one package specification of the project, the
+     * only unit of that name, whose members named [member] are all subprograms.
+     */
+    internal fun provesNoPackageValue(first: OracleIdentifier, member: OracleIdentifier, schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): Boolean {
+        if (provesNoObjectNamed(first, schema, metadata)) return true
+        if (schema == null || preparationState == ProjectPreparationState.NOT_PREPARED || preparationState == ProjectPreparationState.PREPARED_WITH_FAILURES) return false
+        val index = preparationResult.index
+        val spec = index.findOccurrences(QualifiedName(first))
+            .filter { val d = it.declaration; d !is PackageDeclaration || d.role == DeclarationRole.SPECIFICATION }
+            .singleOrNull()?.takeIf { it.declaration is PackageDeclaration } ?: return false
+        val evidence = PackageMemberNames.at(index, spec, member, null)
+        return when (evidence.status) {
+            MemberNameStatus.NOT_DECLARED -> true
+            MemberNameStatus.DECLARED_BEFORE -> PackageMemberNames.members(index, spec, member).let { retained ->
+                retained.size == evidence.members.size && retained.all { it is PackageSubprogramDeclaration }
+            }
+            else -> false
+        }
     }
 
     /** The canonical occurrence behind an ID issued by this snapshot, or null. */

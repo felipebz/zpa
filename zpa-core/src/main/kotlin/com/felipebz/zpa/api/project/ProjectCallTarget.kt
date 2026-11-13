@@ -7,6 +7,7 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import java.util.*
+import com.felipebz.zpa.project.QualifiedName
 import com.felipebz.zpa.project.ProjectCallTarget as InternalCallTarget
 
 /**
@@ -26,11 +27,15 @@ class ProjectCallTarget private constructor(
     /** Present only for [Form.PACKAGE_MEMBER]. */
     val packageName: Optional<ProjectQualifiedName> get() = Optional.ofNullable(packageOwner)
 
+    /** The internal target, for [translated] instead of the written name when a synonym leads elsewhere. */
     @JvmSynthetic
-    internal fun toInternal(): InternalCallTarget = when (form) {
-        Form.PACKAGE_MEMBER -> InternalCallTarget.packageMember(requireNotNull(packageOwner).name, name.name.last)
-        Form.STANDALONE -> InternalCallTarget.standalone(name.name)
-        Form.WRITTEN -> InternalCallTarget.written(name.name)
+    internal fun toInternal(translated: QualifiedName? = null): InternalCallTarget {
+        val written = translated ?: name.name
+        return when (form) {
+            Form.PACKAGE_MEMBER -> InternalCallTarget.packageMember(QualifiedName(written.segments.dropLast(1)), written.last)
+            Form.STANDALONE -> InternalCallTarget.standalone(written)
+            Form.WRITTEN -> InternalCallTarget.written(written)
+        }
     }
 
     override fun equals(other: Any?): Boolean = other is ProjectCallTarget && form == other.form && name == other.name

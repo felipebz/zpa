@@ -28,9 +28,9 @@ class ProjectExternalLookup private constructor(
         FOUND,
 
         /**
-         * The relation is absent from the supplied metadata of a completely covered schema. Synonyms and other
-         * name-resolution paths are not modelled, so Oracle may still resolve the written reference: this is not
-         * proof that a PL/SQL reference is invalid.
+         * The relation is absent from the supplied metadata of a completely covered schema. This exact lookup does not
+         * follow synonyms ([ProjectSnapshot.describeExternalType] does), so Oracle may still resolve the written
+         * reference: this is not proof that a PL/SQL reference is invalid.
          */
         RELATION_NOT_FOUND,
         COLUMN_NOT_FOUND, NOT_COVERED, UNAVAILABLE

@@ -143,7 +143,17 @@ class MemberNameEvidence(val status: MemberNameStatus, members: List<SourceRange
     val members: List<SourceRange> = immutableList(members)
 }
 
-/** Member-name evidence of one package specification occurrence; positions are compared only within that occurrence. */
+/**
+ * The names one package body declares at its own level, outside its subprograms: variables, constants, types,
+ * subtypes, cursors, exceptions and subprograms (forward declarations included), each with the range of its whole
+ * declaration. Unlike a specification's coverage, [names] lists every such declaration, facts included, in source
+ * order; its gaps say why other names may exist. [sourceRange] is the body unit's range.
+ */
+class PackageBodyMemberNames(val owner: QualifiedName, val sourceRange: SourceRange, val names: PackageMemberNameCoverage) {
+    override fun toString(): String = "PackageBodyMemberNames($owner @ $sourceRange, $names)"
+}
+
+/** Member-name evidence of one package specification occurrence or body; positions are compared only within that unit. */
 object PackageMemberNames {
     /**
      * Evidence for [name] in the specification [unit] (an indexed package specification occurrence). [reference] is
@@ -158,8 +168,21 @@ object PackageMemberNames {
         }
         val retained = members(index, unit, name).map { it.sourceRange }
         val unretained = spec.memberNames?.unretained.orEmpty().filter { it.name == name }.map { it.sourceRange }
-        val members = (retained + unretained).sortedWith(compareBy({ it.startLine }, { it.startColumn }))
-        val coverage = spec.memberNames
+        return evidence(retained + unretained, spec.memberNames, name, reference)
+    }
+
+    /**
+     * Evidence for [name] at [reference], a range inside [body] (a declaration of the body's own level or inside one of
+     * its subprograms). A body-level declaration of the name captures the first segment of a reference after it;
+     * Oracle rejects a reference to one declared later, or whose own declaration contains it, as in a specification.
+     */
+    fun inBody(body: PackageBodyMemberNames, name: OracleIdentifier, reference: SourceRange): MemberNameEvidence {
+        require(reference.fileId == body.sourceRange.fileId && contains(body.sourceRange, reference)) { "The reference must lie inside the body" }
+        return evidence(body.names.unretained.filter { it.name == name }.map { it.sourceRange }, body.names, name, reference)
+    }
+
+    private fun evidence(ranges: List<SourceRange>, coverage: PackageMemberNameCoverage?, name: OracleIdentifier, reference: SourceRange?): MemberNameEvidence {
+        val members = ranges.sortedWith(compareBy({ it.startLine }, { it.startColumn }))
         val (certain, conditional) = members.partition { coverage?.isUnconditional(it) ?: false }
         val status = when {
             reference != null && certain.any { !completedBefore(it, reference) } -> MemberNameStatus.REJECTED

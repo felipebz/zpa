@@ -132,6 +132,16 @@ internal object DatatypeFamilies {
             description.source.declaration.orElse(null)?.kind == ProjectDeclarationKind.STANDALONE_TYPE
         ) CompositeKind.SCHEMA_OBJECT else null
 
+    fun declaredCompositeType(description: ProjectExternalTypeDescription): DeclaredCompositeType? {
+        if (description.status != ProjectExternalTypeDescription.Status.NOT_EXTERNAL) return null
+        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return null
+        val source = description.source
+        if (source.status != ProjectTypeDescription.Status.DECLARED_TYPE) return null
+        val type = source.declaration.orElse(null) as? ProjectPackageTypeView ?: return null
+        val shape = type.shape.orElse(null)
+        return if (shape == ProjectTypeShape.RECORD || shape == ProjectTypeShape.COLLECTION) DeclaredCompositeType.Project(type.id) else null
+    }
+
     /** The overload rank of a built-in type spelled as text, read as [ofTypeName] reads it; null when not known. */
     fun rankOfTypeName(text: String): OverloadRank? {
         if (text.contains('"') || text.contains('.')) return null
@@ -144,6 +154,27 @@ internal object DatatypeFamilies {
     fun ofExternal(datatype: ProjectExternalDatatype): ProjectDatatypeFamily? {
         if (datatype.typeOwner.isPresent) return null
         return ofTypeName(datatype.name)
+    }
+
+    /**
+     * The overload rank of a dictionary datatype: owner-less, its `DATA_TYPE` without the parenthesized groups
+     * (`TIMESTAMP(6) WITH TIME ZONE` is TIMESTAMP WITH TIME ZONE, `INTERVAL DAY(2) TO SECOND(6)` is INTERVAL DAY TO
+     * SECOND, `FLOAT` is NUMBER); null for an owned type or a spelling the rank tables do not know.
+     */
+    fun rankOfExternal(datatype: ProjectExternalDatatype): OverloadRank? {
+        if (datatype.typeOwner.isPresent) return null
+        val text = datatype.name
+        if (text.contains('"') || text.contains('.')) return null
+        val stripped = stripGroups(text) ?: return null
+        val words = stripped.trim().split(WHITESPACE).filter { it.isNotEmpty() }.map { it.uppercase(Locale.ROOT) }
+        return OverloadRank.ofDictionaryText(words)
+    }
+
+    /** The overload rank of a column `%TYPE` resolved from external metadata ([rankOfExternal]); null for any other description. */
+    fun externalRank(description: ProjectExternalTypeDescription): OverloadRank? {
+        if (description.status != ProjectExternalTypeDescription.Status.RESOLVED) return null
+        if (description.anchor.orElse(null) != ProjectTypeReference.Anchor.TYPE) return null
+        return description.lookup.flatMap { it.column }.flatMap { it.datatype }.orElse(null)?.let { rankOfExternal(it) }
     }
 
     /** Removes balanced, non-nested `( … )` groups whose content is digits, commas, spaces and length semantics. */
@@ -227,11 +258,15 @@ internal object DatatypeFamilies {
         return source.terminalReference.map { it.name }.orElse(null) ?: startName
     }
 
-    /** The package whose scope resolved the built-in name: the owner of the last followed step, else [requestOwner]. */
+    /**
+     * The package whose scope resolved the built-in name: the owner of the last followed step (for a field, the package
+     * of the record type that declares it), else [requestOwner].
+     */
     fun builtInScope(description: ProjectExternalTypeDescription, requestOwner: QualifiedName?): QualifiedName? =
         when (val last = description.source.steps.lastOrNull()) {
             is ProjectPackageValueView -> last.owner.name
             is ProjectSubtypeView -> last.owner.name
+            is ProjectPackageTypeView -> last.owner.name
             null -> requestOwner
             else -> null
         }

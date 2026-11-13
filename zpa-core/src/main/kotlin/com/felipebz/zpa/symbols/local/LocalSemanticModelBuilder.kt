@@ -208,7 +208,9 @@ internal object LocalSemanticModelBuilder {
                 SourceRange(fileId, first.token.line, first.token.column, node.lastToken.endLine, node.lastToken.endColumn))
             labels.forEach { it.details = (it.details as LocalLabel).copy(labeled = region.id) }
             val index = node.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-            declare(region, LocalDeclarationKind.LOOP_INDEX, index, index, details = LocalLoopIndex(null, true))
+            // The index of FORALL is a PLS_INTEGER, whatever its bounds.
+            declare(region, LocalDeclarationKind.LOOP_INDEX, index, index,
+                details = LocalLoopIndex(null, true, LocalLoopControl(LocalLoopControl.Form.STEPPED, null, null)))
             content.filter { it !== index }.forEach { visit(it, region) }
         }
 
@@ -479,7 +481,7 @@ internal object LocalSemanticModelBuilder {
             }
             val query = item.getFirstChildOrNull(DmlGrammar.SELECT_EXPRESSION)
             declaration.details = LocalCursor(
-                parameters?.id, query == null, item.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, region) }, query?.let(LocalSyntax::queryRow)
+                parameters?.id, query == null, item.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let { typeUse(it, region) }, query?.let { LocalSyntax.queryRow(fileId, it) }
             )
             query?.let { visit(it, parameters ?: region) }
         }

@@ -11,10 +11,11 @@ import java.util.*
 
 /**
  * Bounded, read-only description of a type name or reference, obtained by following **package subtype aliases and
- * supported source-backed `%TYPE` anchors (through package variables and constants)** over the supplied project facts.
- * It is not a datatype graph and not an Oracle type resolver: a description stops at the first non-subtype
- * declaration (its record fields or collection element are not traversed), at a built-in name, at an anchor this
- * source-only resolver does not resolve, at `REF` syntax, at an unresolved lookup or at a cycle.
+ * supported source-backed `%TYPE` anchors (through package variables and constants, and through the record fields an
+ * anchor names after a package value)** over the supplied project facts. It is not a datatype graph and not an Oracle
+ * type resolver: a description stops at the first non-subtype declaration (record fields are traversed only along the
+ * field path of an anchor such as `p.g_rec.f%TYPE`; a collection element never is), at a built-in name, at an anchor
+ * this source-only resolver does not resolve, at `REF` syntax, at an unresolved lookup or at a cycle.
  * [Status.UNRESOLVED_NAME] and [Status.UNRESOLVED_VALUE] say only that the supplied project facts do not identify the
  * target uniquely and completely; neither is proof that the source is invalid or that Oracle lacks the object.
  */
@@ -28,7 +29,8 @@ class ProjectTypeDescription private constructor(
     resolution: ProjectNamedTypeResolution?,
     valueResolution: ProjectValueResolution?,
     anchorStop: AnchorStop?,
-    writtenAnchor: ProjectWrittenAnchor?
+    writtenAnchor: ProjectWrittenAnchor?,
+    fieldPath: List<ProjectIdentifier> = emptyList()
 ) {
     enum class Status {
         /** A non-subtype type declaration was reached: [declaration] is present. */
@@ -58,21 +60,37 @@ class ProjectTypeDescription private constructor(
         /** `%ROWTYPE`: not resolved from source here. */
         ROWTYPE,
 
-        /** The name needs a record field path (or a competing field-path interpretation exists). */
+        /**
+         * A field path that is not followed: a competing reading of the name exists (a shorter and a longer package
+         * value, or a package value and another declaration of the same name), the value it starts from is not
+         * identified uniquely, or the type reached does not prove the field (several fields of the name, an object
+         * type whose attribute list is not fully known, a method, a type of unknown shape).
+         */
         FIELD_PATH,
 
-        /** A scope this resolver does not model (sibling field, parameter, body-private declaration, non-value
-         * package declaration, unidentifiable reference holder, ambiguous package specification, standalone name). */
+        /** A scope this resolver does not model (sibling field, parameter, a declaration of a package body's own level,
+         * or body names not known for the name, non-value package declaration, unidentifiable reference holder, ambiguous
+         * package specification, standalone name). */
         ENCLOSING_SCOPE,
 
         /** The value is declared after, or is, the reference in the same package specification. */
         DECLARED_LATER,
 
         /** The anchor names an object behind a database link (`t.c@link%TYPE`): never read against project sources. */
-        REMOTE
+        REMOTE,
+
+        /**
+         * The anchor selects a field the type of the package value does not have: a record or object type without a
+         * field or attribute of that name, a collection, or a scalar. Oracle rejects such an anchor. [steps] ends with
+         * the type examined (the value or subtype for a scalar).
+         */
+        FIELD_NOT_FOUND
     }
 
-    /** The followed package values and subtypes in traversal order, each occurrence once. Runtime-unmodifiable. */
+    /**
+     * The followed package values and subtypes, and the record or object types a field path went through, in traversal
+     * order, each occurrence once. Runtime-unmodifiable.
+     */
     val steps: List<ProjectDeclarationView> = immutableList(steps)
 
     /** The value steps of [steps], in order. Runtime-unmodifiable. */
@@ -111,11 +129,22 @@ class ProjectTypeDescription private constructor(
     /** Present only for [Status.ANCHORED_REFERENCE]. */
     val anchorStop: Optional<AnchorStop> = Optional.ofNullable(anchorStop)
 
+    /**
+     * The fields an enclosing anchor still selects from the type this description stops at, outermost first; empty when
+     * no field path is pending. `p.g_cust.name%TYPE`, with `g_cust customer%ROWTYPE`, stops at the anchor
+     * `customer%ROWTYPE` with the path `name`: the status then describes the record whose field is meant, not the
+     * requested type. Always empty for [Status.DECLARED_TYPE] and [Status.BUILT_IN]. Runtime-unmodifiable.
+     */
+    val fieldPath: List<ProjectIdentifier> = immutableList(fieldPath)
+
     init {
         val targets = (declaration != null) to (builtInCategory != null)
         val noExtras = resolution == null && valueResolution == null && anchorStop == null
-        // A stop at the written request: only a written-anchor query, before any step was followed.
-        val atRequest = terminalReference == null && writtenAnchor != null && steps.isEmpty()
+        // A stop at the written request: only a written-anchor query, before any step was followed, or a field of the
+        // request's own field path that was not selected after its value was followed.
+        val fieldStop = anchorStop == AnchorStop.FIELD_PATH || anchorStop == AnchorStop.FIELD_NOT_FOUND
+        val atRequest = terminalReference == null && writtenAnchor != null && (steps.isEmpty() || fieldStop)
+        require(fieldPath.isEmpty() || (status != Status.DECLARED_TYPE && status != Status.BUILT_IN)) { "A reached type has no pending field path" }
         when (status) {
             Status.DECLARED_TYPE -> require(targets == (true to false) && noExtras) { "Invalid DECLARED_TYPE description" }
             Status.BUILT_IN -> require(targets == (false to true) && noExtras) { "Invalid BUILT_IN description" }
@@ -145,7 +174,7 @@ class ProjectTypeDescription private constructor(
         }
     }
 
-    override fun toString(): String = "$status ${steps.map { it.qualifiedName }}"
+    override fun toString(): String = "$status ${steps.map { it.qualifiedName }}" + if (fieldPath.isEmpty()) "" else " .${fieldPath.joinToString(".")}"
 
     internal companion object {
         @JvmSynthetic
@@ -157,23 +186,33 @@ class ProjectTypeDescription private constructor(
             ProjectTypeDescription(Status.BUILT_IN, steps, null, category, terminal, null, null, null, written)
 
         @JvmSynthetic
-        fun unresolved(steps: List<ProjectDeclarationView>, resolution: ProjectNamedTypeResolution, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
-            ProjectTypeDescription(Status.UNRESOLVED_NAME, steps, null, null, terminal, resolution, null, null, written)
+        fun unresolved(
+            steps: List<ProjectDeclarationView>, resolution: ProjectNamedTypeResolution, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null,
+            fieldPath: List<ProjectIdentifier> = emptyList()
+        ) = ProjectTypeDescription(Status.UNRESOLVED_NAME, steps, null, null, terminal, resolution, null, null, written, fieldPath)
 
         @JvmSynthetic
-        fun unresolvedValue(steps: List<ProjectDeclarationView>, resolution: ProjectValueResolution, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
-            ProjectTypeDescription(Status.UNRESOLVED_VALUE, steps, null, null, terminal, null, resolution, null, written)
+        fun unresolvedValue(
+            steps: List<ProjectDeclarationView>, resolution: ProjectValueResolution, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null,
+            fieldPath: List<ProjectIdentifier> = emptyList()
+        ) = ProjectTypeDescription(Status.UNRESOLVED_VALUE, steps, null, null, terminal, null, resolution, null, written, fieldPath)
 
         @JvmSynthetic
-        fun anchorStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference?, stop: AnchorStop, written: ProjectWrittenAnchor? = null) =
-            ProjectTypeDescription(Status.ANCHORED_REFERENCE, steps, null, null, reference, null, null, stop, written)
+        fun anchorStopped(
+            steps: List<ProjectDeclarationView>, reference: ProjectTypeReference?, stop: AnchorStop, written: ProjectWrittenAnchor? = null,
+            fieldPath: List<ProjectIdentifier> = emptyList()
+        ) = ProjectTypeDescription(Status.ANCHORED_REFERENCE, steps, null, null, reference, null, null, stop, written, fieldPath)
 
         @JvmSynthetic
-        fun refStopped(steps: List<ProjectDeclarationView>, reference: ProjectTypeReference, written: ProjectWrittenAnchor? = null) =
-            ProjectTypeDescription(Status.REF_REFERENCE, steps, null, null, reference, null, null, null, written)
+        fun refStopped(
+            steps: List<ProjectDeclarationView>, reference: ProjectTypeReference, written: ProjectWrittenAnchor? = null,
+            fieldPath: List<ProjectIdentifier> = emptyList()
+        ) = ProjectTypeDescription(Status.REF_REFERENCE, steps, null, null, reference, null, null, null, written, fieldPath)
 
         @JvmSynthetic
-        fun cycle(steps: List<ProjectDeclarationView>, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
-            ProjectTypeDescription(Status.CYCLE, steps, null, null, terminal, null, null, null, written)
+        fun cycle(
+            steps: List<ProjectDeclarationView>, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null,
+            fieldPath: List<ProjectIdentifier> = emptyList()
+        ) = ProjectTypeDescription(Status.CYCLE, steps, null, null, terminal, null, null, null, written, fieldPath)
     }
 }

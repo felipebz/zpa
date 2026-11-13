@@ -54,7 +54,8 @@ class ProjectWrittenAnchorKotlinConsumerTest {
         val row = snapshot.describeType(ProjectWrittenAnchor.of(n("employees"), ProjectTypeReference.Anchor.ROWTYPE), null)
         assertThat(row.anchorStop.get()).isEqualTo(ProjectTypeDescription.AnchorStop.ROWTYPE)
         assertThat(snapshot.describeType(type("g"), null).anchorStop.get()).isEqualTo(ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE)
-        assertThat(snapshot.describeType(type("rec_value", "id"), n("p")).anchorStop.get()).isEqualTo(ProjectTypeDescription.AnchorStop.FIELD_PATH)
+        assertThat(snapshot.describeType(type("rec_value", "id"), n("p")).status).isEqualTo(ProjectTypeDescription.Status.BUILT_IN)
+        assertThat(snapshot.describeType(type("rec_value", "nope"), n("p")).anchorStop.get()).isEqualTo(ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND)
 
         val retained = snapshot.findDeclarations(n("q", "a")).declarations.single() as ProjectPackageValueView
         val fromRetained = snapshot.describeType(retained.typeRef, retained.owner)

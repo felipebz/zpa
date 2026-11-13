@@ -30,16 +30,19 @@ internal class OracleMetadataSettings(
     val schemas: List<String>,
     val relations: List<Pair<String, String>>,
     /** An explicitly configured driver JAR, or null to use the drivers visible to the plugin. */
-    val driverJar: Path?
+    val driverJar: Path?,
+    val publicSynonyms: Boolean = true
 ) {
     fun request(): OracleMetadataRequest {
         val builder = OracleMetadataRequest.builder()
         schemas.forEach { builder.schema(it) }
         relations.forEach { (schema, name) -> builder.relation(schema, name) }
+        if (publicSynonyms) builder.publicSynonyms()
         return builder.build()
     }
 
-    override fun toString(): String = "OracleMetadataSettings(user=$user, schemas=$schemas, relations=$relations, driverJar=$driverJar)"
+    override fun toString(): String =
+        "OracleMetadataSettings(user=$user, schemas=$schemas, relations=$relations, publicSynonyms=$publicSynonyms, driverJar=$driverJar)"
 
     companion object {
         const val URL_KEY = "sonar.zpa.oracle.url"
@@ -49,6 +52,14 @@ internal class OracleMetadataSettings(
         const val RELATIONS_KEY = "sonar.zpa.oracle.relations"
         const val COMPILATION_SCHEMA_KEY = "sonar.zpa.oracle.compilationSchema"
         const val DRIVER_PATH_KEY = "sonar.zpa.oracle.driverPath"
+
+        /**
+         * `true` (default) or `false`: whether to read every public synonym (the `ALL_SYNONYMS` rows owned by PUBLIC).
+         * A public synonym can take an unqualified name the compilation schema lacks, so without them a relation
+         * absent from the compilation schema is reported as incomplete instead of not found. Databases can have many
+         * public synonyms, which makes the acquisition read more rows.
+         */
+        const val PUBLIC_SYNONYMS_KEY = "sonar.zpa.oracle.publicSynonyms"
         const val DEFAULT_PASSWORD_ENV = "ZPA_ORACLE_PASSWORD"
 
         /** `jdbc:oracle:thin:user/password@...` or a `password=` connection property. */
@@ -68,9 +79,11 @@ internal class OracleMetadataSettings(
             val schemaValues = list(configuration, SCHEMAS_KEY)
             val relationValues = list(configuration, RELATIONS_KEY)
             val driverPath = configuration.get(DRIVER_PATH_KEY).orElse("").trim()
+            val publicSynonymsValue = configuration.get(PUBLIC_SYNONYMS_KEY).orElse("").trim()
             if (url.isEmpty()) {
-                if (user.isNotEmpty() || schemaValues.isNotEmpty() || relationValues.isNotEmpty() || driverPath.isNotEmpty()) {
-                    throw failure("$USER_KEY, $SCHEMAS_KEY, $RELATIONS_KEY and $DRIVER_PATH_KEY require $URL_KEY")
+                if (user.isNotEmpty() || schemaValues.isNotEmpty() || relationValues.isNotEmpty() || driverPath.isNotEmpty() ||
+                    publicSynonymsValue.isNotEmpty()) {
+                    throw failure("$USER_KEY, $SCHEMAS_KEY, $RELATIONS_KEY, $DRIVER_PATH_KEY and $PUBLIC_SYNONYMS_KEY require $URL_KEY")
                 }
                 return null
             }
@@ -98,7 +111,12 @@ internal class OracleMetadataSettings(
             val driverJar = driverPath.takeIf { it.isNotEmpty() }?.let { baseDir.resolve(it).normalize() }?.also {
                 if (!Files.isRegularFile(it)) throw failure("$DRIVER_PATH_KEY does not name a JAR file: $it")
             }
-            return OracleMetadataSettings(url, user, password, schemas, relations, driverJar)
+            val publicSynonyms = when (publicSynonymsValue.lowercase()) {
+                "", "true" -> true
+                "false" -> false
+                else -> throw failure("invalid $PUBLIC_SYNONYMS_KEY value '$publicSynonymsValue': expected true or false")
+            }
+            return OracleMetadataSettings(url, user, password, schemas, relations, driverJar, publicSynonyms)
         }
 
         /** The configured default compilation schema as an exact identifier, or null. Independent of acquisition. */

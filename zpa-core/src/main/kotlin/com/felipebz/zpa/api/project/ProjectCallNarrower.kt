@@ -22,7 +22,8 @@ internal object ProjectCallNarrower {
         val family: ProjectDatatypeFamily?,
         val reason: UnknownReason?,
         val rank: OverloadRank? = null,
-        val compositeKind: CompositeKind? = null
+        val compositeKind: CompositeKind? = null,
+        val declaredType: DeclaredCompositeType? = null
     )
 
     @JvmSynthetic
@@ -42,7 +43,7 @@ internal object ProjectCallNarrower {
             require(snapshot.occurrenceOf(candidate.declaration.id) != null) { "The call resolution was not issued by this snapshot" }
         }
         val shadowed = shadowCheck(snapshot)
-        val actuals = types.map { actual(it, shadowed) }
+        val actuals = types.map { issued(snapshot, actual(it, shadowed)) }
         val formalRanks = ArrayList<List<OverloadRank?>>()
         val evaluations = structural.candidates
             .filter { it.applicability == ProjectCallCandidate.Applicability.APPLICABLE }
@@ -99,7 +100,7 @@ internal object ProjectCallNarrower {
         currentSchema: ProjectIdentifier?
     ): Int? {
         val shadowed = shadowCheck(snapshot)
-        val actuals = argumentTypes.map { actual(it, shadowed) }
+        val actuals = argumentTypes.map { issued(snapshot, actual(it, shadowed)) }
         val evidence = formals.map { types -> types.map { formal(snapshot, it, null, { true }, metadata, currentSchema, shadowed) } }
         val outcomes = evidence.map { types -> actuals.indices.map { compare(actuals[it], types[it]) { outcome, reason -> outcome to reason } } }
         val retained = outcomes.indices.filter { candidate -> outcomes[candidate].none { it.first == Outcome.INCOMPATIBLE } }
@@ -125,11 +126,21 @@ internal object ProjectCallNarrower {
             val name = type.shadowName
             when {
                 family != null && scope != null && name != null && shadowed(scope, name) -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
-                family != null -> Evidence(family, null, type.rank, type.compositeKind)
+                family != null -> Evidence(family, null, type.rank, type.compositeKind, type.declaredType)
                 type.unclassified -> Evidence(null, UnknownReason.UNCLASSIFIED_TYPE)
                 else -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
             }
         }
+    }
+
+    /**
+     * [evidence] without its declared type when that type is a declaration of another snapshot: identities of two
+     * snapshots are never equal, so such a type would reject every formal.
+     */
+    private fun issued(snapshot: ProjectSnapshot, evidence: Evidence): Evidence {
+        val type = evidence.declaredType as? DeclaredCompositeType.Project ?: return evidence
+        if (snapshot.occurrenceOf(type.id) != null) return evidence
+        return Evidence(evidence.family, evidence.reason, evidence.rank, evidence.compositeKind)
     }
 
     /**
@@ -161,7 +172,8 @@ internal object ProjectCallNarrower {
             return Evidence(null, UnknownReason.FORMAL_INCONCLUSIVE)
         }
         val rank = builtIn?.let { OverloadRank.of(it.name, description.source.terminalReference.map { ref -> ref.writtenIdentity }.orElse(null)) }
-        return Evidence(family, null, rank, DatatypeFamilies.compositeKind(description))
+            ?: DatatypeFamilies.externalRank(description)
+        return Evidence(family, null, rank, DatatypeFamilies.compositeKind(description), DatatypeFamilies.declaredCompositeType(description))
     }
 
     /**
@@ -190,8 +202,13 @@ internal object ProjectCallNarrower {
         if (actual.family == ProjectDatatypeFamily.INTERVAL && formal.family == ProjectDatatypeFamily.INTERVAL && actual.rank != null && formal.rank != null) {
             return result(if (actual.rank == formal.rank) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
         }
-        // Composites: a ref cursor and a schema object type reject each other; a SYS_REFCURSOR formal takes any ref cursor.
+        // Composites: a formal of a declared record or collection type accepts only a value of that same declared type
+        // (another one with the same fields or element is rejected); a ref cursor and a schema object type reject each
+        // other; a SYS_REFCURSOR formal takes any ref cursor.
         if (actual.family == ProjectDatatypeFamily.COMPOSITE && formal.family == ProjectDatatypeFamily.COMPOSITE) {
+            if (actual.declaredType != null && formal.declaredType != null) {
+                return result(if (actual.declaredType == formal.declaredType) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
+            }
             val kinds = setOfNotNull(actual.compositeKind, formal.compositeKind)
             if (actual.compositeKind != null && formal.compositeKind != null && kinds.size == 2) return result(Outcome.INCOMPATIBLE, null)
             if (kinds == setOf(CompositeKind.REF_CURSOR) && actual.compositeKind != null && formal.compositeKind != null) return result(Outcome.COMPATIBLE, null)

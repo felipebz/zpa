@@ -22,6 +22,7 @@ class ProjectCallDiscoveryKotlinConsumerTest {
         ProjectCallCandidates.Status.PARTIAL_DECLARATIONS -> "partial"
         ProjectCallCandidates.Status.INCOMPLETE_INDEX -> "incomplete"
         ProjectCallCandidates.Status.NOT_PREPARED -> "not prepared"
+        ProjectCallCandidates.Status.SYNONYM_TARGET_NOT_IN_PROJECT -> "synonym target not in project"
     }
 
     private fun label(uncertainty: ProjectCallUncertainty): String = when (uncertainty) {

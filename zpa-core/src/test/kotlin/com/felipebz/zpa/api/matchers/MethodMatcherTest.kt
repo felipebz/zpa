@@ -7,6 +7,7 @@ package com.felipebz.zpa.api.matchers
 
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.RuleTest
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -237,6 +238,43 @@ class MethodMatcherTest : RuleTest() {
         val matcher = MethodMatcher.create().addParameters(2)
         assertThrows<IllegalStateException> {
             matcher.withNoParameterConstraint()
+        }
+    }
+
+    @Test
+    @OptIn(ZpaExperimentalApi::class)
+    fun nullLiteralPredicateMatchesNullAndTheEmptyString() {
+        val matcher = MethodMatcher.create().name("nvl").addParameters(MethodMatcher.nullLiteral().negate(), MethodMatcher.nullLiteral())
+        matches(matcher, "nvl(x, null)")
+        matches(matcher, "nvl(x, '')")
+        matches(matcher, "nvl(x, n'')")
+        matches(matcher, "nvl(x, q'[]')")
+        notMatches(matcher, "nvl(x, ' ')")
+        notMatches(matcher, "nvl(x, y)")
+        notMatches(matcher, "nvl(x, q'[ ]')")
+        notMatches(matcher, "nvl(x, (null))")
+        notMatches(matcher, "nvl(null, null)")
+        // Named actuals: the predicate sees the expression after the arrow.
+        matches(matcher, "nvl(expr1 => x, expr2 => null)")
+        matches(matcher, "nvl(x, expr2 => '')")
+        notMatches(matcher, "nvl(expr1 => x, expr2 => ' ')")
+        notMatches(matcher, "nvl(expr1 => x, expr2 => y)")
+        notMatches(matcher, "nvl(x)")
+    }
+
+    @Test
+    @OptIn(ZpaExperimentalApi::class)
+    fun predicateReceivesEachArgumentExpression() {
+        val seen = mutableListOf<String>()
+        val matcher = MethodMatcher.create().name("func")
+            .addParameter { seen += it.tokens.joinToString(" ") { t -> t.originalValue }; true }
+            .addParameter()
+            .addParameter { it.type == PlSqlGrammar.LITERAL }
+        matches(matcher, "func(a + 1, b, c => 3)")
+        notMatches(matcher, "func(a, b, c => d)")
+        assertThat(seen).containsExactly("a + 1", "a")
+        assertThrows<IllegalStateException> {
+            MethodMatcher.create().withNoParameterConstraint().addParameter(MethodMatcher.nullLiteral())
         }
     }
 

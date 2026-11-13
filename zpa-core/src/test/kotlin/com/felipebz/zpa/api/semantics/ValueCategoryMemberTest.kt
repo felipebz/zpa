@@ -108,7 +108,7 @@ class ValueCategoryMemberTest {
             "13:s.a=Scalar(NUMERIC)",
             "14:s.inner.b=Scalar(CHARACTER)",
             // A field typed by a collection gives its element; a field typed by a record or an object type, its category.
-            "15:v.tab=Collection(? of Record(RECORD_TYPE))",
+            "15:v.tab=Collection(NESTED_TABLE of Record(RECORD_TYPE))",
             "16:v.o.c=Scalar(DATETIME)",
             "17:v.i=Record(RECORD_TYPE)",
             // The project does not read a cursor's select list: its row's fields stay undecided.

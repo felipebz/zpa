@@ -70,7 +70,7 @@ class OracleMetadataAcquisitionIT {
             END pkg_meta;
             """.trimIndent()
         )
-        full = OracleMetadataAcquisition.acquire(owner.dataSource, OracleMetadataRequest.builder().schema(owner.name).build())
+        full = OracleMetadataAcquisition.acquire(owner.dataSource, OracleMetadataRequest.builder().schema(owner.name).publicSynonyms().build())
     }
 
     @AfterAll
@@ -190,7 +190,8 @@ class OracleMetadataAcquisitionIT {
         val copy = describe("g_copy")
         assertThat(copy.status).isEqualTo(Status.RESOLVED)
         assertThat(copy.source.steps.map { it.qualifiedName.toString() }).containsExactly("pkg_meta.g_name")
-        assertThat(describe("g_q").status).isEqualTo(Status.CAPTURE_NOT_EXCLUDED)
+        // No object of the schema and no public synonym takes the qualifier: it is read as the schema.
+        assertThat(describe("g_q").status).isEqualTo(Status.RESOLVED)
         assertThat(describe("g_mixed").status).isEqualTo(Status.RESOLVED)
         // Oracle compiled the very same specification.
         assertThat(owner.call("BEGIN SELECT status INTO ? FROM user_objects WHERE object_name = 'PKG_META' AND object_type = 'PACKAGE'; END;"))
@@ -211,9 +212,11 @@ class OracleMetadataAcquisitionIT {
         // Without metadata the anchored formals are unknown, so nothing is eliminated.
         assertThat(snapshot.narrowCall(structural, listOf(ProjectArgumentType.builtIn("NUMBER")), ProjectExternalMetadata.none(), schema).status)
             .isEqualTo(ProjectTypedCallResolution.Status.AMBIGUOUS)
-        // DATE is compatible with both (DATE converts to VARCHAR2); S9 does not rank, Oracle prefers born.
-        assertThat(snapshot.narrowCall(structural, listOf(ProjectArgumentType.builtIn("DATE")), full.metadata, schema).status)
-            .isEqualTo(ProjectTypedCallResolution.Status.AMBIGUOUS)
+        // DATE is compatible with both (DATE converts to VARCHAR2); Oracle prefers the DATE formal.
+        val date = snapshot.narrowCall(structural, listOf(ProjectArgumentType.builtIn("DATE")), full.metadata, schema)
+        assertThat(date.status).isEqualTo(ProjectTypedCallResolution.Status.RESOLVED)
+        assertThat(date.ranked).isTrue()
+        assertThat(date.selected.get().declaration.parameters.single().typeRef.name.toString()).isEqualTo("test_table.born")
         assertThat(owner.call("BEGIN ? := pkg_meta.take(SYSDATE); END;")).isEqualTo("born")
     }
 

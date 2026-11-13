@@ -540,6 +540,7 @@ class ProjectApiKotlinConsumerTest {
         ProjectTypeDescription.AnchorStop.ENCLOSING_SCOPE -> "enclosing scope"
         ProjectTypeDescription.AnchorStop.DECLARED_LATER -> "declared later"
         ProjectTypeDescription.AnchorStop.REMOTE -> "remote"
+        ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND -> "field not found"
     }
 
     private fun label(status: ProjectValueResolution.Status): String = when (status) {
@@ -633,7 +634,7 @@ class ProjectApiKotlinConsumerTest {
         assertThat(row.status).isEqualTo(ProjectTypeDescription.Status.ANCHORED_REFERENCE)
         assertThat(label(row.anchorStop.get())).isEqualTo("rowtype")
         assertThat(row.valueResolution).isEmpty
-        assertThat(label(describeValue(snapshot, "p", "field_ref").anchorStop.get())).isEqualTo("field path")
+        assertThat(describeValue(snapshot, "p", "field_ref").status).isEqualTo(ProjectTypeDescription.Status.BUILT_IN)
         assertThat(label(describeValue(snapshot, "p", "later_ref").anchorStop.get())).isEqualTo("declared later")
         val cap = snapshot.resolveNamedType(n("cap_t"), n("p")).declaration.get() as ProjectPackageTypeView
         assertThat(label(snapshot.describeType(cap.recordFields[1].typeRef, cap.owner).anchorStop.get())).isEqualTo("enclosing scope")

@@ -341,7 +341,7 @@ class UsageEvidenceTest {
             /
             """.trimIndent() + "\n"
         assertThat(valueCategories(text)).containsExactly(
-            "21:r=Record(ROWTYPE, Named(t))", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE, Named(t))", "24:rc=Record(ROWTYPE, QueryColumns)",
+            "21:r=Record(ROWTYPE, Named(t))", "22:rr=Record(RECORD_TYPE)", "23:x=Record(ROWTYPE, Named(t))", "24:rc=Record(ROWTYPE, QueryColumns, [A, B])",
             "25:rs=Record(ROWTYPE, Named(t))", "26:ra=Record(ROWTYPE, Named(t))",
             "27:va=Collection(ASSOCIATIVE_ARRAY of Record(ROWTYPE, Named(t)))", "28:vn=Collection(NESTED_TABLE of Scalar(NUMERIC))",
             "29:vv=Collection(VARRAY of Record(RECORD_TYPE))", "30:n=Scalar(NUMERIC)",
@@ -363,11 +363,11 @@ class UsageEvidenceTest {
         // With a RETURN type, c%ROWTYPE is still the query's row (fields b, a), and a loop over c has the RETURN type's.
         val local = "create procedure p is\n  cursor c return tab%rowtype is select b, a from tab;\n  r c%rowtype;\nbegin\n" +
             "  insert into tab values r;\n  for r2 in c loop\n    insert into tab values r2;\n  end loop;\nend;\n/\n"
-        assertThat(valueCategories(local)).containsExactly("5:r=Record(ROWTYPE, QueryColumns)", "7:r2=Record(ROWTYPE, Named(tab))")
-        // A package cursor's row is not a relation: no relation is known.
+        assertThat(valueCategories(local)).containsExactly("5:r=Record(ROWTYPE, QueryColumns, [B, A])", "7:r2=Record(ROWTYPE, Named(tab))")
+        // A package cursor's row is not a relation: no relation is known, its select list names its fields.
         val spec = "create package cur_pkg is\n  cursor c is select b, a from tab;\nend;\n/\n"
         val user = "create procedure u is\n  r cur_pkg.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
-        assertThat(valueCategories(user, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE)")
+        assertThat(valueCategories(user, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE, [B, A])")
     }
 
     @Test
@@ -375,9 +375,9 @@ class UsageEvidenceTest {
         // Oracle reads pk3.c from a unit of the schema APP as app.pk3.c, a cursor.
         val spec = "create package app.pk3 is\n  cursor c is select b, a from tab;\nend;\n/\n"
         val mapped = "create procedure u is\n  r pk3.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
-        assertThat(valueCategories(mapped, "s.sql" to spec, prepared = true, schemaPaths = "u.sql=APP")).containsExactly("4:r=Record(ROWTYPE)")
+        assertThat(valueCategories(mapped, "s.sql" to spec, prepared = true, schemaPaths = "u.sql=APP")).containsExactly("4:r=Record(ROWTYPE, [B, A])")
         val owned = "create procedure app.u is\n  r pk3.c%rowtype;\nbegin\n  insert into tab values r;\nend;\n/\n"
-        assertThat(valueCategories(owned, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE)")
+        assertThat(valueCategories(owned, "s.sql" to spec, prepared = true)).containsExactly("4:r=Record(ROWTYPE, [B, A])")
     }
 
     @Test
@@ -388,10 +388,10 @@ class UsageEvidenceTest {
         val body = "create package body pkg is\n  procedure p is\n    l_list str_list;\n    l_other other_schema.str_list;\n  begin\n" +
             "    insert into t values v_recs(1);\n    insert into t values v_nums(1);\n    insert into t values v_rows(1);\n" +
             "    insert into t values l_list(1);\n    insert into t values l_other(1);\n  end;\nend;\n/\n"
-        // The project keeps no collection kind. A schema-qualified type it cannot place stays unknown.
+        // A schema-qualified type the project cannot place stays unknown.
         assertThat(valueCategories(body, "s.sql" to spec, "type.sql" to type, prepared = true)).containsExactly(
-            "6:v_recs=Collection(? of Record(RECORD_TYPE))", "7:v_nums=Collection(? of Scalar(NUMERIC))", "8:v_rows=Collection(? of Record(ROWTYPE, Named(t)))",
-            "9:l_list=Collection(? of Scalar(CHARACTER))", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
+            "6:v_recs=Collection(NESTED_TABLE of Record(RECORD_TYPE))", "7:v_nums=Collection(NESTED_TABLE of Scalar(NUMERIC))", "8:v_rows=Collection(NESTED_TABLE of Record(ROWTYPE, Named(t)))",
+            "9:l_list=Collection(NESTED_TABLE of Scalar(CHARACTER))", "10:l_other=Unknown[DECLARATION_OUTSIDE_FILE]"
         )
     }
 
@@ -402,14 +402,14 @@ class UsageEvidenceTest {
             "  insert into t values la;\n  insert into t values lb;\n  insert into t values lx;\nend;\n/\n"
         // A collection reached again while its own element is being classified is unknown, as in the file.
         assertThat(valueCategories(proc, "types.sql" to types, prepared = true)).containsExactly(
-            "7:la=Collection(? of Unknown[UNSUPPORTED_REFERENCE])",
-            "8:lb=Collection(? of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))",
-            "9:lx=Collection(NESTED_TABLE of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))"
+            "7:la=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])",
+            "8:lb=Collection(NESTED_TABLE of Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE]))",
+            "9:lx=Collection(NESTED_TABLE of Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE]))"
         )
         val spec = "create package pkg is\n  type s is table of s;\n  type x is table of y;\n  type y is table of x;\n  vs s;\n  vx x;\n  procedure p;\nend;\n/\n"
         val body = "create package body pkg is\n  procedure p is\n  begin\n    insert into t values vs;\n    insert into t values vx;\n  end;\nend;\n/\n"
         assertThat(valueCategories(body, "s.sql" to spec, prepared = true)).containsExactly(
-            "4:vs=Collection(? of Unknown[UNSUPPORTED_REFERENCE])", "5:vx=Collection(? of Collection(? of Unknown[UNSUPPORTED_REFERENCE]))"
+            "4:vs=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])", "5:vx=Collection(NESTED_TABLE of Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE]))"
         )
         assertThat(valueCategories("declare\n  type x is table of x;\n  l x;\nbegin\n  insert into t values l;\nend;\n/\n"))
             .containsExactly("5:l=Collection(NESTED_TABLE of Unknown[UNSUPPORTED_REFERENCE])")
@@ -622,9 +622,10 @@ class UsageEvidenceTest {
         val text = "create or replace package shop as\n  procedure run;\nend;\n/\n" +
             "create or replace package body shop as\n  type rec_t is record (f number);\n  g_rec rec_t;\n  procedure run is\n    n number;\n  begin\n" +
             "    select g_rec.f into n from shop_orders g_rec;\n    select g_rec.f into n from shop_orders;\n  end;\nend;\n/\n"
-        // With no relation of that name, `g_rec.f` cannot be a column: an object column's attribute needs the table alias.
+        // The alias takes `g_rec.f` when its table has the column f, else the record does. With no relation of that name,
+        // `g_rec.f` cannot be a column: an object column's attribute needs the table alias.
         assertThat(chainBindings(text)).containsExactly(
-            "11:11:G_REC=NothingLocal(column possible)", "11:17:F=NothingLocal(column possible)",
+            "11:11:G_REC=ColumnOrLocal(VARIABLE@7:2)", "11:17:F=Unavailable(NOT_A_COVERED_NAME)",
             "12:11:G_REC=Local(VARIABLE@7:2)", "12:17:F=Unavailable(NOT_A_COVERED_NAME)"
         )
     }
