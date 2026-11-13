@@ -53,10 +53,9 @@ internal class LocalColumnBindings(
         if (name.type === PlSqlGrammar.VARIABLE_NAME && parent.type === PlSqlGrammar.MEMBER_EXPRESSION) return unavailable()
         val start = startScope(name) ?: return unavailable()
         if (name.getFirstAncestorOrNull(DmlGrammar.INTO_CLAUSE)?.let { isBelow(it, start) } == true) return ColumnBinding.PlSqlName(PlSqlNameReason.INTO_TARGET)
+        if (isBindVariable(name)) return ColumnBinding.PlSqlName(PlSqlNameReason.BIND_VARIABLE)
         hidden(start)?.let { return it }
-        if (parent.type === PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild === name) {
-            return if (parent.lastChild.type === PlSqlPunctuator.MULTIPLICATION) starQualifier(name, start) else unavailable()
-        }
+        if (parent.type === PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild === name) objectReference(name, parent, start)?.let { return it }
         val segments = segments(name) ?: return unavailable()
         correlationArgument(name, start)?.let { return it }
         writtenColumn(name, start, segments.last())?.let { return it }
@@ -65,13 +64,23 @@ internal class LocalColumnBindings(
         return qualifiedName(name, start, segments)
     }
 
+    /**
+     * The first part of an object reference: the qualifier of `t.*`; `t.col(+)` of an outer join is the name `t.col`
+     * (null: answered as a name); a member of anything else (`t.col.f(…)`) is not a name.
+     */
+    private fun objectReference(name: AstNode, reference: AstNode, start: AstNode): ColumnBinding? = when {
+        reference.lastChild.type === PlSqlPunctuator.MULTIPLICATION -> starQualifier(name, start)
+        reference.children.size == 2 && reference.lastChild.type === PlSqlGrammar.OUTER_JOIN_PLUS_SIGN -> null
+        else -> unavailable()
+    }
+
     /** `q.col.method(…)`: a method of a column; `f(…)` and `q.f(…)` are calls. */
     private fun methodCallee(name: AstNode, start: AstNode, segments: List<OracleIdentifier>): ColumnBinding {
         if (segments.size < 3) return unavailable()
         return when (val capture = qualified(name, start, segments.dropLast(1))) {
             is Capture.Found -> capture.binding
             // A PL/SQL call may take the whole name (`schema.pkg.f`, `pkg.v.method`).
-            is Capture.Lacking -> ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.PLSQL_NAME_UNDECIDED))
+            is Capture.Lacking -> plSqlNameUndecided(capture)
             null -> unavailable()
         }
     }
@@ -101,7 +110,7 @@ internal class LocalColumnBindings(
             is NameBinding.Local -> return declared(name, capture, first.declaration)
             is NameBinding.ColumnOrLocal -> return declared(name, capture, first.declaration)
             is NameBinding.NothingLocal -> Unit
-            else -> return ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.PLSQL_NAME_UNDECIDED))
+            else -> return plSqlNameUndecided(capture)
         }
         val region = region(name)
         // `schema.t.col`: with no object named like the schema, its first name is the schema, where `t` is the relation.
@@ -110,9 +119,13 @@ internal class LocalColumnBindings(
         return when (taken) {
             true -> ColumnBinding.PlSqlName(PlSqlNameReason.NO_SOURCE_HAS_IT)
             false -> columnOf(capture.source, capture.column, false)
-            null -> ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.PLSQL_NAME_UNDECIDED))
+            null -> plSqlNameUndecided(capture)
         }
     }
+
+    /** A PL/SQL name may take the name the source [capture] names lacks; else Oracle reads that missing column. */
+    private fun plSqlNameUndecided(capture: Capture.Lacking): ColumnBinding =
+        ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.PLSQL_NAME_UNDECIDED), listOf(columnOf(capture.source, capture.column, false)))
 
     /**
      * A qualified name whose source lacks the column, and whose first name a declaration of the file takes. A value
@@ -123,7 +136,7 @@ internal class LocalColumnBindings(
         val plsql = ColumnBinding.PlSqlName(PlSqlNameReason.NO_SOURCE_HAS_IT)
         if (declaration.kind !in NAMING_UNITS) return plsql
         val member = name.children.getOrNull(2)?.takeIf { it.type === PlSqlGrammar.IDENTIFIER_NAME }
-            ?: return ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.PLSQL_NAME_UNDECIDED))
+            ?: return plSqlNameUndecided(capture)
         val kind = when (val binding = nameBinding(member)) {
             is NameBinding.Local -> binding.declaration.kind
             is NameBinding.ColumnOrLocal -> binding.declaration.kind
@@ -133,7 +146,7 @@ internal class LocalColumnBindings(
         return when (kind) {
             NameDeclarationKind.VARIABLE, NameDeclarationKind.PARAMETER, NameDeclarationKind.LOOP_INDEX -> plsql
             NameDeclarationKind.FUNCTION, NameDeclarationKind.PROCEDURE -> columnOf(capture.source, capture.column, false)
-            else -> ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.PLSQL_NAME_UNDECIDED))
+            else -> plSqlNameUndecided(capture)
         }
     }
 
@@ -200,7 +213,10 @@ internal class LocalColumnBindings(
             val matches = sources.filterIndexed { index, _ -> known[index] == true }
             when {
                 // Another source may have the column too (ORA-00918): not decided.
-                known.any { it == null } -> return ColumnBinding.Unknown(uncertainty(sources.filterIndexed { index, _ -> known[index] == null }))
+                known.any { it == null } -> return ColumnBinding.Unknown(
+                    uncertainty(sources.filterIndexed { index, _ -> known[index] == null }),
+                    sources.indices.filter { known[it] != false }.map { columnOf(sources[it], column, has(sources[it], column)) }
+                )
                 matches.size == 1 -> return columnOf(matches.single(), column, true)
                 matches.size > 1 -> {
                     val candidates = matches.map { columnOf(it, column, true) }
@@ -300,7 +316,8 @@ internal class LocalColumnBindings(
     /** The `t` of `t.*`: the source it names. */
     private fun starQualifier(name: AstNode, start: AstNode): ColumnBinding {
         val names = segments(name) ?: return unavailable()
-        val source = sourcesOf(start).firstOrNull { qualifierIndex(it, names + STAR, name) != null } ?: return unavailable()
+        val source = sourcesOf(start).firstOrNull { qualifierIndex(it, names + STAR, name) != null }
+            ?: return ColumnBinding.PlSqlName(PlSqlNameReason.QUALIFIER_NOT_A_SOURCE)
         return ColumnBinding.Source(source.source)
     }
 
@@ -566,6 +583,12 @@ internal class LocalColumnBindings(
             }
         }
         else -> null
+    }
+
+    /** `:name`, or a name it qualifies (`:new.col`). */
+    private fun isBindVariable(name: AstNode): Boolean {
+        val head = if (name.type === PlSqlGrammar.MEMBER_EXPRESSION) name.firstChild else name
+        return head.type === PlSqlGrammar.VARIABLE_NAME && head.firstChild.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE
     }
 
     private fun firstName(name: AstNode) = if (name.type === PlSqlGrammar.MEMBER_EXPRESSION) name.firstChild else name

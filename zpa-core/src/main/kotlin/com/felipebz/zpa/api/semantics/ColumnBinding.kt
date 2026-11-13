@@ -101,15 +101,28 @@ sealed interface ColumnBinding {
         override fun toString() = "PlSqlName($reason)"
     }
 
-    /** Not decided; [reasons] says what the analysis could not see. Never a proof. */
-    class Unknown(reasons: Set<ColumnUncertainty>) : ColumnBinding {
+    /**
+     * Not decided; [reasons] says what the analysis could not see. Never a proof.
+     *
+     * [candidates] are the answers the name would have, each unverified:
+     * - when a source whose columns are not known may take it ([ColumnUncertainty.SOURCE_COLUMNS_UNKNOWN],
+     *   [ColumnUncertainty.STAR_NOT_COVERED]): for each source of the innermost scope that leaves it undecided, in the
+     *   order of the statement, the [Column] of a relation or of another table expression (`exists` null), or the
+     *   [QueryColumn] of an inline view or `WITH` query whose columns are not all known; and the sources of that scope
+     *   known to have the column (`exists` true), which Oracle would find ambiguous (ORA-00918) beside another one;
+     * - for [ColumnUncertainty.PLSQL_NAME_UNDECIDED]: the [Column] of the source the qualifier names, which lacks it
+     *   (`exists` false): what Oracle reads, and rejects, when no PL/SQL name takes the name;
+     * - otherwise (text the analysis cannot see, dynamic SQL) none: the scopes are not walked.
+     */
+    class Unknown(reasons: Set<ColumnUncertainty>, candidates: List<ColumnBinding> = emptyList()) : ColumnBinding {
         val reasons: Set<ColumnUncertainty> = reasons.toSet()
+        val candidates: List<ColumnBinding> = candidates.toList()
 
-        override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
+        override fun equals(other: Any?) = other is Unknown && reasons == other.reasons && candidates == other.candidates
 
-        override fun hashCode() = reasons.hashCode()
+        override fun hashCode() = 31 * reasons.hashCode() + candidates.hashCode()
 
-        override fun toString() = "Unknown$reasons"
+        override fun toString() = "Unknown$reasons" + if (candidates.isEmpty()) "" else candidates.toString()
     }
 
     /** No evidence: the file was not analyzed, or the node is not a name of static SQL this query covers. */
@@ -171,7 +184,10 @@ enum class PlSqlNameReason {
     INTO_TARGET,
 
     /** A SQL function written without parentheses (`SYSDATE`, `USER`…), which no column takes. */
-    BUILT_IN_FUNCTION
+    BUILT_IN_FUNCTION,
+
+    /** A bind or host variable (`:name`), alone or qualifying a name (a trigger's `:new.col`): never a column. */
+    BIND_VARIABLE
 }
 
 /** What keeps a name of static SQL undecided. */

@@ -81,6 +81,7 @@ class ColumnBindingTest {
         is ColumnBinding.Joined -> "joined " + binding.columns.joinToString { render(it) }
         is ColumnBinding.Ambiguous -> "ambiguous " + binding.candidates.joinToString { render(it) }
         is ColumnBinding.PlSqlName -> "plsql ${binding.reason}"
+        is ColumnBinding.Unknown -> "Unknown${binding.reasons}" + binding.candidates.joinToString("") { " maybe " + render(it) }
         else -> binding.toString()
     }
 
@@ -162,7 +163,7 @@ class ColumnBindingTest {
             // The inner table's own ORA_ROWSCN, not the outer table's column.
             "11:ora_rowscn=Pseudocolumn",
             // An object table has OBJECT_ID and OBJECT_VALUE without such columns: the metadata does not say which tables are.
-            "12:object_id=Unknown[SOURCE_COLUMNS_UNKNOWN]",
+            "12:object_id=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.ORDER_HEAD.OBJECT_ID missing",
             "12:h.object_value=column SHOP.ORDER_HEAD.OBJECT_VALUE unverified",
             "12:rowid=Pseudocolumn",
             "12:h.rowid=Pseudocolumn",
@@ -187,7 +188,8 @@ class ColumnBindingTest {
             // A package variable does.
             "14:pk_q.g=plsql NO_SOURCE_HAS_IT",
             // A package outside the project may have a variable of that name.
-            "15:pk_ext.col=Unknown[PLSQL_NAME_UNDECIDED]",
+            // Else Oracle reads the missing column.
+            "15:pk_ext.col=Unknown[PLSQL_NAME_UNDECIDED] maybe column SHOP.ORDER_HEAD.COL missing",
             "16:pk_none.col=column SHOP.ORDER_HEAD.COL missing",
             "17:shop.pk_q.g=plsql NO_SOURCE_HAS_IT",
             "18:shop.order_head.no_col=column SHOP.ORDER_HEAD.NO_COL missing"
@@ -276,7 +278,7 @@ class ColumnBindingTest {
             "10:qty=column SHOP.ORDER_LINE.QTY",
             "11:qty=query IV.QTY from 11:33",
             // A star over a relation whose columns are not all known.
-            "12:qty=Unknown[STAR_NOT_COVERED]",
+            "12:qty=Unknown[STAR_NOT_COVERED] maybe query IV.QTY",
             "13:order_id=column SHOP.ORDER_LINE.ORDER_ID",
             "13:qty=column SHOP.ORDER_LINE.QTY",
             "13:w.b=query w.B from 13:37",
@@ -355,7 +357,7 @@ class ColumnBindingTest {
             "select qty into v from order_line\n  \$if \$\$extra \$then where amount > 0 \$end\n  ;"
         )).filter { !it.contains("INTO_TARGET") }).containsExactly(
             // The relation is not in the metadata: its columns are not known.
-            "8:x=Unknown[SOURCE_COLUMNS_UNKNOWN]",
+            "8:x=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column missing_tab.X unverified",
             "9:m.x=column M.X unverified",
             // Conditional text inside the statement.
             "10:qty=Unknown[CONDITIONAL_COMPILATION]",
@@ -363,7 +365,66 @@ class ColumnBindingTest {
         )
         // Without metadata no source's columns are known.
         assertThat(answers(procedure("select qty into v from order_line;"), withMetadata = false))
-            .containsExactly("8:qty=Unknown[SOURCE_COLUMNS_UNKNOWN]", "8:v=plsql INTO_TARGET")
+            .containsExactly("8:qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column order_line.QTY unverified", "8:v=plsql INTO_TARGET")
+    }
+
+    @Test
+    fun theCandidatesOfAnUndecidedName() {
+        assertThat(answers(procedure(
+            "select x_col into v from missing_tab;",
+            "select qty into v from order_line, missing_tab m;",
+            "select qty into v from (select * from missing_tab) iv;",
+            "select column_value into v from table(sys.odcinumberlist(1)) t;",
+            "select max(n) into v from order_head h, (select id n from order_line) iv, missing_tab m where nvl(id, 0) = 1;"
+        )).filter { !it.contains("INTO_TARGET") && !it.contains("Unavailable") }).containsExactly(
+            // The column the only source would give, its columns not known.
+            "8:x_col=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column missing_tab.X_COL unverified",
+            // The known match, and the column of the source that may have one too (ORA-00918).
+            "9:qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.ORDER_LINE.QTY maybe column M.QTY unverified",
+            // The inline view's column, its `*` over a relation whose columns are not known.
+            "10:qty=Unknown[STAR_NOT_COVERED] maybe query IV.QTY",
+            "11:column_value=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column T.COLUMN_VALUE unverified",
+            // The inline view's known column beside missing_tab, and none of a source known to lack it (ORDER_HEAD has no N).
+            "12:n=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe query IV.N from 12:50 maybe column M.N unverified",
+            "12:id=plsql NO_SOURCE_HAS_IT",
+            "12:id=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.ORDER_HEAD.ID maybe column M.ID unverified"
+        )
+    }
+
+    @Test
+    fun aNameMarkedForAnOuterJoinIsTheNameWithoutTheMarker() {
+        val text = procedure(
+            "select count(*) into v from order_line l, order_head h where l.order_id = h.id(+) and status(+) = 'X';",
+            "select count(*) into v from order_line l, missing_tab m where l.order_id = m.x(+) and y(+) = 1;"
+        )
+        assertThat(answers(text).filter { !it.contains("INTO_TARGET") && !it.contains("Unavailable") }).containsExactly(
+            "8:l.order_id=column SHOP.ORDER_LINE.ORDER_ID",
+            "8:h.id=column SHOP.ORDER_HEAD.ID",
+            "8:status=column SHOP.ORDER_HEAD.STATUS",
+            "9:l.order_id=column SHOP.ORDER_LINE.ORDER_ID",
+            "9:m.x=column M.X unverified",
+            "9:y=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column M.Y unverified"
+        )
+        // nameBinding agrees: the alias takes the first name, the marker or not.
+        assertThat(answers(text) { context, name ->
+            if (name.type === PlSqlGrammar.MEMBER_EXPRESSION) context.nameBinding(name.firstChild).toString() else "-"
+        }.filter { !it.endsWith("=-") }).containsExactly(
+            "8:l.order_id=NothingLocal(column possible)", "8:h.id=NothingLocal(column possible)",
+            "9:l.order_id=NothingLocal(column possible)", "9:m.x=NothingLocal(column possible)"
+        )
+    }
+
+    @Test
+    fun bindVariablesAndAStarOfNoSource() {
+        assertThat(answers(
+            "create trigger order_line_biu before insert on order_line for each row\ndeclare\n  v number;\nbegin\n" +
+                "  select count(*) into v from order_head where id = :new.order_id;\n" +
+                "  for r in (select z.* from order_line l) loop null; end loop;\nend;\n/\n"
+        ).filter { !it.contains("INTO_TARGET") && !it.contains("Unavailable") }).containsExactly(
+            "5:id=column SHOP.ORDER_HEAD.ID",
+            "5::new.order_id=plsql BIND_VARIABLE",
+            "6:z=plsql QUALIFIER_NOT_A_SOURCE"
+        )
     }
 
     @Test

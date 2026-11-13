@@ -205,13 +205,16 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * - [ColumnBinding.Pseudocolumn], [ColumnBinding.Joined] (a `USING` or `NATURAL` join column),
      *   [ColumnBinding.Ambiguous] (ORA-00918, ORA-00960);
      * - [ColumnBinding.PlSqlName]: no column takes it, for example when every source is known to lack it or the only
-     *   relation is `DUAL`; [nameBinding] answers what it binds;
+     *   relation is `DUAL`, or it is a bind variable (`:x`, `:new.col`); [nameBinding] answers what it binds;
      * - [ColumnBinding.Unknown]: a source whose columns are not known may take it, a `*` covers a relation the metadata
-     *   does not cover, hidden text lies inside the statement, or it is a name of a dynamic SQL text.
+     *   does not cover, hidden text lies inside the statement, or it is a name of a dynamic SQL text. Its candidates are
+     *   the columns the name would read if such a source has it, never a proof.
      *
-     * A column written by `INSERT (…)`, the left side of `SET` or a `MERGE` insert list is the target's column. A call
-     * (`f(x)`, `q.f(x)`) is [ColumnBinding.Unavailable]: [callBinding] answers it; `q.col.method(x)` is the column
-     * `q.col`. Any other node, and a name outside static SQL, is [ColumnBinding.Unavailable].
+     * A column written by `INSERT (…)`, the left side of `SET` or a `MERGE` insert list is the target's column. A name
+     * marked for an outer join (`t.col(+)`, `col(+)`) is the name without the marker. A call (`f(x)`, `q.f(x)`) is
+     * [ColumnBinding.Unavailable]: [callBinding] answers it; `q.col.method(x)` is the column `q.col`. A member of an
+     * expression (`(t.obj).attr`, `f(x).attr`) is not a name: the names inside it are answered. Any other node, and a
+     * name outside static SQL, is [ColumnBinding.Unavailable].
      */
     @ZpaExperimentalApi
     fun columnBinding(name: AstNode): ColumnBinding {
