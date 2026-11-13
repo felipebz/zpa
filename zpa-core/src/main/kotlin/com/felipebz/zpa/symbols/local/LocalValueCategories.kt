@@ -564,7 +564,7 @@ internal class LocalValueCategories(
     }?.binding(name)
 
     /** A numeric literal, or a value whose declared type is a number. */
-    private fun isNumber(expression: AstNode): Boolean {
+    fun isNumber(expression: AstNode): Boolean {
         if (expression.type === PlSqlGrammar.LITERAL && expression.firstChild.type === PlSqlGrammar.NUMERIC_LITERAL) return true
         val category = category(expression)
         return category is ValueCategory.Scalar && category.family == ScalarFamily.NUMERIC

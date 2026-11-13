@@ -9,6 +9,8 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlTokenType
 import java.util.*
 
 /** A part of a dynamic statement whose text is not known statically, written into the built text as [placeholder]. */
@@ -60,13 +62,19 @@ class DynamicSqlText internal constructor(
     val parts: List<AstNode> = Collections.unmodifiableList(ArrayList(parts))
     val holes: List<DynamicSqlHole> = Collections.unmodifiableList(ArrayList(holes))
 
-    /** The tokens of [root] that write [hole]'s placeholder. */
+    /**
+     * Whether [hole] writes only a value into the text: its placeholder lies inside string literals of the text, or
+     * stands as an operand (a name of its own) whose expression [isNumber] says is a number. Any other hole may write a
+     * source, an alias, a column or a declaration.
+     */
     @JvmSynthetic
-    internal fun tokensOf(hole: DynamicSqlHole): List<Token> = holesByToken.filterValues { hole in it }.keys.toList()
-
-    /** Whether [token] is exactly [hole]'s placeholder. */
-    @JvmSynthetic
-    internal fun isExactly(token: Token, hole: DynamicSqlHole): Boolean = exactByToken[token] === hole
+    internal fun writesOnlyValue(hole: DynamicSqlHole, isNumber: (AstNode) -> Boolean): Boolean {
+        val tokens = holesByToken.filterValues { hole in it }.keys
+        if (tokens.isNotEmpty() && tokens.all { it.type === PlSqlTokenType.STRING_LITERAL }) return true
+        val operand = root.getDescendants(PlSqlGrammar.VARIABLE_NAME)
+            .any { holeOf(it) === hole && it.parent.type !== PlSqlGrammar.MEMBER_EXPRESSION && it.parent.type !== PlSqlGrammar.METHOD_CALL }
+        return operand && isNumber(hole.expression)
+    }
 
     /**
      * The hole [node] stands for when the node is a placeholder: its tokens are exactly one token whose text is a whole

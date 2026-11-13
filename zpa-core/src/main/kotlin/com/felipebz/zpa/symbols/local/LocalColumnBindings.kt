@@ -610,26 +610,16 @@ internal class LocalColumnBindings(
 
     /**
      * A name of a dynamic text whose value a hole may change: a placeholder itself, or any name when some hole may write
-     * more than a value (a source, an alias, a column), or when the holes were left out to parse the text. A hole inside
-     * a string literal of the text, or one that stands as an operand and whose expression is a number, writes a value.
+     * more than a value ([DynamicSqlText.writesOnlyValue]), or when the holes were left out to parse the text.
      */
     private fun dynamicHole(name: AstNode): ColumnBinding? {
         val dynamic = dynamic ?: return null
         val text = dynamic.text
         if (text.holes.isEmpty()) return null
-        if (text.holesDropped || text.holesIn(name).isNotEmpty() || text.holes.any { !writesValue(dynamic, it) }) {
+        if (text.holesDropped || text.holesIn(name).isNotEmpty() || text.holes.any { !text.writesOnlyValue(it, dynamic.isNumber) }) {
             return ColumnBinding.Unknown(EnumSet.of(ColumnUncertainty.DYNAMIC_SQL_HOLE))
         }
         return null
-    }
-
-    private fun writesValue(dynamic: LocalDynamicText, hole: DynamicSqlHole): Boolean {
-        val text = dynamic.text
-        val tokens = text.tokensOf(hole)
-        if (tokens.isNotEmpty() && tokens.all { it.type === PlSqlTokenType.STRING_LITERAL }) return true
-        val operand = text.root.getDescendants(PlSqlGrammar.VARIABLE_NAME)
-            .any { text.holeOf(it) === hole && it.parent.type !== PlSqlGrammar.MEMBER_EXPRESSION && it.parent.type !== PlSqlGrammar.METHOD_CALL }
-        return operand && dynamic.isNumber(hole.expression)
     }
 
     // Names.

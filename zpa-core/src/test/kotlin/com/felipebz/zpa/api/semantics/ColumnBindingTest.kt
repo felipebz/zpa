@@ -486,6 +486,23 @@ class ColumnBindingTest {
     }
 
     @Test
+    fun aTextWhoseHolesWriteOnlyValuesIsComplete() {
+        // A value quoted in the text, or a number standing as an operand, adds no declaration or source: the names are
+        // answered as in a text without holes, as a SQL statement and as a PL/SQL block.
+        val value = "Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column svc_cfg.VALUE unverified / NothingLocal(column possible)"
+        assertThat(dynamicAnswers(procedure(
+            "execute immediate 'select value from svc_cfg where user_name = ''' || status || '''' into status;",
+            "execute immediate 'select value from svc_cfg where n = ' || v into status;",
+            "execute immediate 'begin select value into :x from svc_cfg where user_name = ''' || status || '''; end;' using out status;",
+            "execute immediate 'begin select value into :x from svc_cfg where n = ' || v || '; end;' using out status;"
+        )).filter { ":value=" in it }).containsExactly("8:value=$value", "9:value=$value", "10:value=$value", "11:value=$value")
+        // A varchar2 value outside quotes may write a source or a declaration: the text stays incomplete.
+        assertThat(dynamicAnswers(procedure(
+            "execute immediate 'select value from svc_cfg where user_name = ' || status into status;"
+        )).filter { ":value=" in it }).containsExactly("8:value=Unknown[DYNAMIC_SQL_HOLE] / Unknown[SQL_NAME_MAY_BE_COLUMN, INCOMPLETE_SOURCE]")
+    }
+
+    @Test
     fun aHoleOfADynamicText() {
         assertThat(dynamicAnswers(procedure(
             // A number standing as an operand, or a value inside a string literal of the text: only a value.

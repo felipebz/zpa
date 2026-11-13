@@ -96,14 +96,17 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * hole. Parsed only when asked, at most once per expression in a scan.
      */
     @ZpaExperimentalApi
-    fun dynamicSql(expression: AstNode): DynamicSqlText? = dynamicSqlSupport().fromExpression(expression)
+    fun dynamicSql(expression: AstNode): DynamicSqlText? = dynamicSqlSupport().fromExpression(expression, ::isNumberValue)
 
     /**
      * The SQL text built by joining [parts] in order, each a node of this file classified as in [dynamicSql]: for a
      * text gathered from several places, such as the assignments of a variable. Cached per list of nodes.
      */
     @ZpaExperimentalApi
-    fun dynamicSql(parts: List<AstNode>): DynamicSqlText? = dynamicSqlSupport().fromParts(parts)
+    fun dynamicSql(parts: List<AstNode>): DynamicSqlText? = dynamicSqlSupport().fromParts(parts, ::isNumberValue)
+
+    /** Whether [expression], a hole of a dynamic text, is a number: such a value writes no name into the text. */
+    private fun isNumberValue(expression: AstNode): Boolean = valueCategories?.isNumber(expression) == true
 
     /**
      * Whether [declaration] is used, from the file's local name resolution, with the project's coverage of package

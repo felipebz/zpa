@@ -63,17 +63,18 @@ internal class DynamicSqlSupport(
         override fun hashCode() = parts.fold(1) { hash, node -> 31 * hash + System.identityHashCode(node) }
     }
 
-    fun fromExpression(expression: AstNode): DynamicSqlText? =
-        byExpression.getOrPut(expression) { Cached(build(expression, operands(expression))) }.text
+    /** The text [expression] builds; [isNumber] tells whether a hole's expression of the scanned file is a number. */
+    fun fromExpression(expression: AstNode, isNumber: (AstNode) -> Boolean = { false }): DynamicSqlText? =
+        byExpression.getOrPut(expression) { Cached(build(expression, operands(expression), isNumber)) }.text
 
     /** The text this support built whose root is [root], or null. */
     fun textOf(root: AstNode): DynamicSqlText? =
         byExpression.values.firstNotNullOfOrNull { it.text?.takeIf { text -> text.root === root } }
             ?: byParts.values.firstNotNullOfOrNull { it.text?.takeIf { text -> text.root === root } }
 
-    fun fromParts(parts: List<AstNode>): DynamicSqlText? {
+    fun fromParts(parts: List<AstNode>, isNumber: (AstNode) -> Boolean = { false }): DynamicSqlText? {
         val copy = parts.toList()
-        return byParts.getOrPut(PartsKey(copy)) { Cached(build(null, copy)) }.text
+        return byParts.getOrPut(PartsKey(copy)) { Cached(build(null, copy, isNumber)) }.text
     }
 
     // Parts.
@@ -151,7 +152,7 @@ internal class DynamicSqlSupport(
 
     // Text.
 
-    private fun build(expression: AstNode?, parts: List<AstNode>): DynamicSqlText? {
+    private fun build(expression: AstNode?, parts: List<AstNode>, isNumber: (AstNode) -> Boolean): DynamicSqlText? {
         if (parts.isEmpty()) return null
         val pieces = parts.map(::piece)
         if (pieces.none { it is Known && literalToken(it.node) != null }) return null
@@ -163,8 +164,8 @@ internal class DynamicSqlSupport(
         val holes = pieces.filterIsInstance<Unknown>().map { it.hole }
         val first = pieces.first().node.token
         val treeFileId = FileId("${fileId.value}#dynamic@${first.line}:${first.column}")
-        val parsed = attempt(expression, parts, pieces, holes, dropHoles = false, treeFileId)
-            ?: if (holes.isNotEmpty()) attempt(expression, parts, pieces, holes, dropHoles = true, treeFileId) else null
+        val parsed = attempt(expression, parts, pieces, holes, dropHoles = false, treeFileId, isNumber)
+            ?: if (holes.isNotEmpty()) attempt(expression, parts, pieces, holes, dropHoles = true, treeFileId, isNumber) else null
         return parsed
     }
 
@@ -217,7 +218,8 @@ internal class DynamicSqlSupport(
         pieces: List<Piece>,
         holes: List<DynamicSqlHole>,
         dropHoles: Boolean,
-        treeFileId: FileId
+        treeFileId: FileId,
+        isNumber: (AstNode) -> Boolean
     ): DynamicSqlText? {
         val built = assemble(pieces, dropHoles)
         if (built.text.isBlank()) return null
@@ -246,11 +248,11 @@ internal class DynamicSqlSupport(
         if (root.children.count { it.type !== GenericTokenType.EOF } != 1 || root.hasDescendant(PlSqlGrammar.RECOVERY)) return null
 
         val context = PlSqlVisitorContext(root, null as PlSqlFile?, null)
-        context.tokensAreWholeText = holes.isEmpty()
+        val text = DynamicSqlText(root, expression, parts, built.text, holes, dropHoles, holesByToken, exactByToken, context)
+        // A value written into the text adds no declaration, source or statement: the text is then all its tokens.
+        context.tokensAreWholeText = !dropHoles && holes.all { text.writesOnlyValue(it, isNumber) }
         PlSqlAstWalker(pipeline.create(treeFileId).all).walk(context, capabilities)
-        return DynamicSqlText(
-            root, expression, parts, built.text, holes, dropHoles, holesByToken, exactByToken, context
-        )
+        return text
     }
 
     /** Offsets where each line of [text] starts, breaking lines like the lexer (LF, or CR not followed by LF). */
