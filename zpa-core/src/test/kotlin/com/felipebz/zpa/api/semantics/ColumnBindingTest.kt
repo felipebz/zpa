@@ -45,8 +45,10 @@ class ColumnBindingTest {
         .synonym(ProjectExternalSynonym.of("SHOP", "LINES", "SHOP", "ORDER_LINE", null))
         .build()
 
-    private fun answers(text: String, withMetadata: Boolean = true, answer: (PlSqlVisitorContext, AstNode) -> String = ::render): List<String> {
-        val external = ProjectExternalContext.of(if (withMetadata) metadata else ProjectExternalMetadata.none(), ProjectIdentifier.fromSource("SHOP"), ProjectSchemaPaths.none())
+    private fun answers(
+        text: String, withMetadata: Boolean = true, meta: ProjectExternalMetadata = metadata, answer: (PlSqlVisitorContext, AstNode) -> String = ::render
+    ): List<String> {
+        val external = ProjectExternalContext.of(if (withMetadata) meta else ProjectExternalMetadata.none(), ProjectIdentifier.fromSource("SHOP"), ProjectSchemaPaths.none())
         val context = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(), external).prepare(listOf(ProjectSource(FileId("u.sql")) { text }), concurrent = false)
         )
@@ -500,6 +502,71 @@ class ColumnBindingTest {
         assertThat(dynamicAnswers(procedure(
             "execute immediate 'select value from svc_cfg where user_name = ' || status into status;"
         )).filter { ":value=" in it }).containsExactly("8:value=Unknown[DYNAMIC_SQL_HOLE] / Unknown[SQL_NAME_MAY_BE_COLUMN, INCOMPLETE_SOURCE]")
+    }
+
+    @Test
+    fun aQualifiedNameOverASourceOfUnknownColumnsThatAPlSqlNameMayTake() {
+        // stock_x's columns are not known. Oracle reads its column qty when it has one; else the loop record's field, the
+        // package variable, or, for a package function, nothing (ORA-00904).
+        val packages = "create package pk_cfg_v as qty number; end;\n/\ncreate package pk_cfg_f as function qty return number; end;\n/\n"
+        assertThat(answers(packages + procedure(
+            "for l in (select 7 qty from dual) loop select l.qty into v from stock_x l; end loop;",
+            "select pk_cfg_v.qty into v from stock_x pk_cfg_v;",
+            "select pk_cfg_f.qty into v from stock_x pk_cfg_f;"
+        )).filter { ".qty=" in it }.map { it.substringAfter(':') }).containsExactly(
+            "l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified",
+            "pk_cfg_v.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column PK_CFG_V.QTY unverified",
+            "pk_cfg_f.qty=column PK_CFG_F.QTY unverified"
+        )
+        // In a dynamic text that is a PL/SQL block the same, and nameBinding agrees: the loop record may take the name.
+        assertThat(dynamicAnswers(procedure(
+            "execute immediate 'begin for l in (select 7 qty from dual) loop select l.qty into :x from stock_x l; end loop; end;' using out v;"
+        )).filter { "l.qty=" in it }).containsExactly(
+            "8:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified / ColumnOrLocal(LOOP_INDEX@8:31)"
+        )
+        // A SQL statement text sees no PL/SQL name: the column, whatever its source has.
+        assertThat(dynamicAnswers(procedure("execute immediate 'select l.qty from stock_x l' into v;")).map { it.substringBefore(" / ") })
+            .containsExactly("8:l.qty=column L.QTY unverified")
+        // Without complete public synonyms no schema object outside the project can be excluded: that alone leaves the
+        // column, as for an unqualified name; a loop record or a package variable the project finds is still a reading.
+        val open = ProjectExternalMetadata.builder("test").completeSchema("SHOP")
+            .relation(ProjectExternalRelation.of("SHOP", "ORDER_LINE", true, columns("ORDER_ID", "QTY", "AMOUNT"))).build()
+        assertThat(answers(packages + procedure(
+            "select count(*) into v from shop.order_line where shop.order_line.qty = 1;",
+            "select count(*) into v from missing_t m where m.x = 1;",
+            "for l in (select 7 qty from dual) loop select l.qty into v from stock_x l; end loop;",
+            "select pk_cfg_v.qty into v from stock_x pk_cfg_v;"
+        ), meta = open).filter { "." in it.substringBefore('=') && "count" !in it }.map { it.substringAfter(':') }).containsExactly(
+            "shop.order_line.qty=column SHOP.ORDER_LINE.QTY unverified",
+            "m.x=column M.X unverified",
+            "l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified",
+            "pk_cfg_v.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column PK_CFG_V.QTY unverified"
+        )
+    }
+
+    @Test
+    fun anAliasOfUnknownColumnsPassesTheNameToTheOuterAliasWhenItLacksTheColumn() {
+        // stock_x and stock_y are not in the metadata; order_line has qty. Without qty in stock_x, Oracle reads the outer
+        // alias's column; when no source has it, a loop record of that name, else ORA-00904.
+        val outer = "select count(*) into v from %s l where exists (select 1 from stock_x l where l.qty = 1);"
+        assertThat(answers(procedure(
+            outer.format("order_line"),
+            "for l in (select 7 qty from dual) loop ${outer.format("order_line")} end loop;",
+            outer.format("stock_y"),
+            "for l in (select 7 qty from dual) loop ${outer.format("stock_y")} end loop;"
+        )).filter { "l.qty=" in it }).containsExactly(
+            "8:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified maybe column SHOP.ORDER_LINE.QTY",
+            "9:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified maybe column SHOP.ORDER_LINE.QTY",
+            "10:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified maybe column L.QTY unverified",
+            "11:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified maybe column L.QTY unverified"
+        )
+        // order_head is known and lacks qty: without qty in stock_y Oracle rejects the statement, so stock_y's column is
+        // the only reading; inside the loop the record is the other one.
+        val inner = "select count(*) into v from stock_y l where exists (select 1 from order_head l where l.qty = 1);"
+        assertThat(answers(procedure(inner, "for l in (select 7 qty from dual) loop $inner end loop;")).filter { "l.qty=" in it }).containsExactly(
+            "8:l.qty=column L.QTY unverified",
+            "9:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified"
+        )
     }
 
     @Test

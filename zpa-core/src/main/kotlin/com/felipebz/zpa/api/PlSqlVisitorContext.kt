@@ -226,7 +226,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      *   relation is `DUAL`, or it is a bind variable (`:x`, `:new.col`); [nameBinding] answers what it binds;
      * - [ColumnBinding.Unknown]: a source whose columns are not known may take it, a `*` covers a relation the metadata
      *   does not cover, or hidden text lies inside the statement. Its candidates are the columns the name would read if
-     *   such a source has it, then the columns of enclosing queries known to have it, never a proof.
+     *   such a source has it, then the columns of enclosing queries known to have it, never a proof. A qualified name
+     *   whose source's columns are not known is undecided when a PL/SQL name (a record, a package variable) would take
+     *   it were the source to lack the column, as for a source known to lack it; else it is that source's column.
      *
      * A name of a dynamic SQL text this context parsed ([dynamicSql]) is answered by the same rules, with the text's
      * statement as the outermost scope and its relations read in the compilation schema of the unit that holds the

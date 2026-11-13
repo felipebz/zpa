@@ -112,10 +112,42 @@ internal class LocalColumnBindings(
             (capture as? Capture.Found)?.binding.let { it !is ColumnBinding.Column || it.exists != true }
         ) return ColumnBinding.Pseudocolumn
         return when (capture) {
-            is Capture.Found -> capture.binding
+            is Capture.Found -> capture.unverified?.let { unverified(name, capture.binding, it, segments) } ?: capture.binding
             is Capture.Lacking -> lacking(name, capture, segments)
             null -> ColumnBinding.PlSqlName(PlSqlNameReason.QUALIFIER_NOT_A_SOURCE)
         }
+    }
+
+    /**
+     * A qualified name whose source's columns are not known: the column [column] when the source has it, else [rest],
+     * what the same walk reads were the source to lack it (a source of an enclosing scope with that qualifier, else
+     * [lacking]). When that is the missing column of the innermost source, the name is that column either way; else it
+     * is undecided, with the inner column, then each outer column the walk reaches, from the inside out.
+     */
+    private fun unverified(name: AstNode, column: ColumnBinding, rest: Capture, segments: List<OracleIdentifier>): ColumnBinding {
+        val innerSource = (column as? ColumnBinding.Column)?.source ?: (column as? ColumnBinding.QueryColumn)?.source
+        val reasons = EnumSet.noneOf(ColumnUncertainty::class.java)
+        val candidates = arrayListOf(column)
+        var next: Capture? = rest
+        while (next != null) {
+            when (next) {
+                is Capture.Found -> {
+                    candidates += next.binding
+                    next.unverified?.let { reasons += ColumnUncertainty.SOURCE_COLUMNS_UNKNOWN }
+                    next = next.unverified
+                }
+                is Capture.Lacking -> {
+                    val otherwise = lacking(name, next, segments)
+                    // A missing column is Oracle rejecting the statement, not a reading of the name. A PL/SQL name the
+                    // analysis only cannot exclude (a schema object outside the project) weighs no more than it does
+                    // for an unqualified name: only a declaration zpa knows is another reading.
+                    if (otherwise !is ColumnBinding.PlSqlName && candidates.size == 1) return column
+                    next = null
+                }
+            }
+        }
+        if (innerSource != null) reasons += ColumnUncertainty.SOURCE_COLUMNS_UNKNOWN
+        return ColumnBinding.Unknown(reasons, candidates)
     }
 
     /**
@@ -172,7 +204,11 @@ internal class LocalColumnBindings(
     }
 
     private sealed interface Capture {
-        class Found(val binding: ColumnBinding) : Capture
+        /**
+         * The source takes the name; [unverified] when its columns are not known: what the name reads were the source
+         * to lack the column.
+         */
+        class Found(val binding: ColumnBinding, val unverified: Capture? = null) : Capture
 
         /** The innermost source the qualifier names is known to lack [column], named at segment [index]. */
         class Lacking(val source: Source, val column: OracleIdentifier, val index: Int) : Capture
@@ -180,10 +216,11 @@ internal class LocalColumnBindings(
 
     /**
      * `q.col`, `schema.t.col`: the column of the first source, from the innermost scope out, whose qualifier matches and
-     * that is not known to lack it; null when no qualifier matches.
+     * that is not known to lack it; null when no qualifier matches. A source whose columns are not known takes it with
+     * what the rest of the walk reads were it to lack the column, else [lackingIn] or its own missing column.
      */
-    private fun qualified(name: AstNode, start: AstNode, names: List<OracleIdentifier>): Capture? {
-        var lacking: Capture.Lacking? = null
+    private fun qualified(name: AstNode, start: AstNode?, names: List<OracleIdentifier>, lackingIn: Capture.Lacking? = null): Capture? {
+        var lacking: Capture.Lacking? = lackingIn
         var scope: AstNode? = start
         while (scope != null) {
             for (source in sourcesFor(scope, name, qualified = true)) {
@@ -193,7 +230,9 @@ internal class LocalColumnBindings(
                     if (lacking == null) lacking = capture
                     break
                 }
-                return capture
+                val own = (capture as Capture.Found).unverified as? Capture.Lacking ?: return capture
+                val ifLacking = lacking ?: own
+                return Capture.Found(capture.binding, qualified(name, enclosing(scope), names, ifLacking) ?: ifLacking)
             }
             scope = enclosing(scope)
         }
@@ -206,7 +245,11 @@ internal class LocalColumnBindings(
         if (!column.quoted && column.lookupName in RESERVED_PSEUDOCOLUMNS) return Capture.Found(ColumnBinding.Pseudocolumn)
         val has = presence(source, column)
         if (has == false && !column.quoted && column.lookupName in ROW_PSEUDOCOLUMNS) return Capture.Found(ColumnBinding.Pseudocolumn)
-        return if (has == false) Capture.Lacking(source, column, index) else Capture.Found(columnOf(source, column, has))
+        return when (has) {
+            false -> Capture.Lacking(source, column, index)
+            null -> Capture.Found(columnOf(source, column, null), Capture.Lacking(source, column, index))
+            true -> Capture.Found(columnOf(source, column, true))
+        }
     }
 
     private fun qualifierIndex(source: Source, names: List<OracleIdentifier>, at: AstNode): Int? {
