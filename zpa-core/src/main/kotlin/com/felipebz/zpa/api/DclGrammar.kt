@@ -41,9 +41,12 @@ enum class DclGrammar : GrammarRuleKey {
             b.rule(IDENTIFIER_OR_KEYWORD).define(b.firstOf(GenericTokenType.IDENTIFIER, keywords[0], *rest))
 
             b.rule(PRIVILEGE_PART).define(
-                b.nextNot(b.firstOf(COMMA, ON, TO, LPARENTHESIS)),
-                b.nextNot(b.requireContext(CREATE_SCHEMA_CONTEXT, true), CREATE),
-                IDENTIFIER_OR_KEYWORD)
+                b.firstOf(
+                    b.sequence(ON, COMMIT, REFRESH),
+                    b.sequence(
+                        b.nextNot(b.firstOf(COMMA, ON, TO, LPARENTHESIS)),
+                        b.nextNot(b.requireContext(CREATE_SCHEMA_CONTEXT, true), CREATE),
+                        IDENTIFIER_OR_KEYWORD)))
 
             b.rule(PRIVILEGE_COLUMNS).define(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
 
@@ -78,7 +81,9 @@ enum class DclGrammar : GrammarRuleKey {
         }
 
         private fun createRevoke(b: PlSqlGrammarBuilder) {
-            val privilegeItem = b.oneOrMore(b.nextNot(b.firstOf(FROM, ON)), IDENTIFIER_OR_KEYWORD)
+            val privilegeItem = b.firstOf(
+                b.sequence(ON, COMMIT, REFRESH),
+                b.oneOrMore(b.nextNot(b.firstOf(FROM, ON)), IDENTIFIER_OR_KEYWORD))
             fun privilegeList(item: Any) = b.sequence(item, b.zeroOrMore(COMMA, item))
             val revokees = b.sequence(
                 FROM, IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD))

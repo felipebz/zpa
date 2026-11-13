@@ -330,11 +330,11 @@ enum class DmlGrammar : GrammarRuleKey {
                         USING,
                         FULL,
                         NATURAL,
-                        INNER,
                         LEFT,
                         RIGHT,
-                        // `outer` alone is a legal alias; only `outer join` and
-                        // `outer apply` must not be taken for one.
+                        // `inner` and `outer` alone are legal aliases; only `inner join`,
+                        // `outer join` and `outer apply` must not be taken for one.
+                        b.sequence(INNER, JOIN),
                         b.sequence(OUTER, b.firstOf(JOIN, APPLY)),
                         JOIN,
                         RETURN,

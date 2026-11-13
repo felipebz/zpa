@@ -40,6 +40,8 @@ class AlterMaterializedViewTest : RuleTest() {
         assertThat(p).matches("alter materialized view MView1 annotations(drop Snapshot);")
         assertThat(p).matches("alter materialized view if exists hr.mv pctfree 5 pctused 40 nocache parallel 2")
         assertThat(p).matches("alter materialized view mv nocompress nologging shrink space compact")
+        assertThat(p).matches("alter materialized view mv no inmemory;")
+        assertThat(p).matches("alter materialized view mv inmemory priority high no inmemory (c) refresh complete")
         assertThat(p).matches("alter materialized view mv allocate extent (size 1m) deallocate unused keep 1m")
         assertThat(p).matches("alter materialized view mv using index initrans 2 storage (next 1m) refresh fast")
         assertThat(p).matches("alter materialized view mv parallel 2 refresh complete evaluate using current edition " +
@@ -52,6 +54,7 @@ class AlterMaterializedViewTest : RuleTest() {
         assertThat(p).notMatches("alter materialized view mv;")
         assertThat(p).notMatches("alter materialized view mv refresh")
         assertThat(p).notMatches("alter materialized view mv query rewrite")
+        assertThat(p).notMatches("alter materialized view mv no inmemory priority high")
         // The groups keep their order and the final action is a single choice (ORA-03049 / ORA-00922).
         assertThat(p).notMatches("alter materialized view mv refresh complete parallel 2")
         assertThat(p).notMatches("alter materialized view mv compile refresh complete")

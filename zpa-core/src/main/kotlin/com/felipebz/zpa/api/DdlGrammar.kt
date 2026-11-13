@@ -446,6 +446,7 @@ enum class DdlGrammar : GrammarRuleKey {
     SEGMENT_ATTRIBUTES_CLAUSE,
     PHYSICAL_ATRIBUTES_CLAUSE,
     TABLE_COMPRESSION,
+    INMEMORY_TABLE_CLAUSE,
     KEY_COMPRESSION,
     LOB_STORAGE_CLAUSE,
     VARRAY_COL_PROPERTIES,
@@ -1657,13 +1658,17 @@ enum class DdlGrammar : GrammarRuleKey {
             val inmemoryTextColumn = b.sequence(
                     IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME, b.optional(DOT, IDENTIFIER_NAME)),
                     b.optional(USING, CHARACTER_LITERAL))
-            val inmemoryProperty = b.firstOf(
-                    b.sequence(b.optional(NO), INMEMORY, TEXT,
-                            LPARENTHESIS, inmemoryTextColumn, b.zeroOrMore(COMMA, inmemoryTextColumn), RPARENTHESIS),
+            // The documented inmemory_table_clause, also used by CREATE and ALTER MATERIALIZED VIEW, whose
+            // diagrams have no TEXT clause.
+            b.rule(INMEMORY_TABLE_CLAUSE).define(b.firstOf(
                     b.sequence(INMEMORY, b.optional(memcompress), ONE_OR_MORE_IDENTIFIERS),
                     b.sequence(NO, INMEMORY, ONE_OR_MORE_IDENTIFIERS),
                     b.sequence(INMEMORY, b.zeroOrMore(inmemoryAttribute)),
-                    b.sequence(NO, INMEMORY))
+                    b.sequence(NO, INMEMORY)))
+            val inmemoryProperty = b.firstOf(
+                    b.sequence(b.optional(NO), INMEMORY, TEXT,
+                            LPARENTHESIS, inmemoryTextColumn, b.zeroOrMore(COMMA, inmemoryTextColumn), RPARENTHESIS),
+                    INMEMORY_TABLE_CLAUSE)
 
             // NO DROP and NO DELETE retention clauses, shared by CREATE of immutable/blockchain tables and ALTER.
             // Oracle 26 reports a missing retention count as a value-range error (ORA-05741), not a syntax
@@ -1683,8 +1688,19 @@ enum class DdlGrammar : GrammarRuleKey {
             // Oracle accepts only a plain or quoted identifier here; any unquoted keyword needs quoting.
             val flashbackArchiveName = b.optional(b.next(IDENTIFIER), IDENTIFIER_NAME)
 
+            fun resultCacheClause(): Any {
+                val resultCacheMode = b.sequence(MODE, b.firstOf(DEFAULT, FORCE))
+                val resultCacheStandby = b.sequence(STANDBY, b.firstOf(ENABLE, DISABLE))
+                return b.sequence(RESULT_CACHE, LPARENTHESIS, b.firstOf(
+                        b.sequence(resultCacheMode, b.optional(COMMA, resultCacheStandby)),
+                        b.sequence(resultCacheStandby, b.optional(COMMA, resultCacheMode))), RPARENTHESIS)
+            }
+
+
+
             b.rule(TABLE_BEHAVIOR_PROPERTY).define(b.firstOf(
                     CACHE, NOCACHE,
+                    resultCacheClause(),
                     b.sequence(
                             b.nextNot(b.requireContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true)),
                             b.firstOf(
@@ -1822,21 +1838,21 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(CREATE_TABLE).define(
                     CREATE,
                     b.firstOf(
-                            b.sequence(b.optional(IMMUTABLE), BLOCKCHAIN, TABLE,
+                            b.sequence(b.optional(IMMUTABLE), BLOCKCHAIN, TABLE, b.optional(IF, NOT, EXISTS),
                                     createTableBody(blockchainTableClauses)),
-                            b.sequence(IMMUTABLE, TABLE,
+                            b.sequence(IMMUTABLE, TABLE, b.optional(IF, NOT, EXISTS),
                                     createTableBody(immutableTableClauses)),
-                            b.sequence(PRIVATE, TEMPORARY, TABLE,
+                            b.sequence(PRIVATE, TEMPORARY, TABLE, b.optional(IF, NOT, EXISTS),
                                     b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
-                            b.sequence(JSON, COLLECTION, TABLE, UNIT_NAME,
+                            b.sequence(JSON, COLLECTION, TABLE, b.optional(IF, NOT, EXISTS), UNIT_NAME,
                                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.sequence(
                                             b.optional(WITH, ETAG),
                                             b.optional(JSON_COLLECTION_COLUMNS),
                                             CREATE_TABLE_RELATIONAL_TAIL,
                                             b.optional(AS, DmlGrammar.SELECT_EXPRESSION))),
                                     b.optional(SEMICOLON)),
-                            b.sequence(SHARDED, TABLE, b.withContext(SHARDED_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
-                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, CREATE_TABLE_BODY)))
+                            b.sequence(SHARDED, TABLE, b.optional(IF, NOT, EXISTS), b.withContext(SHARDED_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
+                            b.sequence(b.optional(GLOBAL, TEMPORARY), TABLE, b.optional(IF, NOT, EXISTS), CREATE_TABLE_BODY)))
 
             // Oracle parses three-part object names for every non-column family; resolution rejects
             // nonexistent objects. Columns require table.column, optionally prefixed by a schema.
@@ -2474,7 +2490,10 @@ enum class DdlGrammar : GrammarRuleKey {
                     b.optional(DOMAIN, domainName),
                     b.optional(COLLATE, IDENTIFIER_NAME),
                     b.optional(visibility),
-                    b.optional(b.firstOf(b.sequence(DEFAULT, EXPRESSION), identityClause(true))),
+                    b.optional(b.firstOf(b.sequence(DEFAULT, b.optional(
+                        b.sequence(ON, NULL, b.optional(FOR, INSERT,
+                            b.firstOf(ONLY, b.sequence(AND, UPDATE))))), EXPRESSION),
+                        identityClause(true))),
                     b.optional(b.firstOf(columnEncryptionClause(), DECRYPT)),
                     b.zeroOrMore(b.firstOf(INLINE_REF_CONSTRAINT, INLINE_CONSTRAINT)),
                     b.optional(ANNOTATIONS_CLAUSE))
@@ -2886,9 +2905,6 @@ enum class DdlGrammar : GrammarRuleKey {
             fun renameConstraintClause() = b.sequence(RENAME, CONSTRAINT, IDENTIFIER_NAME, TO, IDENTIFIER_NAME)
             fun renameTableClause() = b.sequence(RENAME, TO, IDENTIFIER_NAME)
 
-            val resultCacheMode = b.sequence(MODE, b.firstOf(DEFAULT, FORCE))
-            val resultCacheStandby = b.sequence(STANDBY, b.firstOf(ENABLE, DISABLE))
-
             // Oracle 26 accepts these properties in any order, together with the READ ONLY, ROW ARCHIVAL,
             // FOR STAGING, DEFAULT COLLATION and annotation clauses that the SQLRF diagram lists separately,
             // and the immutable-table retention clauses. Repeated PARALLEL, LOGGING or CACHE options fail with
@@ -2902,9 +2918,7 @@ enum class DdlGrammar : GrammarRuleKey {
                     INDEX_ALLOCATE_EXTENT_CLAUSE,
                     INDEX_DEALLOCATE_UNUSED_CLAUSE,
                     b.firstOf(CACHE, NOCACHE),
-                    b.sequence(RESULT_CACHE, LPARENTHESIS, b.firstOf(
-                            b.sequence(resultCacheMode, b.optional(COMMA, resultCacheStandby)),
-                            b.sequence(resultCacheStandby, b.optional(COMMA, resultCacheMode))), RPARENTHESIS),
+                    resultCacheClause(),
                     b.sequence(UPGRADE, b.optional(b.optional(NOT), INCLUDING, DATA)),
                     b.sequence(b.firstOf(MINIMIZE, NOMINIMIZE), RECORDS_PER_BLOCK),
                     INDEX_PARALLEL_CLAUSE,
@@ -2987,7 +3001,7 @@ enum class DdlGrammar : GrammarRuleKey {
                             b.sequence(DROP, b.next(PARTITION), TABLE_RELATIONAL_PROPERTIES))
 
             b.rule(ALTER_TABLE).define(
-                    ALTER, TABLE, UNIT_NAME,
+                    ALTER, TABLE, b.optional(IF, EXISTS), UNIT_NAME,
                     b.firstOf(
                             renameColumnClause(),
                             renameConstraintClause(),

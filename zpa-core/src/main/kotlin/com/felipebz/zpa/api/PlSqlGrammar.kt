@@ -1863,6 +1863,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     b.sequence(b.firstOf(ENABLE, DISABLE), CONCURRENT, REFRESH),
                     b.firstOf(CACHE, NOCACHE),
                     TABLE_COMPRESSION,
+                    INMEMORY_TABLE_CLAUSE,
                     b.sequence(FOR, UPDATE),
                     ANNOTATIONS_CLAUSE
                 )
@@ -2023,6 +2024,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.zeroOrMore(b.firstOf(
                     PHYSICAL_ATRIBUTES_CLAUSE,
                     TABLE_COMPRESSION,
+                    INMEMORY_TABLE_CLAUSE,
                     INDEX_PARALLEL_CLAUSE,
                     LOGGING_CLAUSE,
                     INDEX_ALLOCATE_EXTENT_CLAUSE,

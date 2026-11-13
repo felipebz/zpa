@@ -75,6 +75,13 @@ class CreateMaterializedViewTest : RuleTest() {
             "create materialized view foo segment creation deferred partition by range (id) " +
                 "(partition p1 values less than (maxvalue)) as select 1 from dual;"
         )
+        assertThat(p).matches(
+            "create materialized view foo tablespace users inmemory memcompress for query low priority high " +
+                "build immediate refresh complete as select 1 from dual;"
+        )
+        assertThat(p).matches(
+            "create materialized view foo (a, b) no inmemory inmemory (a) as select 1, 2 from dual;"
+        )
     }
 
     @Test
@@ -108,6 +115,7 @@ class CreateMaterializedViewTest : RuleTest() {
         assertThat(p).notMatches("create materialized view log on customers;")
         assertThat(p).notMatches("create materialized view foo on prebuilt as select 1 from dual;")
         assertThat(p).notMatches("create materialized view foo (id,) as select 1 from dual;")
+        assertThat(p).notMatches("create materialized view foo no inmemory priority high as select 1 from dual;")
         assertThat(p).notMatches(
             "create materialized view foo (scope for (ref_col) is) as select 1 from dual;"
         )

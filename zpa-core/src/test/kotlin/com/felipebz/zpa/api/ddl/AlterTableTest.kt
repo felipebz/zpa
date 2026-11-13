@@ -22,6 +22,12 @@ class AlterTableTest : RuleTest() {
     }
 
     @Test
+    fun matchesIfExists() {
+        assertThat(p).matches("alter table if exists tab read only;")
+        assertThat(p).notMatches("alter table if not exists tab read only;")
+    }
+
+    @Test
     fun matchesAlterTableWithOutOfLineConstraint() {
         assertThat(p).matches("alter table tab add constraint c_name foreign key (f_key) references tab.col (name);")
     }
@@ -165,6 +171,19 @@ class AlterTableTest : RuleTest() {
         assertThat(p).matches("alter table t modify (c number constraint c_nn not null)")
         assertThat(p).matches("alter table t modify (c constraint c_nn not null, c2 annotations(label 'C2'))")
         assertThat(p).matches("alter table t modify c number enable constraint c_nn")
+    }
+
+    @Test
+    fun matchesAlterTableModifyDefaultOnNull() {
+        assertThat(p).matches("alter table t modify c default on null 1;")
+        assertThat(p).matches("alter table t modify (c default on null 1);")
+        assertThat(p).matches("alter table t modify c number default on null 1;")
+        assertThat(p).matches("alter table t modify c default on null for insert only 1;")
+        assertThat(p).matches("alter table t modify c default on null for insert and update 1;")
+        assertThat(p).matches("alter table t modify (c default on null 1, d default 2);")
+        assertThat(p).notMatches("alter table t modify c default on null;")
+        assertThat(p).notMatches("alter table t modify c default on 1;")
+        assertThat(p).notMatches("alter table t modify c default on null for update 1;")
     }
 
     @Test
