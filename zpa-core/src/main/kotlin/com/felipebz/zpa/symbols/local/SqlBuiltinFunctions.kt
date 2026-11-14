@@ -72,4 +72,9 @@ internal object SqlBuiltinFunctions {
 
     /** Whether SQL may take [name], called with arguments, as one of its built-in functions. */
     fun mayTake(name: OracleIdentifier): Boolean = name.lookupName.let { it in NAMES || it.startsWith("SYS_") }
+
+    /** SQL functions called without parentheses. */
+    val PARAMETERLESS = setOf(
+        "SYSDATE", "SYSTIMESTAMP", "CURRENT_DATE", "CURRENT_TIMESTAMP", "LOCALTIMESTAMP", "USER", "UID", "DBTIMEZONE", "SESSIONTIMEZONE"
+    )
 }

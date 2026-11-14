@@ -433,7 +433,7 @@ class ColumnBindingTest {
      * `line:name=column binding / name binding` for each name of each dynamic text of [text]: the text of every
      * `EXECUTE IMMEDIATE`, and the second argument of every `DBMS_SQL.PARSE`.
      */
-    private fun dynamicAnswers(text: String): List<String> {
+    private fun dynamicAnswers(text: String, answer: ((PlSqlVisitorContext, AstNode) -> String)? = null): List<String> {
         val external = ProjectExternalContext.of(metadata, ProjectIdentifier.fromSource("SHOP"), ProjectSchemaPaths.none())
         val context = ProjectAnalysisContext.prepared(
             ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(), external).prepare(listOf(ProjectSource(FileId("u.sql")) { text }), concurrent = false)
@@ -450,7 +450,8 @@ class ColumnBindingTest {
                         .filter { !(it.type === PlSqlGrammar.VARIABLE_NAME && it.parent.type === PlSqlGrammar.MEMBER_EXPRESSION) }
                         .forEach { name ->
                             val written = name.tokens.joinToString("") { it.originalValue }
-                            rows += "${name.token.line}:$written=${render(this.context.columnBinding(name))} / ${this.context.nameBinding(if (name.type === PlSqlGrammar.MEMBER_EXPRESSION) name.firstChild else name)}"
+                            rows += "${name.token.line}:$written=" + (answer?.invoke(this.context, name)
+                                ?: "${render(this.context.columnBinding(name))} / ${this.context.nameBinding(if (name.type === PlSqlGrammar.MEMBER_EXPRESSION) name.firstChild else name)}")
                         }
                 }
             }
@@ -566,6 +567,53 @@ class ColumnBindingTest {
         assertThat(answers(procedure(inner, "for l in (select 7 qty from dual) loop $inner end loop;")).filter { "l.qty=" in it }).containsExactly(
             "8:l.qty=column L.QTY unverified",
             "9:l.qty=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column L.QTY unverified"
+        )
+    }
+
+    @Test
+    fun aFunctionNamedWithoutParenthesesInSqlIsACall() {
+        // Oracle calls a function named without parentheses in SQL when no source of the statement takes the name, as in
+        // PL/SQL; a column of a source whose columns are not known may take it, and a SQL built-in takes SYSDATE.
+        val packages = "create package pk_ses as\n  g number;\n  function sid_atual return number;\n  function f2(a number) return number;\nend;\n/\n" +
+            "create function fn_seq return number is begin return 1; end;\n/\n" +
+            "create function order_id return number is begin return 1; end;\n/\n"
+        val call: (PlSqlVisitorContext, AstNode) -> String = { context, name -> context.callBinding(name).toString() }
+        assertThat(answers(packages + procedure(
+            "v := 'a' || pk_ses.sid_atual;",
+            "select count(*) into v from dual where 1 in (pk_ses.sid_atual);",
+            "select pk_ses.sid_atual into v from dual;",
+            "select count(*) into v from order_line where qty = pk_ses.sid_atual;",
+            "select pk_ses.f2(1) into v from dual;",
+            "select count(*) into v from order_line where amount = fn_seq;",
+            "select count(*) into v from stock_x where amount = fn_seq;",
+            "select count(*) into v from order_line where qty = pk_ses.g;",
+            "select count(*) into v from dual where sysdate is not null;",
+            "select count(*) into v from order_line where order_id = 1;"
+        ), answer = call).filter { it.substringBefore('=').substringAfter(':').lowercase() in setOf("pk_ses.sid_atual", "pk_ses.f2", "fn_seq", "pk_ses.g", "sysdate", "order_id") }
+            .map { it.substringAfter(':') }).containsExactly(
+            "pk_ses.sid_atual=Project(RESOLVED)",
+            "pk_ses.sid_atual=Project(RESOLVED)",
+            "pk_ses.sid_atual=Project(RESOLVED)",
+            "pk_ses.sid_atual=Project(RESOLVED)",
+            "pk_ses.f2=Project(RESOLVED)",
+            // order_line is known to lack the column: the function; stock_x may have it: undecided.
+            "fn_seq=Project(RESOLVED)",
+            "fn_seq=KeptLocal(INCOMPLETE)",
+            // A package variable is no call; SYSDATE is the SQL built-in.
+            "pk_ses.g=Unavailable(NOT_A_COVERED_NAME)",
+            "sysdate=Unavailable(NOT_A_COVERED_NAME)",
+            // order_line has the column: the column takes the name, and no function is called.
+            "order_id=Unavailable(NOT_A_COVERED_NAME)"
+        )
+        // A SQL statement text sees no PL/SQL declaration, and calls a function of a package or of the schema.
+        assertThat(dynamicAnswers(packages + procedure(
+            "execute immediate 'select pk_ses.sid_atual + fn_seq from dual' into v;",
+            "execute immediate 'select count(*) from order_line where order_id = 1' into v;"
+        ), call).map { it.substringAfter(':') }).containsExactly(
+            "pk_ses.sid_atual=Project(RESOLVED)",
+            "fn_seq=Project(RESOLVED)",
+            "count=Unavailable(NOT_A_COVERED_NAME)",
+            "order_id=Unavailable(NOT_A_COVERED_NAME)"
         )
     }
 

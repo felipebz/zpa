@@ -11,6 +11,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.CallBinding
+import com.felipebz.zpa.api.semantics.ColumnBinding
 import com.felipebz.zpa.api.semantics.CallKeptLocalReason
 import com.felipebz.zpa.api.semantics.LocalCallStatus
 import com.felipebz.zpa.api.semantics.UsageUnavailability
@@ -19,7 +20,11 @@ import com.felipebz.zpa.api.semantics.UsageUnavailability
 internal class LocalCallBindings(private val facts: LocalSemanticFacts) {
     private val callsByStart = facts.calls.associateBy { it.reference.range.startLine to it.reference.range.startColumn }
 
-    fun binding(name: AstNode): CallBinding {
+    /**
+     * The decision for the call named by [name]. A function named without parentheses in SQL that only a column may
+     * take is the project's call when [column], the statement's column decision, proves that no source takes it.
+     */
+    fun binding(name: AstNode, column: ((AstNode) -> ColumnBinding)? = null): CallBinding {
         val written = when (name.type) {
             PlSqlGrammar.VARIABLE_NAME -> 0
             // `a.b.c`: the names after the first; an attribute or a database link is no call name.
@@ -33,6 +38,12 @@ internal class LocalCallBindings(private val facts: LocalSemanticFacts) {
                 status(local.status), local.selected?.let(facts.names::declaration), local.candidates.map { facts.names.declaration(it.declaration) }
             )
             call.outcome == LocalCallOutcome.PROJECT -> call.typed?.let(CallBinding::Project) ?: unavailable()
+            call.outcome == LocalCallOutcome.INCOMPLETE && call.typed != null && column != null -> when (column(name)) {
+                is ColumnBinding.PlSqlName -> CallBinding.Project(call.typed)
+                is ColumnBinding.Unknown, is ColumnBinding.Unavailable -> CallBinding.KeptLocal(CallKeptLocalReason.INCOMPLETE)
+                // A column, pseudocolumn or select item takes the name: Oracle calls no function there.
+                else -> unavailable()
+            }
             else -> CallBinding.KeptLocal(
                 when (call.outcome) {
                     LocalCallOutcome.INCOMPLETE -> CallKeptLocalReason.INCOMPLETE

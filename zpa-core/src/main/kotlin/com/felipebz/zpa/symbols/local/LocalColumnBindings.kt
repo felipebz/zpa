@@ -273,7 +273,7 @@ internal class LocalColumnBindings(
      */
     private fun unqualified(name: AstNode, start: AstNode, column: OracleIdentifier): ColumnBinding {
         if (!column.quoted && column.lookupName in BARE_PSEUDOCOLUMNS) return ColumnBinding.Pseudocolumn
-        if (!column.quoted && column.lookupName in PARAMETERLESS_FUNCTIONS) return ColumnBinding.PlSqlName(PlSqlNameReason.BUILT_IN_FUNCTION)
+        if (!column.quoted && column.lookupName in SqlBuiltinFunctions.PARAMETERLESS) return ColumnBinding.PlSqlName(PlSqlNameReason.BUILT_IN_FUNCTION)
         orderByItem(name, start, column)?.let { return it }
         var scope: AstNode? = start
         while (scope != null) {
@@ -720,10 +720,6 @@ internal class LocalColumnBindings(
         val OBJECT_PSEUDOCOLUMNS = setOf("OBJECT_ID", "OBJECT_VALUE")
         val SEQUENCE_PSEUDOCOLUMNS = setOf("NEXTVAL", "CURRVAL")
 
-        /** SQL functions called without parentheses. */
-        val PARAMETERLESS_FUNCTIONS = setOf(
-            "SYSDATE", "SYSTIMESTAMP", "CURRENT_DATE", "CURRENT_TIMESTAMP", "LOCALTIMESTAMP", "USER", "UID", "DBTIMEZONE", "SESSIONTIMEZONE"
-        )
         val CORRELATION_FUNCTIONS = setOf("REF", "VALUE")
 
         /** A last segment that matches no column, for the qualifier of `t.*`. */

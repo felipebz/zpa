@@ -271,7 +271,12 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * - of a function named without parentheses, read as a value: a function of the file, or a qualified name the
      *   project knows as a function and not as a package variable (`pkg.f`);
      * - of a call written with arguments inside static SQL (a `SELECT` list, a `WHERE`, the `VALUES` of an `INSERT`, the
-     *   `SET` of an `UPDATE`), the first child of its `METHOD_CALL`.
+     *   `SET` of an `UPDATE`), the first child of its `METHOD_CALL`;
+     * - of a function named without parentheses inside static SQL that no source of the statement takes
+     *   ([columnBinding] answers it as a PL/SQL name): a qualified name (`pk.f`, `schema.f`, `schema.pk.f`) or an
+     *   unqualified name the project knows as a function and not as a package variable, which Oracle calls there.
+     *   When a source whose columns are not known may have a column of that name, the call is undecided
+     *   ([CallKeptLocalReason.INCOMPLETE]).
      *
      * A name of the file's own subprograms gives [CallBinding.Local], with the subprogram the call binds or the reason
      * it is undecided. A name whose first segment no declaration of the file takes gives [CallBinding.Project], the
@@ -288,10 +293,13 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * private to a package body) is [CallKeptLocalReason.NOT_CALLABLE_IN_SQL]; one a package body defines for its
      * specification in another file is the project's call of that specification's function.
      *
+     * A name of a dynamic SQL text this context parsed ([dynamicSql]) is answered by the same rules among the text's own
+     * declarations, as Oracle compiles the text on its own: a text that is a SQL statement sees no PL/SQL declaration,
+     * and calls a schema function or a function of a package.
+     *
      * [CallBinding.Unavailable] answers:
-     * - an unqualified name a SQL built-in function may take, which wins over the file's declarations in SQL, as
-     *   [nameBinding] answers it;
-     * - a call in the text of dynamic SQL;
+     * - an unqualified name a SQL built-in function may take (with arguments, or without parentheses such as `SYSDATE`
+     *   and `USER`), which wins over the file's declarations in SQL, as [nameBinding] answers it;
      * - a method called after another call or an element (`f(1).m(x)`, `v(i).m(x)`), bound only while typing a value;
      * - a node that names no call (a variable, a qualifier segment, a datatype), and a file that was not analyzed.
      *
@@ -299,8 +307,18 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * method: [CallBinding.KeptLocal] for a value of the file, the project's answer for the written name otherwise.
      */
     @ZpaExperimentalApi
-    fun callBinding(name: AstNode): CallBinding =
-        localSemanticFacts?.callBindings?.binding(name) ?: CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+    fun callBinding(name: AstNode): CallBinding {
+        val facts = localSemanticFacts ?: return CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        if (name.parentOrNull != null && rootTree != null) {
+            val root = generateSequence(name) { it.parentOrNull }.last()
+            if (root !== rootTree) {
+                val text = dynamicSqlSupport?.textOf(root) ?: return CallBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+                return text.context?.localSemanticFacts?.callBindings?.binding(name) { columnBinding(it) }
+                    ?: CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+            }
+        }
+        return facts.callBindings.binding(name) { columnBinding(it) }
+    }
 
     /**
      * The explicit cursor the name [name] denotes and, for `OPEN` and a cursor `FOR` loop, how its written actuals bind

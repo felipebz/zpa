@@ -145,8 +145,22 @@ internal class LocalForwardCalls(
             Ctx.VALUE -> if (localCallee(reference) != null || reference.segments.isNotEmpty() &&
                 LocalReferenceOutcomes.isAbsent(outcomes.first(reference)) && isProjectFunction(target(reference), reference.region)
             ) ProjectCallKind.FUNCTION else null
+            Ctx.SQL_VALUE -> if (sqlFunctionWithoutParentheses(reference)) ProjectCallKind.FUNCTION else null
             else -> null
         }
+    }
+
+    /**
+     * A name of SQL written without parentheses that Oracle reads as a call of a project function: no source of the
+     * statement takes it (or only a column of a source whose columns are not known may take it, and the call is then
+     * undecided), a SQL built-in does not take it, and the project shows a function and no value of that name.
+     */
+    private fun sqlFunctionWithoutParentheses(reference: LocalReference): Boolean {
+        if (reference.segments.isEmpty() && (reference.name.lookupName in SqlBuiltinFunctions.PARAMETERLESS || SqlBuiltinFunctions.mayTake(reference.name))) return false
+        val first = covered(outcomes.first(reference))
+        val absent = first == LocalResolution.ProvenAbsent ||
+            first is LocalResolution.Incomplete && onlyColumnGap(first) && first.provisional == LocalResolution.ProvenAbsent
+        return absent && isProjectFunction(target(reference), reference.region)
     }
 
     /**
@@ -233,21 +247,27 @@ internal class LocalForwardCalls(
         val first = outcomes.first(reference)
         val call = callsByPosition[reference.range.startLine to reference.range.startColumn]
         val (outcome, viaSpecification) =
-            if (reference.lastSegmentContext == Ctx.SQL_CALL) sqlDecision(reference, first, call) else plsqlDecision(reference, first, call)
+            if (reference.lastSegmentContext == Ctx.SQL_CALL || reference.lastSegmentContext == Ctx.SQL_VALUE) sqlDecision(reference, first, call)
+            else plsqlDecision(reference, first, call)
         val target = (if (viaSpecification) memberTarget(reference) else null) ?: target(reference)
         val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it, reference.region, reference.lastSegmentContext == Ctx.SQL_CALL)) }.orEmpty()
         val notation = ProjectCallArguments.of(actuals.map { actual ->
             actual.actual.label?.let { ProjectCallArgument.named(ProjectIdentifier.fromSource(it.originalSpelling)) } ?: ProjectCallArgument.positional()
         })
+        val typed by lazy {
+            val structural = view(reference.region).resolveCall(ProjectCallTarget.written(ProjectQualifiedName.wrap(target)), kind, notation)
+            snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, external.metadata, walk.compilationSchema(reference.region))
+        }
         if (outcome != LocalCallOutcome.PROJECT) {
             val local = if (call != null && call.actuals == null) null else localCallee(reference)?.let { (set, complete) ->
                 if (!complete) LocalCallResolution.incomplete
                 else overloads.resolve(set.declarations, kind.internal(), notation.internal, actuals.map { it.evidence }, caller(reference, set))
             }
-            return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, null, local)
+            // Undecided only because a column may take the name: the project's call, for when the statement's columns
+            // prove that none does.
+            val undecided = if (local == null && outcome == LocalCallOutcome.INCOMPLETE && reference.lastSegmentContext == Ctx.SQL_VALUE) typed else null
+            return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, undecided, local)
         }
-        val structural = view(reference.region).resolveCall(ProjectCallTarget.written(ProjectQualifiedName.wrap(target)), kind, notation)
-        val typed = snapshot.narrowCall(structural, actuals.map { it.evidence.argumentType }, external.metadata, walk.compilationSchema(reference.region))
         return LocalCallAnalysis(reference, target, kind, first, outcome, actuals, typed, null)
     }
 
@@ -269,8 +289,12 @@ internal class LocalForwardCalls(
     private fun sqlDecision(reference: LocalReference, first: LocalResolution, call: LocalCall?): Pair<LocalCallOutcome, Boolean> {
         if (specificationUndecided(first)) return LocalCallOutcome.INCOMPLETE to false
         val viaSpecification = LocalReferenceOutcomes.isSpecificationMember(first) || sqlSpecificationMember(first) || publicInOtherSpecification(first)
-        val outcome = sqlOutcome(reference, first, viaSpecification)
-        return (if (outcome == LocalCallOutcome.PROJECT && call?.actuals == null) LocalCallOutcome.UNSUPPORTED else outcome) to viaSpecification
+        val outcome = sqlOutcome(reference, first, viaSpecification).let {
+            // Without parentheses a column may take the name: a source whose columns are not known leaves it undecided.
+            if (reference.lastSegmentContext == Ctx.SQL_VALUE && covered(first) is LocalResolution.Incomplete) LocalCallOutcome.INCOMPLETE else it
+        }
+        val missingActuals = reference.lastSegmentContext == Ctx.SQL_CALL && call?.actuals == null
+        return (if (outcome == LocalCallOutcome.PROJECT && missingActuals) LocalCallOutcome.UNSUPPORTED else outcome) to viaSpecification
     }
 
     /**

@@ -103,8 +103,8 @@ class CallBindingTest {
             "13:v_nums=KeptLocal(LOCAL_CAPTURE)",
             "14:x=Unavailable(NOT_A_COVERED_NAME)",
             "14:v_amount=Unavailable(NOT_A_COVERED_NAME)",
-            // A function named in SQL is not forwarded.
-            "15:pk_audit.fmt=Unavailable(NOT_A_COVERED_NAME)",
+            // A function named without parentheses in SQL that no source takes: Oracle calls it, as in PL/SQL.
+            "15:pk_audit.fmt=Project(RESOLVED () of 1)",
             "15:pk_audit=Unavailable(NOT_A_COVERED_NAME)",
             "15:x=Unavailable(NOT_A_COVERED_NAME)"
         )
