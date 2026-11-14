@@ -7,6 +7,7 @@
 
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.metadata.FormsHostVariables
@@ -97,9 +98,11 @@ internal class LocalForwardCalls(
     /** The references' outcomes; by default the resolver's, refined with the project's specification coverage. */
     private val outcomes: LocalReferenceOutcomes = LocalReferenceOutcomes(model, LocalSpecificationCoverage.of(model, snapshot)),
     /** The Oracle Forms metadata of the scan, which types host variables; null without one. */
-    private val forms: FormsMetadata? = null
+    private val forms: FormsMetadata? = null,
+    /** The file's tree, where the select items of its cursors type their rows' fields. */
+    root: AstNode? = null
 ) {
-    private val walk = LocalTypeWalk(model, snapshot, external, outcomes)
+    private val walk = LocalTypeWalk(model, snapshot, external, outcomes, root = root)
     private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot), outcomes::specificationDefaults)
     private val callsByPosition = calls.associateBy { it.line to it.column }
     private val namesByPosition = references.filter { it.context != Ctx.TYPE && it.context != Ctx.ANCHOR_TYPE && it.context != Ctx.ANCHOR_ROWTYPE }
@@ -388,6 +391,7 @@ internal class LocalForwardCalls(
     /** Evidence of a name or call whose first segment no local declaration takes. */
     private fun absentName(reference: LocalReference, actual: LocalActual): LocalTypeEvidence {
         builtInValue(reference, actual)?.let { return it }
+        substr(reference, actual)?.let { return it }
         callOf(reference)?.let { call ->
             val result = walk.projectResult(call.typed, reference.region)
             // An object type's constructor, user-defined or the default one: nothing local takes the name.
@@ -468,6 +472,23 @@ internal class LocalForwardCalls(
         // In SQL a column may take the name.
         if (reference.segments.isNotEmpty() || actual.isCall || reference.name.quoted || reference.context != Ctx.VALUE) return null
         return BUILT_IN_VALUES[reference.name.lookupName]?.let(::builtIn)
+    }
+
+    /**
+     * `SUBSTR(s, p [, n])` when no local declaration takes the name: STANDARD's, before any schema-level function of that
+     * name. Its result is a CLOB for a CLOB or NCLOB `s`, else a VARCHAR2 for a character, numeric or datetime `s`
+     * (in the character set of `s`: Oracle finds a call ambiguous between overloads that differ only by it, as it finds
+     * VARCHAR2 and NVARCHAR2 alike for overloads). Anything else (another argument count, an `s` of no type) is not typed.
+     */
+    private fun substr(reference: LocalReference, actual: LocalActual): LocalTypeEvidence? {
+        if (!actual.isCall || reference.segments.isNotEmpty() || reference.name.quoted || reference.name.lookupName != "SUBSTR") return null
+        val actuals = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.takeIf { it.size in 2..3 && it.all { a -> a.label == null } }
+            ?: return LocalTypeEvidence.unknown("a SUBSTR call of other actuals")
+        return when (evidence(actuals.first(), reference.region).argumentType.familyOrNull) {
+            ProjectDatatypeFamily.CLOB -> builtIn("CLOB")
+            ProjectDatatypeFamily.CHARACTER, ProjectDatatypeFamily.NUMERIC, ProjectDatatypeFamily.DATETIME -> builtIn("VARCHAR2")
+            else -> LocalTypeEvidence.unknown("SUBSTR of a value of no character, numeric or datetime type")
+        }
     }
 
     private fun builtIn(typeName: String) = LocalTypeEvidence(ProjectArgumentType.builtIn(typeName), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)

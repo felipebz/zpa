@@ -8,10 +8,14 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
+import com.felipebz.zpa.api.semantics.ColumnBinding
+import com.felipebz.zpa.api.semantics.NameBinding
+import com.felipebz.zpa.api.semantics.UsageUnavailability
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.StaticArithmetic
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.*
@@ -100,7 +104,9 @@ internal class LocalTypeWalk(
     private val outcomes: LocalReferenceOutcomes =
         LocalReferenceOutcomes(model, snapshot?.let { LocalSpecificationCoverage.of(model, it) }),
     /** For a dynamic SQL text, the compilation schema of the unit that runs it, for every region of the text. */
-    private val heldSchema: HeldSchema? = null
+    private val heldSchema: HeldSchema? = null,
+    /** The file's tree, where the select items of its cursors are read to type their fields; null types none. */
+    private val root: AstNode? = null
 ) {
     class HeldSchema(val schema: ProjectIdentifier?)
 
@@ -319,22 +325,95 @@ internal class LocalTypeWalk(
             return field(record.id, ordinal)
         }
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
+        selectListOf(evidence)?.let { return selectField(snapshot, it, name, region) }
         val description = evidence.description?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT }
             ?: return LocalTypeEvidence.unknown("member $name of a value the project does not describe")
         if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) {
-            val relation = description.anchorName.orElse(null)?.takeIf { description.status == ProjectExternalTypeDescription.Status.RESOLVED }
-                ?: return LocalTypeEvidence.unknown("member $name of a row the external metadata does not confirm")
-            val owner = packageOwner(region)
-            val column = snapshot.describeExternalType(
-                ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(relation.name.append(name)), ProjectTypeReference.Anchor.TYPE),
-                owner, metadata, compilationSchema(region)
-            )
-            return LocalTypeEvidence(ProjectArgumentType.described(column, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, column)
+            return rowColumn(snapshot, description, name, region) ?: LocalTypeEvidence.unknown("member $name of a row the external metadata does not confirm")
         }
         val type = description.source.declaration.orElse(null)?.takeIf { description.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
             ?: return LocalTypeEvidence.unknown("member $name of a value of no declared project type")
         val member = snapshot.memberType(type.id, name) ?: return LocalTypeEvidence.unknown("$name is not one field or attribute of ${type.qualifiedName}")
         return described(snapshot, member, region)
+    }
+
+    /** Column [name] of the relation's row [description] names, typed as its `%TYPE`; null when the metadata does not confirm the row. */
+    private fun rowColumn(snapshot: ProjectSnapshot, description: ProjectExternalTypeDescription, name: OracleIdentifier, region: LocalRegionId): LocalTypeEvidence? {
+        val relation = description.anchorName.orElse(null)?.takeIf { description.status == ProjectExternalTypeDescription.Status.RESOLVED } ?: return null
+        val owner = packageOwner(region)
+        val column = snapshot.describeExternalType(
+            ProjectWrittenAnchor.of(ProjectQualifiedName.wrap(relation.name.append(name)), ProjectTypeReference.Anchor.TYPE),
+            owner, metadata, compilationSchema(region)
+        )
+        return LocalTypeEvidence(ProjectArgumentType.described(column, owner), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, column)
+    }
+
+    /**
+     * Field [name] of the row of a query of this file: the one select item named [name], typed when it is a column of a
+     * relation that the external metadata confirms has it, as that column's `%TYPE`. For a compound query (UNION,
+     * INTERSECT, MINUS) Oracle types the field from the item at that position in every branch ([setOperationType]).
+     * Any other item (an expression, a column of an inline view, one the metadata does not confirm) is unknown.
+     */
+    private fun selectField(snapshot: ProjectSnapshot, selectList: SelectList, name: OracleIdentifier, region: LocalRegionId): LocalTypeEvidence {
+        val item = selectList.positionsOf(name).singleOrNull()?.let { selectList.items[it] }
+            ?: return LocalTypeEvidence.unknown("$name is not one item of the select list")
+        val node = selectColumn(item) ?: return LocalTypeEvidence.unknown("select item $name is not in this file")
+        val block = node.parent
+        val position = block.getChildren(DmlGrammar.SELECT_COLUMN).indexOf(node)
+        val branches = block.parent.takeIf { it.type === DmlGrammar.SELECT_EXPRESSION }?.getChildren(DmlGrammar.QUERY_BLOCK) ?: listOf(block)
+        val types = branches.map { branch ->
+            branch.getChildren(DmlGrammar.SELECT_COLUMN).getOrNull(position)?.let { itemType(snapshot, it, region) }
+                ?: LocalTypeEvidence.unknown("a branch with no select item at the position of $name")
+        }
+        return types.singleOrNull() ?: setOperationType(types)
+    }
+
+    /** A select item's value when it is a column of a relation the external metadata confirms has it, as that column's `%TYPE`. */
+    private fun itemType(snapshot: ProjectSnapshot, item: AstNode, region: LocalRegionId): LocalTypeEvidence {
+        val column = selectColumns?.binding(item.firstChild)
+        if (column !is ColumnBinding.Column || column.exists != true) return LocalTypeEvidence.unknown("a select item that is not a column the metadata confirms")
+        val row = column.source.relation ?: return LocalTypeEvidence.unknown("a select item that is not a column of a relation")
+        return rowColumn(snapshot, row, OracleIdentifier.fromSource("\"${column.name}\""), region)
+            ?: LocalTypeEvidence.unknown("a select item of a row the external metadata does not confirm")
+    }
+
+    /**
+     * The type Oracle gives a column of a compound query from its branches' types: theirs when they tell no types apart
+     * for overloads (VARCHAR2 and CHAR alike); BINARY_DOUBLE over BINARY_FLOAT over NUMBER; TIMESTAMP for DATE and
+     * TIMESTAMP. Any other mix, and a branch of no known type, is unknown.
+     */
+    private fun setOperationType(types: List<LocalTypeEvidence>): LocalTypeEvidence {
+        types.firstOrNull { it.terminal == LocalTypeEvidence.Terminal.UNKNOWN }?.let { return it }
+        val ranks = types.map { it.argumentType.rank ?: return LocalTypeEvidence.unknown("a branch whose exact type is not known") }.toSet()
+        val combined = when {
+            ranks.size == 1 -> return types.first()
+            NUMERIC_SET_OPERANDS.containsAll(ranks) -> if (OverloadRank.BINARY_DOUBLE in ranks) OverloadRank.BINARY_DOUBLE else OverloadRank.BINARY_FLOAT
+            ranks == setOf(OverloadRank.DATE, OverloadRank.TIMESTAMP) -> OverloadRank.TIMESTAMP
+            else -> return LocalTypeEvidence.unknown("branches of the types $ranks")
+        }
+        return LocalTypeEvidence(ProjectArgumentType.builtIn(if (combined == OverloadRank.TIMESTAMP) "TIMESTAMP" else combined.name, combined), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+    }
+
+    /** The select item of this file's tree whose range holds [item]'s (the field's name, or the whole item). */
+    private fun selectColumn(item: SelectItem): AstNode? {
+        if (item.range.fileId != model.fileId) return null
+        return selectItemNodes.firstOrNull { node ->
+            val range = LocalSyntax.range(model.fileId, node)
+            !before(item.range.startLine, item.range.startColumn, range.startLine, range.startColumn) &&
+                !before(range.endLine, range.endColumn, item.range.endLine, item.range.endColumn)
+        }
+    }
+
+    private fun before(line: Int, column: Int, otherLine: Int, otherColumn: Int) = line < otherLine || line == otherLine && column < otherColumn
+
+    private val selectItemNodes: List<AstNode> by lazy(LazyThreadSafetyMode.NONE) { root?.getDescendants(DmlGrammar.SELECT_COLUMN).orEmpty() }
+
+    /**
+     * The columns the select items read, as `columnBinding` decides them. Only a column a relation has is used, which
+     * never asks what a PL/SQL name binds: the name bindings are not computed yet.
+     */
+    private val selectColumns: LocalColumnBindings? by lazy(LazyThreadSafetyMode.NONE) {
+        root?.let { LocalColumnBindings(model, this, { NameBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME) }) }
     }
 
     /**
@@ -887,6 +966,9 @@ internal class LocalTypeWalk(
     }
 
     companion object {
+        /** The ranks a column of a compound query combines into the widest of them. */
+        private val NUMERIC_SET_OPERANDS = setOf(OverloadRank.NUMBER, OverloadRank.BINARY_FLOAT, OverloadRank.BINARY_DOUBLE)
+
         /** The declarations that hold a value: an object type's attribute is one (`self.a`, or `a` alone in a method). */
         private val VALUES = setOf(VARIABLE, PARAMETER, CURSOR_PARAMETER, LOOP_INDEX, ATTRIBUTE)
     }
