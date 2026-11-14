@@ -5,8 +5,6 @@
 
 package com.felipebz.zpa.api.matchers
 
-import java.util.*
-
 fun interface NameCriteria {
 
     fun matches(name: String?): Boolean
@@ -25,8 +23,7 @@ fun interface NameCriteria {
         fun startsWith(prefix: String): NameCriteria =
             NameCriteria { name ->
                 name != null &&
-                    name.uppercase(Locale.getDefault())
-                        .startsWith(prefix.uppercase(Locale.getDefault()))
+                    name.uppercase().startsWith(prefix.uppercase())
             }
 
         @JvmStatic

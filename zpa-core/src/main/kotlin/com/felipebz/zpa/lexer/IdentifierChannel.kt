@@ -12,12 +12,14 @@ import com.felipebz.flr.channel.Channel
 import com.felipebz.flr.channel.CodeReader
 import com.felipebz.flr.impl.LexerOutput
 import com.felipebz.zpa.api.UnquotedIdentifier
-import java.util.*
 
 class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutput> {
 
-    /** Each keyword by its uppercase text, with that text as one string that the lexes of every file can share. */
-    private val keywordsMap = keywordTypes.associate { it.value.uppercase(Locale.getDefault()).let { value -> value to Keyword(it, value) } }
+    /**
+     * Each keyword by its uppercase text, with that text as one string that the lexes of every file can share. Oracle
+     * reads an unquoted word the same way whatever the client's locale, so no text here is cased by the default locale.
+     */
+    private val keywordsMap = keywordTypes.associate { it.value.uppercase().let { value -> value to Keyword(it, value) } }
 
     private class Keyword(val type: TokenType, val value: String)
 
@@ -25,7 +27,7 @@ class IdentifierChannel(keywordTypes: Array<out TokenType>) : Channel<LexerOutpu
 
     /** The value and type of a word from its shared original value; computed once per distinct word in a lex. */
     private val resolveWord: LexerOutput.(String) -> Word = { originalValue ->
-        val normalizedValue = originalValue.uppercase(Locale.getDefault())
+        val normalizedValue = originalValue.uppercase()
         val keyword = keywordsMap[normalizedValue]
         // Written in uppercase, the value is the original value. Otherwise a keyword's value is its constant, unless
         // that text already has a string in this lex.

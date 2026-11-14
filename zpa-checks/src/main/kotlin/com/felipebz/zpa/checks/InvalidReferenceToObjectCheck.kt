@@ -11,7 +11,6 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
 import com.felipebz.zpa.typeIs
-import java.util.*
 
 @Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
 @ConstantRemediation("5min")
@@ -86,7 +85,7 @@ class InvalidReferenceToObjectCheck : AbstractBaseCheck(), FormsMetadataAwareChe
 
             if (reportIssue) {
                 addIssue(argument, getLocalizedMessage(), value,
-                    verifier.matcher.methodName.uppercase(Locale.getDefault())
+                    verifier.matcher.methodName.uppercase()
                 )
 
             }

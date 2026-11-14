@@ -27,7 +27,6 @@ import org.junit.jupiter.api.fail
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
-import java.util.*
 import kotlin.io.path.exists
 
 class PlSqlRulingTest {
@@ -184,7 +183,7 @@ class PlSqlRulingTest {
 
         val files = baseDir
             .walkTopDown()
-            .filter { it.isFile && it.extension.isNotEmpty() && extensions.contains(it.extension.lowercase(Locale.getDefault())) }
+            .filter { it.isFile && it.extension.isNotEmpty() && extensions.contains(it.extension.lowercase()) }
             .toList()
         val inputFiles = files.map { InputFile(PlSqlFile.Type.MAIN, baseDirPath, it, StandardCharsets.UTF_8) }
 

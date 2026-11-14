@@ -59,11 +59,11 @@ open class PlSqlCheck : PlSqlVisitor() {
 
     @ZpaExperimentalApi
     fun addIssue(view: SyntaxView, message: String, vararg messageParameters: Any): PreciseIssue {
-        return addIssue(view, MessageFormat.format(message, *messageParameters))
+        return addIssue(view, format(message, messageParameters))
     }
 
     fun addIssue(node: AstNode, message: String, vararg messageParameters: Any): PreciseIssue {
-        return addIssue(node, MessageFormat.format(message, *messageParameters))
+        return addIssue(node, format(message, messageParameters))
     }
 
     fun addIssue(primaryLocation: IssueLocation): PreciseIssue {
@@ -79,7 +79,7 @@ open class PlSqlCheck : PlSqlVisitor() {
     }
 
     fun addLineIssue(message: String, lineNumber: Int, vararg messageParameters: Any): PreciseIssue {
-        return addLineIssue(MessageFormat.format(message, *messageParameters), lineNumber)
+        return addLineIssue(format(message, messageParameters), lineNumber)
     }
 
     fun addFileIssue(message: String): PreciseIssue {
@@ -89,7 +89,7 @@ open class PlSqlCheck : PlSqlVisitor() {
     }
 
     fun addFileIssue(message: String, vararg messageParameters: Any): PreciseIssue {
-        return addFileIssue(MessageFormat.format(message, *messageParameters))
+        return addFileIssue(format(message, messageParameters))
     }
 
     fun addIssue(token: Token, message: String): PreciseIssue {
@@ -97,8 +97,11 @@ open class PlSqlCheck : PlSqlVisitor() {
     }
 
     fun addIssue(token: Token, message: String, vararg messageParameters: Any): PreciseIssue {
-        return addIssue(token, MessageFormat.format(message, *messageParameters))
+        return addIssue(token, format(message, messageParameters))
     }
+
+    /** The message with its parameters, a number in the same form whatever the default locale. */
+    private fun format(message: String, parameters: Array<out Any>): String = MessageFormat(message, Locale.ROOT).format(parameters)
 
     class PreciseIssue(private val primaryLocation: IssueLocation) {
         private var cost: Int? = null
