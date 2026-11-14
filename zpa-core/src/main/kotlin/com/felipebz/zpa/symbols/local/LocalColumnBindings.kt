@@ -69,6 +69,9 @@ internal class LocalColumnBindings(
         if (name.type !== PlSqlGrammar.VARIABLE_NAME && name.type !== PlSqlGrammar.MEMBER_EXPRESSION) return unavailable()
         val parent = name.parent
         if (name.type === PlSqlGrammar.VARIABLE_NAME && parent.type === PlSqlGrammar.MEMBER_EXPRESSION) return unavailable()
+        // A member after an element, a call result or any other expression (`v(1).f`, `f(1).f`) is a field of that value,
+        // not a name SQL resolves in its scopes.
+        if (parent.type === PlSqlGrammar.OBJECT_REFERENCE && parent.firstChild !== name) return unavailable()
         val start = startScope(name) ?: return unavailable()
         if (name.getFirstAncestorOrNull(DmlGrammar.INTO_CLAUSE)?.let { isBelow(it, start) } == true) return ColumnBinding.PlSqlName(PlSqlNameReason.INTO_TARGET)
         if (isBindVariable(name)) return ColumnBinding.PlSqlName(PlSqlNameReason.BIND_VARIABLE)

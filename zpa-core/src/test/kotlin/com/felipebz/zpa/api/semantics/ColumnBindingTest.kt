@@ -570,6 +570,33 @@ class ColumnBindingTest {
     }
 
     @Test
+    fun aMemberAfterAnElementOrACallResultIsNotAColumn() {
+        // `campo(1).qty` and `f_x(1).qty` are a field of the element or of the result: Oracle never reads a column there,
+        // and nameBinding agrees. The leading name keeps its answer.
+        val text = "create procedure p_elem is\n  type t_r is record (qty number);\n  type t_t is table of t_r index by binary_integer;\n" +
+            "  campo t_t;\n  v number;\nbegin\n" +
+            "  select count(*) into v from order_line where qty = campo(1).qty;\n" +
+            "  select count(*) into v from order_line where qty = f_x(1).qty;\n" +
+            "  select count(*) into v from order_line where campo(1).qty = qty;\n" +
+            "  select count(*) into v from order_line l where l.qty = campo(1).qty;\n" +
+            "end;\n/\n"
+        assertThat(answers(text) { context, name -> render(context.columnBinding(name)) + " / " + context.nameBinding(name) }
+            .filter { it.substringBefore('=').substringAfter(':') in setOf("qty", "l.qty", "campo") }).containsExactly(
+            "7:qty=column SHOP.ORDER_LINE.QTY / NothingLocal(column possible)",
+            "7:campo=Unavailable(NOT_A_COVERED_NAME) / Local(VARIABLE@4:2)",
+            "7:qty=Unavailable(NOT_A_COVERED_NAME) / Unavailable(NOT_A_COVERED_NAME)",
+            "8:qty=column SHOP.ORDER_LINE.QTY / NothingLocal(column possible)",
+            "8:qty=Unavailable(NOT_A_COVERED_NAME) / Unavailable(NOT_A_COVERED_NAME)",
+            "9:campo=Unavailable(NOT_A_COVERED_NAME) / Local(VARIABLE@4:2)",
+            "9:qty=Unavailable(NOT_A_COVERED_NAME) / Unavailable(NOT_A_COVERED_NAME)",
+            "9:qty=column SHOP.ORDER_LINE.QTY / NothingLocal(column possible)",
+            "10:l.qty=column SHOP.ORDER_LINE.QTY / NothingLocal(column possible)",
+            "10:campo=Unavailable(NOT_A_COVERED_NAME) / Local(VARIABLE@4:2)",
+            "10:qty=Unavailable(NOT_A_COVERED_NAME) / Unavailable(NOT_A_COVERED_NAME)"
+        )
+    }
+
+    @Test
     fun aHoleOfADynamicText() {
         assertThat(dynamicAnswers(procedure(
             // A number standing as an operand, or a value inside a string literal of the text: only a value.
