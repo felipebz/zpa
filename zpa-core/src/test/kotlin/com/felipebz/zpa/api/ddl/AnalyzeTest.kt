@@ -29,6 +29,28 @@ class AnalyzeTest : RuleTest() {
     }
 
     @Test
+    fun matchesComputeAndEstimateStatistics() {
+        assertThat(p).matches("analyze table tab compute statistics;")
+        assertThat(p).matches("analyze table tab compute statistics for table;")
+        assertThat(p).matches("analyze table tab estimate statistics sample 10 percent;")
+        assertThat(p).matches("analyze index ix compute statistics;")
+        assertThat(p).matches("analyze cluster cl compute statistics;")
+        assertThat(p).matches("analyze table tab compute system statistics")
+        assertThat(p).matches("analyze table tab estimate system statistics")
+        assertThat(p).matches("analyze table tab estimate statistics sample 100 rows")
+        assertThat(p).matches("analyze table tab estimate statistics for table sample 10 percent")
+        assertThat(p).matches("analyze table tab estimate statistics sample 10 percent for table")
+        assertThat(p).matches("analyze table tab estimate statistics for all columns for table sample 5 rows")
+        assertThat(p).matches("analyze table tab compute statistics for all indexed columns size 10 for all indexes")
+        assertThat(p).matches("analyze table tab compute statistics for columns id, val size 5")
+        assertThat(p).matches("analyze table tab compute statistics for columns size 4 id, val")
+        assertThat(p).matches("analyze table tab compute statistics for columns id size 3, val size 5")
+        assertThat(p).matches("analyze table tab compute statistics for table for all indexes for all columns")
+        assertThat(p).matches("analyze table tab partition (p1) compute statistics for all local indexes")
+        assertThat(p).matches("analyze index ix estimate statistics sample 5 percent")
+    }
+
+    @Test
     fun matchesValidationClauses() {
         assertThat(p).matches("analyze index inv_product_ix validate structure;")
         assertThat(p).matches("analyze table employees validate structure cascade;")
@@ -56,5 +78,14 @@ class AnalyzeTest : RuleTest() {
         assertThat(p).notMatches("analyze table t validate structure cascade fast into t2")
         assertThat(p).notMatches("analyze table t validate structure online cascade")
         assertThat(p).notMatches("analyze table t delete statistics validate structure")
+        // ORA-01490: SAMPLE goes with ESTIMATE, once; ORA-02000: SAMPLE needs ROWS or PERCENT; ORA-02017: an integer.
+        assertThat(p).notMatches("analyze table tab compute statistics sample 10 percent")
+        assertThat(p).notMatches("analyze table tab estimate statistics sample 10 percent sample 5 rows")
+        assertThat(p).notMatches("analyze table tab estimate statistics sample 10")
+        assertThat(p).notMatches("analyze table tab estimate statistics sample 10.5 percent")
+        // ORA-03049: a comma between columns; ORA-00921: a column after COLUMNS; ORA-02000: COLUMNS after ALL.
+        assertThat(p).notMatches("analyze table tab compute statistics for columns id size 3 val size 5")
+        assertThat(p).notMatches("analyze table tab compute statistics for columns")
+        assertThat(p).notMatches("analyze table tab compute statistics for all")
     }
 }

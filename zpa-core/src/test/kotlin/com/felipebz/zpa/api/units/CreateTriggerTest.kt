@@ -72,9 +72,34 @@ class CreateTriggerTest : RuleTest() {
     fun matchesSystemDatabaseTrigger() {
         assertThat(p).matches(""
                 + "create trigger foo "
-                + "after startup or before logoff or after db_role_change "
+                + "after startup or db_role_change or set container "
                 + "on pluggable database "
                 + "begin null; end;")
+    }
+
+    @Test
+    fun matchesSystemTriggerWhoseEventsShareOneTiming() {
+        assertThat(p).matches("create or replace trigger trg_b after logon or create on schema begin null; end;")
+        assertThat(p).matches("create or replace trigger trg_d after servererror or logon on database begin null; end;")
+        assertThat(p).matches("create or replace trigger trg_e before create or logoff on schema begin null; end;")
+        assertThat(p).matches("create trigger trg_f after create or logon or alter on schema begin null; end;")
+        assertThat(p).matches("create trigger trg_g before logoff or truncate or drop on schema begin null; end;")
+        assertThat(p).matches("create trigger trg_h before shutdown or logoff on database begin null; end;")
+        assertThat(p).matches("create trigger trg_i before unplug or logoff on pluggable database begin null; end;")
+        assertThat(p).matches("create trigger trg_j after clone or logon on pluggable database begin null; end;")
+        assertThat(p).matches("create trigger trg_k instead of create or logon on schema begin null; end;")
+    }
+
+    @Test
+    fun doesNotMatchASystemTriggerWhoseTimingDoesNotFit() {
+        // ORA-30509: a logoff trigger is BEFORE only; ORA-30501: a shutdown trigger too.
+        assertThat(p).notMatches("create or replace trigger trg_a after logon or logoff on database begin null; end;")
+        assertThat(p).notMatches("create or replace trigger trg_c after startup or shutdown on database begin null; end;")
+        // ORA-30508: a logon trigger is AFTER only.
+        assertThat(p).notMatches("create trigger trg_l before logon on schema begin null; end;")
+        // ORA-04072: the timing is written once.
+        assertThat(p).notMatches("create trigger trg_m after logon or after create on schema begin null; end;")
+        assertThat(p).notMatches("create trigger trg_n after startup or before logoff on database begin null; end;")
     }
 
     @Test

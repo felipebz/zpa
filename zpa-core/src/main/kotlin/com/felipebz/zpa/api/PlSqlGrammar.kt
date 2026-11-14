@@ -296,13 +296,18 @@ enum class PlSqlGrammar : GrammarRuleKey {
             val rest = keywords.subList(2, keywords.size).toTypedArray()
             b.rule(NON_RESERVED_KEYWORD).define(b.isOneOfThem(keywords[0], keywords[1], *rest))
 
-            b.rule(IDENTIFIER_NAME).define(b.firstOf(IDENTIFIER, NON_RESERVED_KEYWORD))
+            val reservedKeywords = PlSqlKeyword.entries.filter { it.isReserved }
+            b.rule(IDENTIFIER_NAME).define(b.firstOf(
+                    IDENTIFIER,
+                    NON_RESERVED_KEYWORD,
+                    b.sequence(b.requireContext(BIND_NAME_CONTEXT, true),
+                            b.isOneOfThem(reservedKeywords[0], reservedKeywords[1], *reservedKeywords.drop(2).toTypedArray()))))
 
             b.rule(VALID_INPUT).define(b.firstOf(
                     COMPILATION_UNIT,
                     DCL_COMMAND,
                     DDL_COMMAND,
-                    DML_COMMAND,
+                    b.withContext(TOP_LEVEL_SQL_CONTEXT, true, DML_COMMAND),
                     TCL_COMMAND,
                     SQLPLUS_COMMAND,
                     SESSION_CONTROL_COMMAND,
@@ -589,7 +594,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                 b.firstOf(
                     b.sequence(
                         COLON, b.firstOf(
-                            b.sequence(IDENTIFIER_NAME, b.optional(INDICATOR), b.optional(COLON, IDENTIFIER_NAME)),
+                            b.sequence(bindName(b), b.optional(INDICATOR), b.optional(COLON, bindName(b))),
                             INTEGER_LITERAL
                         )
                     ),
@@ -890,7 +895,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     BRACKED_EXPRESSION,
                     b.sequence(LPARENTHESIS, EXPRESSION, b.oneOrMore(COMMA, EXPRESSION), RPARENTHESIS))).skipIfOneChild()
 
-            b.rule(MEMBER_EXPRESSION).define(
+            val memberExpression = b.sequence(
                     MULTIPLE_VALUE_EXPRESSION,
                     b.zeroOrMore(
                             b.firstOf(
@@ -922,7 +927,11 @@ enum class PlSqlGrammar : GrammarRuleKey {
                                 // extension guarded by the active MODEL context.
                                 MODEL_CELL_REFERENCE_SUFFIX
                             )
-                    )).skipIfOneChild()
+                    ))
+            // After a bind variable in PL/SQL, a reserved word names its member too (`:block.select`).
+            b.rule(MEMBER_EXPRESSION).define(b.firstOf(
+                    b.sequence(b.next(COLON), notTopLevelSql(b), b.withContext(BIND_NAME_CONTEXT, true, memberExpression)),
+                    memberExpression)).skipIfOneChild()
 
             b.rule(ARGUMENT).define(
                 b.optional(IDENTIFIER_NAME, ASSOCIATION),
@@ -1513,11 +1522,17 @@ enum class PlSqlGrammar : GrammarRuleKey {
                     COMPOUND_TRIGGER_BLOCK
             )
 
+            // One timing for every event: Oracle rejects a timing repeated after OR (ORA-04072), and a database event
+            // the timing does not fit (ORA-30501, ORA-30508, ORA-30509). It does not single out INSTEAD OF a DDL
+            // event other than CREATE (ORA-30513).
+            val beforeEvent = b.firstOf(DDL_EVENT, b.sequence(b.next(b.firstOf(SHUTDOWN, LOGOFF, UNPLUG, b.sequence(SET, CONTAINER))), DATABASE_EVENT))
+            val afterEvent = b.firstOf(DDL_EVENT, b.sequence(b.nextNot(b.firstOf(SHUTDOWN, LOGOFF, UNPLUG)), DATABASE_EVENT))
+            val insteadOfEvent = b.firstOf(DDL_EVENT, DATABASE_EVENT)
             b.rule(SYSTEM_TRIGGER).define(
                     b.firstOf(
-                            b.sequence(b.firstOf(BEFORE, AFTER, b.sequence(INSTEAD, OF)),
-                                    DDL_EVENT, b.zeroOrMore(OR, DDL_EVENT)),
-                            b.sequence(DATABASE_EVENT, b.zeroOrMore(OR, DATABASE_EVENT))),
+                            b.sequence(BEFORE, beforeEvent, b.zeroOrMore(OR, beforeEvent)),
+                            b.sequence(AFTER, afterEvent, b.zeroOrMore(OR, afterEvent)),
+                            b.sequence(INSTEAD, OF, insteadOfEvent, b.zeroOrMore(OR, insteadOfEvent))),
                     ON,
                     b.firstOf(
                             b.sequence(b.optional(IDENTIFIER_NAME, DOT), SCHEMA),
@@ -1592,20 +1607,27 @@ enum class PlSqlGrammar : GrammarRuleKey {
                             DDL)
             )
 
+            // The timing the event takes is the trigger's, written once before its first event.
             b.rule(DATABASE_EVENT).define(
                     b.firstOf(
-                            b.sequence(AFTER, STARTUP),
-                            b.sequence(BEFORE, SHUTDOWN),
-                            b.sequence(AFTER, DB_ROLE_CHANGE),
-                            b.sequence(AFTER, SERVERERROR),
-                            b.sequence(AFTER, LOGON),
-                            b.sequence(BEFORE, LOGOFF),
-                            b.sequence(AFTER, SUSPEND),
-                            b.sequence(AFTER, CLONE),
-                            b.sequence(BEFORE, UNPLUG),
-                            b.sequence(b.firstOf(BEFORE, AFTER), SET, CONTAINER))
+                            STARTUP,
+                            SHUTDOWN,
+                            DB_ROLE_CHANGE,
+                            SERVERERROR,
+                            LOGON,
+                            LOGOFF,
+                            SUSPEND,
+                            CLONE,
+                            UNPLUG,
+                            b.sequence(SET, CONTAINER))
             )
         }
+
+        private fun notTopLevelSql(b: PlSqlGrammarBuilder) = b.nextNot(b.requireContext(TOP_LEVEL_SQL_CONTEXT, true))
+
+        /** The name of a bind variable: in PL/SQL a reserved word too (`:table`). */
+        private fun bindName(b: PlSqlGrammarBuilder) =
+            b.firstOf(b.sequence(notTopLevelSql(b), b.withContext(BIND_NAME_CONTEXT, true, IDENTIFIER_NAME)), IDENTIFIER_NAME)
 
         private fun accessor(b: PlSqlGrammarBuilder) = b.sequence(
                 b.optional(b.firstOf(FUNCTION, PROCEDURE, PACKAGE, TRIGGER, TYPE)), UNIT_NAME)

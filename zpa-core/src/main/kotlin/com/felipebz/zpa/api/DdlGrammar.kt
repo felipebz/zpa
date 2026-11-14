@@ -4686,6 +4686,24 @@ enum class DdlGrammar : GrammarRuleKey {
                         b.optional(b.firstOf(ONLINE, OFFLINE)),
                         b.optional(intoClause))))
 
+            // A column list needs a comma between columns, whatever SIZE follows one (ORA-03049).
+            val size = b.sequence(SIZE, INTEGER_LITERAL)
+            val column = b.sequence(IDENTIFIER_NAME, b.zeroOrMore(DOT, IDENTIFIER_NAME), b.optional(size))
+            val forClause = b.sequence(
+                FOR,
+                b.firstOf(
+                    TABLE,
+                    b.sequence(ALL, b.optional(INDEXED), COLUMNS, b.optional(size)),
+                    b.sequence(COLUMNS, b.optional(size), column, b.zeroOrMore(COMMA, column)),
+                    b.sequence(ALL, b.optional(LOCAL), INDEXES)))
+            // SAMPLE goes with ESTIMATE only, once, before, between or after the FOR clauses (ORA-01490 otherwise).
+            // A FOR clause repeated is ORA-01490 too, but is not singled out here.
+            val statistics = b.firstOf(
+                b.sequence(COMPUTE, b.optional(SYSTEM), STATISTICS, b.zeroOrMore(forClause)),
+                b.sequence(
+                    ESTIMATE, b.optional(SYSTEM), STATISTICS, b.zeroOrMore(forClause),
+                    b.optional(SAMPLE, INTEGER_LITERAL, b.firstOf(ROWS, PERCENT), b.zeroOrMore(forClause))))
+
             // LIST CHAINED ROWS on an index fails at parse time (ORA-01492), but is not singled out here.
             b.rule(ANALYZE_STATEMENT).define(
                 ANALYZE, target,
@@ -4694,7 +4712,8 @@ enum class DdlGrammar : GrammarRuleKey {
                         VALIDATE,
                         b.firstOf(b.sequence(REF, UPDATE, b.optional(SET, DANGLING, TO, NULL)), validateStructure)),
                     b.sequence(LIST, CHAINED, ROWS, b.optional(intoClause)),
-                    b.sequence(DELETE, b.optional(SYSTEM), STATISTICS)),
+                    b.sequence(DELETE, b.optional(SYSTEM), STATISTICS),
+                    statistics),
                 b.optional(SEMICOLON))
         }
 
