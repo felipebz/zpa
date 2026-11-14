@@ -8,8 +8,10 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.flr.api.AstNode
+import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
+import com.felipebz.zpa.api.semantics.ColumnBinding
 import com.felipebz.zpa.metadata.FormsHostVariables
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.project.OracleIdentifier
@@ -99,8 +101,8 @@ internal class LocalForwardCalls(
     private val outcomes: LocalReferenceOutcomes = LocalReferenceOutcomes(model, LocalSpecificationCoverage.of(model, snapshot)),
     /** The Oracle Forms metadata of the scan, which types host variables; null without one. */
     private val forms: FormsMetadata? = null,
-    /** The file's tree, where the select items of its cursors type their rows' fields. */
-    root: AstNode? = null
+    /** The file's tree, where the select items of its cursors type their rows' fields, and its names of static SQL their columns. */
+    private val root: AstNode? = null
 ) {
     private val walk = LocalTypeWalk(model, snapshot, external, outcomes, root = root)
     private val overloads = LocalOverloads(model, walk, ProjectCallNarrower.shadowCheck(snapshot), outcomes::specificationDefaults)
@@ -233,7 +235,7 @@ internal class LocalForwardCalls(
         val (outcome, viaSpecification) =
             if (reference.lastSegmentContext == Ctx.SQL_CALL) sqlDecision(reference, first, call) else plsqlDecision(reference, first, call)
         val target = (if (viaSpecification) memberTarget(reference) else null) ?: target(reference)
-        val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it, reference.region)) }.orEmpty()
+        val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it, reference.region, reference.lastSegmentContext == Ctx.SQL_CALL)) }.orEmpty()
         val notation = ProjectCallArguments.of(actuals.map { actual ->
             actual.actual.label?.let { ProjectCallArgument.named(ProjectIdentifier.fromSource(it.originalSpelling)) } ?: ProjectCallArgument.positional()
         })
@@ -347,20 +349,23 @@ internal class LocalForwardCalls(
      * Evidence of one actual: a literal as Oracle types it; a name, an element or a call's result through the resolver,
      * the type walk and, for a project callee, the call's own resolution.
      */
-    private fun evidence(actual: LocalActual, region: LocalRegionId): LocalTypeEvidence {
-        actual.form?.let { return form(it, region) }
-        if (!actual.isName) return LocalTypeEvidence.literal(actual.literal).takeIf { actual.literal != null }
+    private fun evidence(actual: LocalActual, region: LocalRegionId, sql: Boolean = false): LocalTypeEvidence {
+        actual.form?.let { return form(it, region, sql) }
+        if (!actual.isName) return LocalTypeEvidence.literal(actual.literal?.let { if (sql) inSql(it) else it }).takeIf { actual.literal != null }
             ?: LocalTypeEvidence.unknown("expression not modeled")
         val reference = namesByPosition[actual.nameLine to actual.nameColumn]?.singleOrNull()
             ?: return LocalTypeEvidence.unknown("name not collected")
         if (reference.segments.any { it.isAttribute }) return LocalTypeEvidence.unknown("attribute")
+        val column = sqlColumn(reference, actual)
+        if (column is ColumnBinding.Column) return walk.sqlColumnType(column, reference.region)
+        val noColumn = column is ColumnBinding.PlSqlName
         val steps = outcomes.steps(reference)
         val first = steps.first()
         if (LocalReferenceOutcomes.isSpecificationMember(first)) {
             callOf(reference)?.let { return walk.projectResult(it.typed, reference.region) }
             return memberTarget(reference)?.let { walk.projectValue(it, reference.region) } ?: LocalTypeEvidence.unknown("no package")
         }
-        if (LocalReferenceOutcomes.isAbsent(first)) return absentName(reference, actual)
+        if (LocalReferenceOutcomes.isAbsent(first)) return absentName(reference, actual, sql)
         memberPath(reference, steps, actual)?.let { return it }
         if (steps.size != reference.segments.size + 1) return LocalTypeEvidence.unknown("stopped at ${steps.last()}")
         // `pkg.member` through the package's own name, the member in the specification in another file.
@@ -371,13 +376,7 @@ internal class LocalForwardCalls(
         callOf(reference)?.local?.let { local ->
             return local.selected?.let(walk::result) ?: LocalTypeEvidence.unknown("the local call is ${local.status}")
         }
-        // A decision made with the project's specification coverage is still the body's: its declaration is local.
-        val last = steps.last().let { (it as? LocalResolution.SpecificationCovered)?.outcome ?: it }.let { decided ->
-            // Over DUAL alone no column but DUMMY exists: the local declaration takes the name, as nameBinding decides.
-            if (decided is LocalResolution.SqlColumnOrLocal && reference.segments.isEmpty() && reference.sql?.excludesColumn(reference.name) == true) {
-                LocalResolution.Bound(decided.declaration)
-            } else decided
-        }
+        val last = decidedLocal(reference, steps.last(), noColumn)
         if (!actual.isCall) return walk.outcome(last)
         val arguments = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.size ?: 0
         val element = walk.call(last, arguments)
@@ -388,10 +387,26 @@ internal class LocalForwardCalls(
         return element
     }
 
+    /** A name of static SQL: what it reads (the column the statement's sources give it, else the PL/SQL name); null elsewhere. */
+    private fun sqlColumn(reference: LocalReference, actual: LocalActual): ColumnBinding? =
+        if (reference.sql == null || actual.isCall) null else sqlNames[reference.range.startLine to reference.range.startColumn]?.let(walk::sqlColumn)
+
+    /**
+     * The last outcome of a name, a decision made with the project's specification coverage being still the body's
+     * (its declaration is local). When no source of the statement has the column ([noColumn], or over DUAL alone,
+     * where no column but DUMMY exists) the local declaration takes a name of SQL, as nameBinding decides.
+     */
+    private fun decidedLocal(reference: LocalReference, outcome: LocalResolution, noColumn: Boolean): LocalResolution {
+        val decided = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
+        val local = decided is LocalResolution.SqlColumnOrLocal && reference.segments.isEmpty() &&
+            (noColumn || reference.sql?.excludesColumn(reference.name) == true)
+        return if (local) LocalResolution.Bound((decided as LocalResolution.SqlColumnOrLocal).declaration) else decided
+    }
+
     /** Evidence of a name or call whose first segment no local declaration takes. */
-    private fun absentName(reference: LocalReference, actual: LocalActual): LocalTypeEvidence {
+    private fun absentName(reference: LocalReference, actual: LocalActual, sql: Boolean): LocalTypeEvidence {
         builtInValue(reference, actual)?.let { return it }
-        substr(reference, actual)?.let { return it }
+        substr(reference, actual, sql)?.let { return it }
         callOf(reference)?.let { call ->
             val result = walk.projectResult(call.typed, reference.region)
             // An object type's constructor, user-defined or the default one: nothing local takes the name.
@@ -408,9 +423,9 @@ internal class LocalForwardCalls(
      * called on a constructor, an element or a `TREAT`, an element of a call's result, a signed number or a cursor
      * attribute.
      */
-    private fun form(form: LocalActualForm, region: LocalRegionId): LocalTypeEvidence = when (form) {
+    private fun form(form: LocalActualForm, region: LocalRegionId, sql: Boolean): LocalTypeEvidence = when (form) {
         LocalActualForm.Predicate -> builtIn("BOOLEAN")
-        is LocalActualForm.Concatenation -> concatenation(form.operands.map { evidence(it, region) })
+        is LocalActualForm.Concatenation -> concatenation(form.operands.map { evidence(it, region, sql) })
         is LocalActualForm.Treat -> treat(form.type, region)
         is LocalActualForm.Members -> walk.memberPath(evidence(form.base, region), form.members, region)
         is LocalActualForm.Method -> {
@@ -419,7 +434,7 @@ internal class LocalForwardCalls(
         }
         // Typed only through the call's result: the RETURN type of the function it binds, as for any call actual.
         is LocalActualForm.Element -> (1..form.indexes).fold(evidence(form.base, region)) { current, _ -> walk.element(current, region) }
-        is LocalActualForm.Signed -> signed(evidence(form.operand, region))
+        is LocalActualForm.Signed -> signed(evidence(form.operand, region, sql))
         // Oracle rejects an attribute of anything but a cursor (PLS-00324), and no declaration takes an attribute's name.
         is LocalActualForm.CursorAttribute -> builtIn(if (form.rowCount) "NUMBER" else "BOOLEAN")
         is LocalActualForm.HostVariable -> forms?.let { FormsHostVariables.type(it, form.qualifier.lookupName, form.name.lookupName) }?.let(::builtIn)
@@ -480,15 +495,28 @@ internal class LocalForwardCalls(
      * (in the character set of `s`: Oracle finds a call ambiguous between overloads that differ only by it, as it finds
      * VARCHAR2 and NVARCHAR2 alike for overloads). Anything else (another argument count, an `s` of no type) is not typed.
      */
-    private fun substr(reference: LocalReference, actual: LocalActual): LocalTypeEvidence? {
+    private fun substr(reference: LocalReference, actual: LocalActual, sql: Boolean): LocalTypeEvidence? {
         if (!actual.isCall || reference.segments.isNotEmpty() || reference.name.quoted || reference.name.lookupName != "SUBSTR") return null
         val actuals = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.takeIf { it.size in 2..3 && it.all { a -> a.label == null } }
             ?: return LocalTypeEvidence.unknown("a SUBSTR call of other actuals")
-        return when (evidence(actuals.first(), reference.region).argumentType.familyOrNull) {
+        return when (evidence(actuals.first(), reference.region, sql).argumentType.familyOrNull) {
             ProjectDatatypeFamily.CLOB -> builtIn("CLOB")
             ProjectDatatypeFamily.CHARACTER, ProjectDatatypeFamily.NUMERIC, ProjectDatatypeFamily.DATETIME -> builtIn("VARCHAR2")
             else -> LocalTypeEvidence.unknown("SUBSTR of a value of no character, numeric or datetime type")
         }
+    }
+
+    /** In SQL an integer literal is a NUMBER, whatever its size: Oracle prefers a NUMBER formal for it there. */
+    private fun inSql(literal: LocalLiteral) = if (literal == LocalLiteral.INTEGER || literal == LocalLiteral.LARGE_INTEGER) LocalLiteral.NUMBER else literal
+
+    /** The names of the file's static SQL, by the position where each starts (the outermost node there). */
+    private val sqlNames: Map<Pair<Int, Int>, AstNode> by lazy(LazyThreadSafetyMode.NONE) {
+        val names = HashMap<Pair<Int, Int>, AstNode>()
+        root?.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION, PlSqlGrammar.VARIABLE_NAME)?.forEach { node ->
+            if (node.type === PlSqlGrammar.VARIABLE_NAME && node.parent.type === PlSqlGrammar.MEMBER_EXPRESSION) return@forEach
+            names.putIfAbsent(node.token.line to node.token.column, node)
+        }
+        names
     }
 
     private fun builtIn(typeName: String) = LocalTypeEvidence(ProjectArgumentType.builtIn(typeName), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)

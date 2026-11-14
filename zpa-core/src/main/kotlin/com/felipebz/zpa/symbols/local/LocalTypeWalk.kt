@@ -369,12 +369,26 @@ internal class LocalTypeWalk(
     }
 
     /** A select item's value when it is a column of a relation the external metadata confirms has it, as that column's `%TYPE`. */
-    private fun itemType(snapshot: ProjectSnapshot, item: AstNode, region: LocalRegionId): LocalTypeEvidence {
-        val column = selectColumns?.binding(item.firstChild)
-        if (column !is ColumnBinding.Column || column.exists != true) return LocalTypeEvidence.unknown("a select item that is not a column the metadata confirms")
-        val row = column.source.relation ?: return LocalTypeEvidence.unknown("a select item that is not a column of a relation")
+    private fun itemType(snapshot: ProjectSnapshot, item: AstNode, region: LocalRegionId): LocalTypeEvidence =
+        columnType(snapshot, selectColumns?.binding(item.firstChild), region)
+
+    private fun columnType(snapshot: ProjectSnapshot, column: ColumnBinding?, region: LocalRegionId): LocalTypeEvidence {
+        if (column !is ColumnBinding.Column || column.exists != true) return LocalTypeEvidence.unknown("not a column the metadata confirms")
+        val row = column.source.relation ?: return LocalTypeEvidence.unknown("not a column of a relation")
         return rowColumn(snapshot, row, OracleIdentifier.fromSource("\"${column.name}\""), region)
-            ?: LocalTypeEvidence.unknown("a select item of a row the external metadata does not confirm")
+            ?: LocalTypeEvidence.unknown("a column of a row the external metadata does not confirm")
+    }
+
+    /**
+     * What [name], a name written in this file's static SQL, reads, as `columnBinding` decides it without the name
+     * bindings (a name it would need them for is not decided); null without the file's tree.
+     */
+    fun sqlColumn(name: AstNode): ColumnBinding? = selectColumns?.binding(name)
+
+    /** The value of the column [column], as its `%TYPE`, when the external metadata confirms the relation has it. */
+    fun sqlColumnType(column: ColumnBinding.Column, region: LocalRegionId): LocalTypeEvidence {
+        val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
+        return columnType(snapshot, column, region)
     }
 
     /**
