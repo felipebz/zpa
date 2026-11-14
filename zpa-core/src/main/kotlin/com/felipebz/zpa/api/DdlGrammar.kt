@@ -1842,7 +1842,7 @@ enum class DdlGrammar : GrammarRuleKey {
                                     createTableBody(blockchainTableClauses)),
                             b.sequence(IMMUTABLE, TABLE, b.optional(IF, NOT, EXISTS),
                                     createTableBody(immutableTableClauses)),
-                            b.sequence(PRIVATE, TEMPORARY, TABLE, b.optional(IF, NOT, EXISTS),
+                            b.sequence(PRIVATE, TEMPORARY, TABLE,
                                     b.withContext(PRIVATE_TEMPORARY_TABLE_CONTEXT, true, CREATE_TABLE_BODY)),
                             b.sequence(JSON, COLLECTION, TABLE, b.optional(IF, NOT, EXISTS), UNIT_NAME,
                                     b.withContext(CREATE_ANNOTATIONS_CONTEXT, true, b.sequence(

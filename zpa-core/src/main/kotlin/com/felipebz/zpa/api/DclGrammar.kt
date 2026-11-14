@@ -48,27 +48,32 @@ enum class DclGrammar : GrammarRuleKey {
                         b.nextNot(b.requireContext(CREATE_SCHEMA_CONTEXT, true), CREATE),
                         IDENTIFIER_OR_KEYWORD)))
 
+            // ON COMMIT REFRESH is a whole privilege of the list, never a word of a multi-word privilege.
+            val privilege = b.firstOf(
+                b.sequence(b.next(ON, COMMIT, REFRESH), PRIVILEGE_PART, b.next(b.firstOf(COMMA, ON, TO))),
+                b.oneOrMore(b.nextNot(ON), PRIVILEGE_PART))
+
             b.rule(PRIVILEGE_COLUMNS).define(LPARENTHESIS, IDENTIFIER_NAME, b.zeroOrMore(COMMA, IDENTIFIER_NAME), RPARENTHESIS)
 
             b.rule(GRANT_SYSTEM_PRIVILEGES).define(
-                    b.oneOrMore(PRIVILEGE_PART),
-                    b.zeroOrMore(COMMA, b.oneOrMore(PRIVILEGE_PART)),
+                    privilege,
+                    b.zeroOrMore(COMMA, privilege),
                     TO, IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD),
                     b.optional(IDENTIFIED, BY, b.anyToken(), b.zeroOrMore(COMMA, b.anyToken())),
                     b.optional(WITH, b.firstOf(ADMIN, DELEGATE), OPTION),
                     b.optional(CONTAINER, EQUALS, b.firstOf(CURRENT, ALL)))
 
             b.rule(GRANT_OBJECT_PRIVILEGES).define(
-                    b.oneOrMore(PRIVILEGE_PART), b.optional(PRIVILEGE_COLUMNS),
-                    b.zeroOrMore(COMMA, b.oneOrMore(PRIVILEGE_PART, b.optional(PRIVILEGE_COLUMNS))),
-                    b.optional(ON, b.oneOrMore(b.anyTokenButNot(TO))),
+                    privilege, b.optional(PRIVILEGE_COLUMNS),
+                    b.zeroOrMore(COMMA, privilege, b.optional(PRIVILEGE_COLUMNS)),
+                    b.optional(ON, b.nextNot(COMMIT, REFRESH), b.oneOrMore(b.anyTokenButNot(TO))),
                     TO, IDENTIFIER_OR_KEYWORD, b.zeroOrMore(COMMA, IDENTIFIER_OR_KEYWORD),
                     b.optional(WITH, HIERARCHY, OPTION),
                     b.optional(WITH, GRANT, OPTION))
 
             b.rule(GRANT_ROLES_TO_PROGRAMS).define(
-                    b.oneOrMore(PRIVILEGE_PART),
-                    b.zeroOrMore(COMMA, b.oneOrMore(PRIVILEGE_PART)),
+                    privilege,
+                    b.zeroOrMore(COMMA, privilege),
                     TO, b.firstOf(FUNCTION, PROCEDURE, PACKAGE), UNIT_NAME,
                     b.zeroOrMore(COMMA, b.firstOf(FUNCTION, PROCEDURE, PACKAGE), UNIT_NAME)
             )

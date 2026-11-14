@@ -118,6 +118,9 @@ class GrantStatementTest : RuleTest() {
         assertThat(p).matches("grant on commit refresh on myschema.tab to user1;")
         assertThat(p).matches("grant on commit refresh to user1;")
         assertThat(p).matches("grant query rewrite, on commit refresh on tab to user1;")
+        assertThat(p).matches("grant on commit refresh, select on tab to user1;")
+        assertThat(p).notMatches("grant select on commit refresh to user1;")
+        assertThat(p).notMatches("grant on commit refresh query rewrite on tab to user1;")
         assertThat(p).notMatches("grant on commit on tab to user1;")
     }
 

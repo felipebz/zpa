@@ -29,7 +29,7 @@ class CreateTableTest : RuleTest() {
     fun matchesIfNotExists() {
         assertThat(p).matches("create table if not exists tab (id number);")
         assertThat(p).matches("create global temporary table if not exists tab (id number);")
-        assertThat(p).matches("create private temporary table if not exists ora\$ptt_tab (id number);")
+        assertThat(p).notMatches("create private temporary table if not exists ora\$ptt_tab (id number);")
         assertThat(p).matches("create sharded table if not exists tab (a number) partition by directory (a) (partition tablespace t1);")
         assertThat(p).matches("create blockchain table if not exists tab (id number) no drop until 0 days idle no delete locked hashing using \"SHA2_512\" version \"v1\";")
         assertThat(p).matches("create immutable table if not exists tab (id number) no drop until 0 days idle no delete locked;")
