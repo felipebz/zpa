@@ -1,0 +1,1 @@
+{"alerts":[],"blocks":[{"name":"BL1","items":[{"name":"R"},{"name":"G"},{"name":"B"},{"name":"COLOR","dataType":"CHAR","maxLength":30},{"name":"VR","dataType":"NUMBER","maxLength":3},{"name":"VG","dataType":"NUMBER","maxLength":3},{"name":"VB","dataType":"NUMBER","maxLength":3}]}],"lovs":[],"parameters":[]}

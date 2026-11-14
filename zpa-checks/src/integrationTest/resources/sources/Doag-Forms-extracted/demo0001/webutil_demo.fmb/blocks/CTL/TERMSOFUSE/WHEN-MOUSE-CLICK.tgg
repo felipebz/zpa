@@ -1,0 +1,3 @@
+BEGIN
+WEB.SHOW_DOCUMENT('http://www.oracle.com/html/terms.html','_blank');
+END;

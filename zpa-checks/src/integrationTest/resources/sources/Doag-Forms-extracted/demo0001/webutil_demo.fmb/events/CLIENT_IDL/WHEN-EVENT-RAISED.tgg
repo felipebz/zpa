@@ -1,0 +1,5 @@
+BEGIN
+SET_APPLICATION_PROPERTY(CLIENT_IDLE_TIME,0);
+synchronize;
+exit_form;
+END;

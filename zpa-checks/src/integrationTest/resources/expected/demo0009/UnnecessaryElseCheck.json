@@ -1,6 +1,6 @@
 {
-  "FNC_GET_FILE_SEPARATOR.fun" : [ 5 ],
-  "PKG_CONFIG.pkb" : [ 428, 448 ],
-  "PRC_GET_CHK_REF_INFO.pcd" : [ 20, 47 ],
-  "PRC_VIEW_FILE.pcd" : [ 74 ]
+  "program-units/FNC_GET_FILE_SEPARATOR.fun" : [ 5 ],
+  "program-units/PKG_CONFIG.pkb" : [ 428, 448 ],
+  "program-units/PRC_GET_CHK_REF_INFO.pcd" : [ 20, 47 ],
+  "program-units/PRC_VIEW_FILE.pcd" : [ 74 ]
 }

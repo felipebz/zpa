@@ -1,0 +1,1 @@
+{"alerts":["AL_ERROR","AL_INFO","AL_WARNING","AL_YES_NO","AL_YES_NO_CANCEL"],"blocks":[{"name":"BL","items":[{"name":"TI","dataType":"CHAR","maxLength":30}]}],"lovs":[],"parameters":[]}

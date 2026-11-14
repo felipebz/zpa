@@ -1,0 +1,12 @@
+BEGIN
+
+BEGIN
+	
+	  NULL;
+	  
+    -- pkg_RUN.prc_run_view_NPP_INI(:PARAMETER.P_DEFAULT_CONFIG_INI);
+
+END;
+
+
+END;

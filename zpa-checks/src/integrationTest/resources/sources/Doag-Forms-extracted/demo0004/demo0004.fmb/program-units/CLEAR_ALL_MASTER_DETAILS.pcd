@@ -1,0 +1,138 @@
+PROCEDURE Clear_All_Master_Details IS
+  mastblk  VARCHAR2(30);  -- Initial Master Block Causing Coord
+  coordop  VARCHAR2(30);  -- Operation Causing the Coord
+  trigblk  VARCHAR2(30);  -- Cur Block On-Clear-Details Fires On
+  startitm VARCHAR2(61);  -- Item in which cursor started
+  frmstat  VARCHAR2(15);  -- Form Status
+  curblk   VARCHAR2(30);  -- Current Block
+  currel   VARCHAR2(30);  -- Current Relation
+  curdtl   VARCHAR2(30);  -- Current Detail Block
+
+  FUNCTION First_Changed_Block_Below(Master VARCHAR2)
+  RETURN VARCHAR2 IS
+    curblk VARCHAR2(30);  -- Current Block
+    currel VARCHAR2(30);  -- Current Relation
+    retblk VARCHAR2(30);  -- Return Block
+  BEGIN
+    --
+    -- Initialize Local Vars
+    --
+    curblk := Master;
+    currel := Get_Block_Property(curblk,  FIRST_MASTER_RELATION);
+    --
+    -- While there exists another relation for this block
+    --
+    WHILE currel IS NOT NULL LOOP
+      --
+      -- Get the name of the detail block
+      --
+      curblk := Get_Relation_Property(currel, DETAIL_NAME);
+      --
+      -- If this block has changes, return its name
+      --
+      IF ( Get_Block_Property(curblk, STATUS) = 'CHANGED' ) THEN
+        RETURN curblk;
+      ELSE
+        --
+        -- No changes, recursively look for changed blocks below
+        --
+        retblk := First_Changed_Block_Below(curblk);
+        --
+        -- If some block below is changed, return its name
+        --
+        IF retblk IS NOT NULL THEN
+          RETURN retblk;
+        ELSE
+          --
+          -- Consider the next relation
+          --
+          currel := Get_Relation_Property(currel, NEXT_MASTER_RELATION);
+        END IF;
+      END IF;
+    END LOOP;
+
+    --
+    -- No changed blocks were found
+    --
+    RETURN NULL;
+  END First_Changed_Block_Below;
+
+BEGIN
+  --
+  -- Init Local Vars
+  --
+  mastblk  := :System.Master_Block;
+  coordop  := :System.Coordination_Operation;
+  trigblk  := :System.Trigger_Block;
+  startitm := :System.Cursor_Item;
+  frmstat  := :System.Form_Status;
+
+  --
+  -- If the coordination operation is anything but CLEAR_RECORD or
+  -- SYNCHRONIZE_BLOCKS, then continue checking.
+  --
+  IF coordop NOT IN ('CLEAR_RECORD', 'SYNCHRONIZE_BLOCKS') THEN
+    --
+    -- If we're processing the driving master block...
+    --
+    IF mastblk = trigblk THEN
+      --
+      -- If something in the form is changed, find the
+      -- first changed block below the master
+      --
+      IF frmstat = 'CHANGED' THEN
+        curblk := First_Changed_Block_Below(mastblk);
+        --
+        -- If we find a changed block below, go there
+        -- and Ask to commit the changes.
+        --
+        IF curblk IS NOT NULL THEN
+          Go_Block(curblk);
+          Check_Package_Failure;
+          Clear_Block(ASK_COMMIT);
+          --
+          -- If user cancels commit dialog, raise error
+          --
+          IF NOT ( :System.Form_Status = 'QUERY'
+                   OR :System.Block_Status = 'NEW' ) THEN
+            RAISE Form_Trigger_Failure;
+          END IF;
+        END IF;
+      END IF;
+    END IF;
+  END IF;
+
+  --
+  -- Clear all the detail blocks for this master without
+  -- any further asking to commit.
+  --
+  currel := Get_Block_Property(trigblk, FIRST_MASTER_RELATION);
+  WHILE currel IS NOT NULL LOOP
+    curdtl := Get_Relation_Property(currel, DETAIL_NAME);
+    IF Get_Block_Property(curdtl, STATUS) <> 'NEW'  THEN
+      Go_Block(curdtl);
+      Check_Package_Failure;
+      Clear_Block(NO_VALIDATE);
+      IF :System.Block_Status <> 'NEW' THEN
+        RAISE Form_Trigger_Failure;
+      END IF;
+    END IF;
+    currel := Get_Relation_Property(currel, NEXT_MASTER_RELATION);
+  END LOOP;
+
+  --
+  -- Put cursor back where it started
+  --
+  IF :System.Cursor_Item <> startitm THEN
+    Go_Item(startitm);
+    Check_Package_Failure;
+  END IF;
+
+EXCEPTION
+  WHEN Form_Trigger_Failure THEN
+    IF :System.Cursor_Item <> startitm THEN
+      Go_Item(startitm);
+    END IF;
+    RAISE;
+
+END Clear_All_Master_Details;

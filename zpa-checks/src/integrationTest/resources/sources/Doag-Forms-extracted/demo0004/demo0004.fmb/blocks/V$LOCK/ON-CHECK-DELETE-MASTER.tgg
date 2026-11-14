@@ -1,0 +1,42 @@
+BEGIN
+--
+-- Begin default relation declare section
+--
+DECLARE
+  Dummy_Define CHAR(1);
+  --
+  -- Begin V$SESSION detail declare section
+  --
+  CURSOR V$SESSION_cur IS      
+    SELECT 1 FROM V$session V     
+    WHERE V.SID = :V$LOCK.SID;
+  --
+  -- End V$SESSION detail declare section
+  --
+--
+-- End default relation declare section
+--
+--
+-- Begin default relation program section
+--
+BEGIN
+  --
+  -- Begin V$SESSION detail program section
+  --
+  OPEN V$SESSION_cur;     
+  FETCH V$SESSION_cur INTO Dummy_Define;     
+  IF ( V$SESSION_cur%found ) THEN     
+    Message('Master-Datensatz kann nicht gelöscht werden, wenn noch Detail-Sätze vorhanden sind.');     
+    CLOSE V$SESSION_cur;     
+    RAISE Form_Trigger_Failure;     
+  END IF;
+  CLOSE V$SESSION_cur;
+  --
+  -- End V$SESSION detail program section
+  --
+END;
+--
+-- End default relation program section
+--
+
+END;

@@ -1,4 +1,4 @@
 {
-  "FNC_BOOL.fun" : [ 1 ],
-  "PRC_SHOW.pcd" : [ 1 ]
+  "program-units/FNC_BOOL.fun" : [ 1 ],
+  "program-units/PRC_SHOW.pcd" : [ 1 ]
 }

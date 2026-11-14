@@ -1,0 +1,10 @@
+BEGIN
+
+BEGIN
+	
+  do_key('COMMIT_FORM');
+
+END;
+
+
+END;

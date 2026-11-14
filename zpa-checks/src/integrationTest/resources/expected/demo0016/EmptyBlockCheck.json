@@ -1,4 +1,4 @@
 {
-  "CBX/CBX__ON-ERROR.tgg" : [ 5 ],
-  "PKG_CBOX.pkb" : [ 138 ]
+  "blocks/CBX/ON-ERROR.tgg" : [ 5 ],
+  "program-units/PKG_CBOX.pkb" : [ 138 ]
 }

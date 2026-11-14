@@ -1,0 +1,113 @@
+BEGIN
+--
+-- WHEN-EVENT-RAISED Trigger for 12cDemo "System client-idle"
+-- 
+-- 5.2.2016 Frank Hoffmann, Cologne Data GmbH (created) 
+--
+-- After SET_APPLICATION_PROPERTY(CLIENT_IDLE_TIME,xx); was called, and the Idle time (in sec) reached its time, this trigger will fire
+-- To identify activity we count the ms between the time of the call and the time of the trigger raised. 
+-- A heartbeat solution (demo2, demo3) seems to be helpful if you want your application to check certain issues duriing the idletime
+--
+-- To start a simple  idle timer without heartbeat set :countdown to 1 and :max_time = heartbeat
+-- To start a complex idle timer with    heartbeat set :countdown = :maxtime/heartbeat and heartbeart as a fraction of maxtime
+--
+-- DEMO 1   :max_time 10sec,         :heartbeat 10sec,        :countdown = 1 durations
+-- DEMO 2		:max_time 30sec,         :heartbeat 10sec,        :countdown = 3 durations
+-- DEMO 3   :max_time 300sec(5 min), :heartbeat 60sec(1 min), :countdown = 5 durations
+--
+-- uses parameters :parameter.p_timer_stoptime, :parameter.p_timer_starttime, :parameter.p_timer_countdown (countdowncounter during complex timer)
+-- uses f_get_timer_value to get the ms from 23rd october 2015 till this moment to calculate the time until the trigger fired 
+--
+
+declare 
+	l_timer_max_inactivity integer := :max_time;             --  Inactivity in Seconds
+	l_idle_heartbeat       integer := :heartbeat*1000+1000;  --  Minimum time to raise an activity (+ 1 sec grace time)
+	l_timer_runtime        number(38);                       --  Time of Last idle_event
+begin
+
+if :SYSTEM.LAST_EVENT = 'SYSTEM_CLIENT_IDLE' 
+then
+	
+:parameter.p_timer_stoptime := f_get_timer_value;
+l_timer_runtime := :parameter.p_timer_stoptime-:parameter.p_timer_starttime;	
+	
+	
+if :parameter.p_timer_countdown is null and :countdown = 1 then -- Simple Timer (Demo 1)
+
+  -- Stop the timer
+  SET_APPLICATION_PROPERTY(CLIENT_IDLE_TIME,0); 
+  :parameter.p_timer_countdown := 0;
+  
+  if l_timer_runtime > l_idle_heartbeat
+ 	then 
+ 	 -- simple timer had activities
+   :last_action_event := 'Finished. ' || to_char(:start_date,'HH24:MI:SS') || ' - ' || to_char(sysdate,'HH24:MI:SS') || ' (Activity recognized!)';
+  else
+   -- simple timer has no activities
+	 :last_action_event := 'Finished. '|| to_char(:start_date,'HH24:MI:SS') || ' - ' || to_char(sysdate,'HH24:MI:SS') || ' (No Activity)';
+	end if; 
+  --
+  -- Place your Code here for simple timer events (demo1)
+  -- exit_form(no_validate)
+  --
+
+else  	-- Complex Timer (Demo2, Demo 3)
+	
+
+  if :parameter.p_timer_countdown is null then
+   -- Initial Setup during first call
+   :parameter.p_timer_countdown := :countdown;
+  end if; 
+
+  -- Heartbeat Activity - we watch and check every time if activity was recognized
+  :parameter.p_timer_stoptime := f_get_timer_value;
+  l_timer_runtime := :parameter.p_timer_stoptime-:parameter.p_timer_starttime;
+	  
+  -- Activity is recognized if heartbeat was longer than l_idle_heartbeat+ 1 sec
+  if l_timer_runtime > l_idle_heartbeat
+ 	then 
+   -- Counter is reseted because of activity in complex timer
+ 	 :parameter.p_timer_countdown := :countdown;
+ 	 :parameter.p_timer_starttime := f_get_timer_value;
+   -- Diagnostic info
+   :last_action_event := 'Heartbeat ' || to_char(sysdate,'HH24:MI:SS') || ' (Activity recognized!)';
+  else
+   -- Counter must decrease because of no activity in complex timer
+	 :last_action_event := 'Heartbeat ' || to_char(sysdate,'HH24:MI:SS') || ' (No Activity)';
+   :parameter.p_timer_countdown := :parameter.p_timer_countdown -1;
+   if :parameter.p_timer_countdown = 0
+   then
+     -- stop the timer
+     SET_APPLICATION_PROPERTY(CLIENT_IDLE_TIME,0);
+     -- Diagnostic info  
+     :last_action_event := 'Finished. ' || to_char(:start_date,'HH24:MI:SS') || ' - ' || to_char(sysdate,'HH24:MI:SS') ;
+     --
+     -- Place your Code here for complex timer events (demo2, demo3)
+     --
+     -- exit_form(no_validate)  
+     --
+
+    else
+      -- Start a new duration of the idle timer 
+      :parameter.p_timer_starttime := f_get_timer_value; 
+      --
+      -- Place your Code here for complex timer events (demo2, demo3)
+      --
+      -- p_heartbeat_action  
+      --  
+        	 
+   end if;
+  end if; 
+ end if;	  
+
+ -- Synchronize Diagnostic Values
+ :stoptime       := to_char(:parameter.p_timer_stoptime) || ' ms since 23rd October 2015';
+ :result         := to_char(l_timer_runtime) || ' ms gone since last Activity';
+ :idle_heartbeat := to_char(l_idle_heartbeat) || ' ms';
+ :time_left      := to_char(:parameter.p_timer_countdown || ' times left until finished');
+ :max_inactivity := to_char(l_timer_max_inactivity) || ' sec';
+
+end if;
+  
+end;
+END;

@@ -1,5 +1,0 @@
-BEGIN
-begin
-  files_wbp('LIST_FILES');
-end;
-END;

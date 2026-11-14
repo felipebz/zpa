@@ -1,5 +1,0 @@
-BEGIN
-begin
-  get_clientinfo;
-end;
-END;

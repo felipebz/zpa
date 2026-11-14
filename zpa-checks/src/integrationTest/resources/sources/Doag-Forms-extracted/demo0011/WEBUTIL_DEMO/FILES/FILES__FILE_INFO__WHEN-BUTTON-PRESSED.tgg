@@ -1,5 +1,0 @@
-BEGIN
-begin
-  files_wbp('FILE_INFO');
-end;
-END;

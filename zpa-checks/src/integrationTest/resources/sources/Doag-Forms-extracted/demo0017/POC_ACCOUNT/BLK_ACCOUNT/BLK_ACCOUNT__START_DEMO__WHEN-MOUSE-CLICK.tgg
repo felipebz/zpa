@@ -1,8 +1,0 @@
-BEGIN
-
-BEGIN
-    prc_chk_item_sequence;
-  
-END;
-
-END;

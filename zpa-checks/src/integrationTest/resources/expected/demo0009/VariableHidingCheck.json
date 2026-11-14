@@ -1,5 +1,5 @@
 {
-  "CTL_BASIC/CTL_BASIC__BT_ALL__WHEN-BUTTON-PRESSED.tgg" : [ 86 ],
-  "PKG_CONFIG.pkb" : [ 410 ],
-  "PRC_MSG.pcd" : [ 33 ]
+  "blocks/CTL_BASIC/BT_ALL/WHEN-BUTTON-PRESSED.tgg" : [ 86 ],
+  "program-units/PKG_CONFIG.pkb" : [ 410 ],
+  "program-units/PRC_MSG.pcd" : [ 33 ]
 }

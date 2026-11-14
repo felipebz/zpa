@@ -1,5 +1,0 @@
-BEGIN
-begin
-  download_as;
-end;
-END;

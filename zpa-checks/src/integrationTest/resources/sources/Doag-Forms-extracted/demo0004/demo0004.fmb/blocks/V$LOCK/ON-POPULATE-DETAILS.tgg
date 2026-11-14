@@ -1,0 +1,39 @@
+BEGIN
+--
+-- Begin default relation declare section
+--
+DECLARE
+  recstat     VARCHAR2(20) := :System.record_status;   
+  startitm    VARCHAR2(61) := :System.cursor_item;   
+  rel_id      Relation;
+--
+-- End default relation declare section
+--
+--
+-- Begin default relation program section
+--
+BEGIN
+  IF ( recstat = 'NEW' or recstat = 'INSERT' ) THEN   
+    RETURN;
+  END IF;
+  --
+  -- Begin V$SESSION detail program section
+  --
+  IF ( (:V$LOCK.SID is not null) ) THEN   
+    rel_id := Find_Relation('V$LOCK.V$LOCK_V$SESSION');   
+    Query_Master_Details(rel_id, 'V$SESSION');   
+  END IF;
+  --
+  -- End V$SESSION detail program section
+  --
+
+  IF ( :System.cursor_item <> startitm ) THEN     
+     Go_Item(startitm);     
+     Check_Package_Failure;     
+  END IF;
+END;
+--
+-- End default relation program section
+--
+
+END;

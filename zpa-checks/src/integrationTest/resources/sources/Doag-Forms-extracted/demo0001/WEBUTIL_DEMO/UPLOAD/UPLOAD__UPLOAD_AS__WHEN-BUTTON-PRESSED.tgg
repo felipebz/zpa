@@ -1,6 +1,0 @@
-BEGIN
-begin
-  upload_as;
-
-end;
-END;

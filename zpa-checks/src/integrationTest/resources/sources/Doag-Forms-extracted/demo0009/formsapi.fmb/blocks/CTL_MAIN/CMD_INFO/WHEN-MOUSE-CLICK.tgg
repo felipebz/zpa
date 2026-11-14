@@ -1,0 +1,11 @@
+BEGIN
+
+BEGIN
+	
+	prc_set_infos;
+	
+	go_item('CTL_INFO.DUMMY');
+	
+END;
+
+END;

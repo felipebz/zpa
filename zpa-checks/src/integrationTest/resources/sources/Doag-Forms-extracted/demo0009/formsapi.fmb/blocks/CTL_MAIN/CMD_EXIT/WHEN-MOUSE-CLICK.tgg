@@ -1,0 +1,9 @@
+BEGIN
+
+BEGIN
+	
+  do_key('EXIT');
+
+END;
+
+END;

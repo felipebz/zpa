@@ -1,5 +1,0 @@
-BEGIN
-begin
-  files_wbp('FILE_SAVE');
-end;
-END;

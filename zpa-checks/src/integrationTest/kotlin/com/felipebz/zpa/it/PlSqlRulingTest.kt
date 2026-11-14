@@ -66,102 +66,102 @@ class PlSqlRulingTest {
 
     @Test
     fun demo0001() {
-        analyze("demo0001", "Doag-Forms-extracted/demo0001/WEBUTIL_DEMO")
+        analyze("demo0001", "Doag-Forms-extracted/demo0001/webutil_demo.fmb")
     }
 
     @Test
     fun demo0002() {
-        analyze("demo0002", "Doag-Forms-extracted/demo0002/DEMO0002")
+        analyze("demo0002", "Doag-Forms-extracted/demo0002/demo0002.fmb")
     }
 
     @Test
     fun demo0002_2() {
-        analyze("demo0002_2", "Doag-Forms-extracted/demo0002/FRW_REF")
+        analyze("demo0002_2", "Doag-Forms-extracted/demo0002/frw_ref.fmb")
     }
 
     @Test
     fun demo0003() {
-        analyze("demo0003", "Doag-Forms-extracted/demo0003/DEMO0003")
+        analyze("demo0003", "Doag-Forms-extracted/demo0003/demo0003.fmb")
     }
 
     @Test
     fun demo0004() {
-        analyze("demo0004", "Doag-Forms-extracted/demo0004/RELEASE_LOCKS")
+        analyze("demo0004", "Doag-Forms-extracted/demo0004/demo0004.fmb")
     }
 
     @Test
     fun demo0005() {
-        analyze("demo0005", "Doag-Forms-extracted/demo0005/TIMEOUTPJC_TEST")
+        analyze("demo0005", "Doag-Forms-extracted/demo0005/timeout.fmb")
     }
 
     @Test
     fun demo0006() {
-        analyze("demo0006", "Doag-Forms-extracted/demo0006/TIMEOUT_SYS_CLIENT_IDL")
+        analyze("demo0006", "Doag-Forms-extracted/demo0006/demo0006.fmb")
     }
 
     @Test
     fun demo0007() {
-        analyze("demo0007", "Doag-Forms-extracted/demo0007/CD_DEMO_EXCEL")
+        analyze("demo0007", "Doag-Forms-extracted/demo0007/cd_demo_excel.fmb")
     }
 
     @Test
     fun demo0008() {
-        analyze("demo0008", "Doag-Forms-extracted/demo0008/LATENCY_TEST")
+        analyze("demo0008", "Doag-Forms-extracted/demo0008/latency_test.fmb")
     }
 
     @Test
     fun demo0009() {
-        analyze("demo0009", "Doag-Forms-extracted/demo0009/FORMSAPI_WIZARD_2905")
+        analyze("demo0009", "Doag-Forms-extracted/demo0009/formsapi.fmb")
     }
 
     @Test
     fun demo0010() {
-        analyze("demo0010", "Doag-Forms-extracted/demo0010/CHK_MYFFI_SAMPLE5")
+        analyze("demo0010", "Doag-Forms-extracted/demo0010/ffi_sample.fmb")
     }
 
     @Test
     fun demo0011() {
-        analyze("demo0011", "Doag-Forms-extracted/demo0011/WEBUTIL_DEMO")
+        analyze("demo0011", "Doag-Forms-extracted/demo0011/webutil_demo.fmb")
     }
 
     @Test
     fun demo0012() {
-        analyze("demo0012", "Doag-Forms-extracted/demo0012/PDFVIEWER")
+        analyze("demo0012", "Doag-Forms-extracted/demo0012/pdfviewer.fmb")
     }
 
     @Test
     fun demo0013() {
-        analyze("demo0013", "Doag-Forms-extracted/demo0013/COLOR_SLIDER")
+        analyze("demo0013", "Doag-Forms-extracted/demo0013/slider.fmb")
     }
 
     @Test
     fun demo0014() {
-        analyze("demo0014", "Doag-Forms-extracted/demo0014/ACCORDION")
+        analyze("demo0014", "Doag-Forms-extracted/demo0014/ACCORDION.fmb")
     }
 
     @Test
     fun demo0014_2() {
-        analyze("demo0014_2", "Doag-Forms-extracted/demo0014/ACCORDION2")
+        analyze("demo0014_2", "Doag-Forms-extracted/demo0014/ACCORDION2.fmb")
     }
 
     @Test
     fun demo0015() {
-        analyze("demo0015", "Doag-Forms-extracted/demo0015/MODERNIZE")
+        analyze("demo0015", "Doag-Forms-extracted/demo0015/modernize.fmb")
     }
 
     @Test
     fun demo0016() {
-        analyze("demo0016", "Doag-Forms-extracted/demo0016/CHK_CBOX3")
+        analyze("demo0016", "Doag-Forms-extracted/demo0016/chk_cbox3.fmb")
     }
 
     @Test
     fun demo0017() {
-        analyze("demo0017", "Doag-Forms-extracted/demo0017/POC_ACCOUNT")
+        analyze("demo0017", "Doag-Forms-extracted/demo0017/poc_account.fmb")
     }
 
     @Test
     fun demo0018() {
-        analyze("demo0018", "Doag-Forms-extracted/demo0018/TEST")
+        analyze("demo0018", "Doag-Forms-extracted/demo0018/test.fmb")
     }
 
     @Test

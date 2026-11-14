@@ -1,4 +1,4 @@
 {
-  "RELEASE_LOCKS/POST-FORM.tgg" : [ 3 ],
-  "STEUERBLOCK/STEUERBLOCK__PB_CONNECT__WHEN-BUTTON-PRESSED.tgg" : [ 3, 4, 5 ]
+  "blocks/STEUERBLOCK/PB_CONNECT/WHEN-BUTTON-PRESSED.tgg" : [ 3, 4, 5 ],
+  "triggers/POST-FORM.tgg" : [ 3 ]
 }

@@ -1,9 +1,0 @@
-BEGIN
-  
-BEGIN
-  
-  :BLK_HANDLG.DFILE:= replace(:BLK_HANDLG.DFILE, '-', '.');
-
-END;
-
-END;
