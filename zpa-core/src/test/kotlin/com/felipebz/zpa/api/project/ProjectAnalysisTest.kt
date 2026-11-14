@@ -40,12 +40,12 @@ class ProjectAnalysisTest {
 
         val result = probe.results.single()
         assertThat(result.status).isEqualTo(PackageSpecificationResolution.Status.RESOLVED)
-        assertThat(result.getBody()).isPresent
-        assertThat(result.getSpecification()).isPresent
-        assertThat(result.getBody().orElseThrow().kind).isEqualTo(PackageSubprogramKind.PROCEDURE)
-        assertThat(result.getBody().orElseThrow().parameters).extracting<Int> { it.ordinal }.containsExactly(1, 2)
-        assertThat(result.getBody().orElseThrow().parameters[1].isNocopy).isFalse
-        assertThat(result.getSpecification().orElseThrow().parameters[1].isNocopy).isTrue
+        assertThat(result.body).isPresent
+        assertThat(result.specification).isPresent
+        assertThat(result.body.orElseThrow().kind).isEqualTo(PackageSubprogramKind.PROCEDURE)
+        assertThat(result.body.orElseThrow().parameters).extracting<Int> { it.ordinal }.containsExactly(1, 2)
+        assertThat(result.body.orElseThrow().parameters[1].isNocopy).isFalse
+        assertThat(result.specification.orElseThrow().parameters[1].isNocopy).isTrue
     }
 
     @Test
@@ -65,8 +65,8 @@ class ProjectAnalysisTest {
 
         val result = probe.results.single()
         assertThat(result.status).isEqualTo(PackageSpecificationResolution.Status.RESOLVED)
-        assertThat(result.getBody().orElseThrow().isDeterministic).isFalse
-        assertThat(result.getSpecification().orElseThrow().isDeterministic).isTrue
+        assertThat(result.body.orElseThrow().isDeterministic).isFalse
+        assertThat(result.specification.orElseThrow().isDeterministic).isTrue
     }
 
     @Test
@@ -85,8 +85,8 @@ class ProjectAnalysisTest {
         )
 
         val result = probe.results.single()
-        assertThat(result.getSpecification().orElseThrow().parameters.single().isDefaultPresent).isTrue
-        assertThat(result.getBody().orElseThrow().parameters.single().isDefaultPresent).isFalse
+        assertThat(result.specification.orElseThrow().parameters.single().isDefaultPresent).isTrue
+        assertThat(result.body.orElseThrow().parameters.single().isDefaultPresent).isFalse
     }
 
     @Test

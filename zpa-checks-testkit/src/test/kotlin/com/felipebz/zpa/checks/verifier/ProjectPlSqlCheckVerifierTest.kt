@@ -102,8 +102,8 @@ class ProjectPlSqlCheckVerifierTest {
                 return
             }
 
-            val body = resolution.getBody().orElseThrow()
-            val specification = resolution.getSpecification().orElseThrow()
+            val body = resolution.body.orElseThrow()
+            val specification = resolution.specification.orElseThrow()
             val specificationByOrdinal = specification.parameters.associateBy { it.ordinal }
             if (body.parameters.any { parameter ->
                     val specificationParameter = specificationByOrdinal[parameter.ordinal]

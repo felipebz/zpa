@@ -39,7 +39,7 @@ class PackageBodyParameterNocopyCheck : AbstractBaseCheck() {
 
         bodyParameters.forEachIndexed { index, bodyParameter ->
             val specificationParameter = specificationParameters[index]
-            if (specificationParameter.isNocopy() != bodyParameter.isNocopy()) {
+            if (specificationParameter.isNocopy != bodyParameter.isNocopy) {
                 addIssue(
                     astParameters[index].getFirstChild(PlSqlGrammar.IDENTIFIER_NAME),
                     getLocalizedMessage()

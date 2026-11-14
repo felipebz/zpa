@@ -85,8 +85,8 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
         val currentPackage = packageNameOf(packageNode)
             ?: return PackageProcedureResolution.of(PackageProcedureResolution.Status.NOT_APPLICABLE)
 
-        val packageName = reference.getPackageName().orElse(null)
-        val owner = reference.getOwner().orElse(null)
+        val packageName = reference.packageName.orElse(null)
+        val owner = reference.owner.orElse(null)
         val targetPackage = when {
             packageName == null -> currentPackage
             owner != null -> QualifiedName(
@@ -143,9 +143,9 @@ class ProjectAnalysis private constructor(contextHolder: Any) {
             is PackageProcedureDeclaration -> PackageSubprogramKind.PROCEDURE
             is PackageFunctionDeclaration -> PackageSubprogramKind.FUNCTION
         }
-        return PackageSubprogram(
+        return PackageSubprogram.of(
             kind,
-            parameters.map { PackageParameter(it.ordinal, it.nocopy, it.defaultPresent) },
+            parameters.map { PackageParameter.of(it.ordinal, it.nocopy, it.defaultPresent) },
             (this as? PackageFunctionDeclaration)?.deterministic == true
         )
     }
