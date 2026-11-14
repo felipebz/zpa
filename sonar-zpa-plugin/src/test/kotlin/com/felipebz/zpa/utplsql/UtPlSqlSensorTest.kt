@@ -10,16 +10,16 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.symbols.MappedObject
 import com.felipebz.zpa.symbols.ObjectLocator
+import com.sonarsource.scanner.engine.sensor.test.fixtures.SensorContextTester
+import com.sonarsource.scanner.engine.sensor.test.fixtures.TestInputFileBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.sonar.api.batch.fs.InputFile
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder
-import org.sonar.api.batch.sensor.internal.DefaultSensorDescriptor
-import org.sonar.api.batch.sensor.internal.SensorContextTester
 import org.sonar.api.measures.CoreMetrics
 import org.sonar.api.notifications.AnalysisWarnings
+import org.sonar.scanner.plugin.api.impl.sensor.DefaultSensorDescriptor
 import java.io.File
 import java.nio.charset.StandardCharsets
 

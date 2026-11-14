@@ -14,8 +14,10 @@ flatlaf = "3.7.2"
 flr = "1.6.4-SNAPSHOT"
 jackson = "2.22.4"
 jsoup = "1.23.2"
-min-sonarqube = "25.8.0.111929"
-min-sonarqubeapi = "13.0.0.3026"
+# see https://github.com/SonarSource/sonar-plugin-api/#sonarqube-community-build
+min-sonarqube = "26.7.0.124771"
+min-sonarqubeapi = "13.8.0.4399"
+sonar-scanner-engine = "13.1.3.3768"
 woodstox = "7.3.0"
 
 # testing
@@ -44,6 +46,8 @@ mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "
 woodstox = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "woodstox" }
 sonar-plugin-api = { module = "org.sonarsource.api.plugin:sonar-plugin-api", version.ref = "min-sonarqubeapi" }
 sonar-plugin-api-impl = { module = "org.sonarsource.sonarqube:sonar-plugin-api-impl", version.ref = "min-sonarqube" }
+sonar-plugin-api-scanner-impl = { module = "org.sonarsource.scanner.engine:plugin-api-scanner-impl", version.ref = "sonar-scanner-engine" }
+sonar-sensor-test-fixtures = { module = "org.sonarsource.scanner.engine:sensor-test-fixtures", version.ref = "sonar-scanner-engine" }
 sonar-ws = { module = "org.sonarsource.sonarqube:sonar-ws", version.ref = "min-sonarqube" }
 sonar-orchestrator = { module = "org.sonarsource.orchestrator:sonar-orchestrator-junit5", version.ref = "sonarqube-orchestrator" }
 testcontainers-oracle-free = { module = "org.testcontainers:testcontainers-oracle-free", version.ref = "testcontainers" }

@@ -20,6 +20,8 @@ dependencies {
     implementation(project(":zpa-oracle-metadata"))
     compileOnly(libs.sonar.plugin.api)
     compileOnly(libs.sonar.plugin.api.impl)
+    testImplementation(libs.sonar.plugin.api.scanner.impl)
+    testImplementation(libs.sonar.sensor.test.fixtures)
 }
 
 // The Oracle JDBC driver used by the database-backed tests. It is passed to them as a JAR path and kept off their class
@@ -88,6 +90,7 @@ testing {
                     systemProperty("zpa.plugin.jar", shadow.get().archiveFile.get().asFile.absolutePath)
                     systemProperty("zpa.probePlugin.jar", oracleProbePluginJar.get().archiveFile.get().asFile.absolutePath)
                     System.getProperty("sonar.zipFile")?.let { systemProperty("sonar.zipFile", it) }
+                    System.getProperty("sonar.runtimeVersion")?.let { systemProperty("sonar.runtimeVersion", it) }
                     outputs.upToDateWhen { false }
                     testLogging {
                         showStandardStreams = true
@@ -106,6 +109,7 @@ testing {
                 all {
                     testTask.configure {
                         val zipFile = System.getProperty("sonar.zipFile")
+                        val runtimeVersion = System.getProperty("sonar.runtimeVersion")
 
                         val launcher = javaToolchains.launcherFor {
                             languageVersion.set(JavaLanguageVersion.of(21))
@@ -116,6 +120,9 @@ testing {
                         systemProperty("java.awt.headless", "true")
                         if (zipFile != null) {
                             systemProperty("sonar.zipFile", zipFile)
+                        }
+                        if (runtimeVersion != null) {
+                            systemProperty("sonar.runtimeVersion", runtimeVersion)
                         }
                         outputs.upToDateWhen { false }
                     }

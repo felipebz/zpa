@@ -6,12 +6,12 @@
 package com.felipebz.zpa.highlight
 
 import com.felipebz.zpa.TestPlSqlVisitorRunner
+import com.sonarsource.scanner.engine.sensor.test.fixtures.SensorContextTester
+import com.sonarsource.scanner.engine.sensor.test.fixtures.TestInputFileBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder
 import org.sonar.api.batch.sensor.highlighting.TypeOfText
-import org.sonar.api.batch.sensor.internal.SensorContextTester
 import java.io.File
 import java.nio.charset.StandardCharsets
 

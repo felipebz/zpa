@@ -6,11 +6,11 @@
 package com.felipebz.zpa.metrics
 
 import com.felipebz.zpa.TestPlSqlVisitorRunner
+import com.sonarsource.scanner.engine.sensor.test.fixtures.SensorContextTester
+import com.sonarsource.scanner.engine.sensor.test.fixtures.TestInputFileBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.sonar.api.batch.fs.internal.DefaultInputFile
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder
-import org.sonar.api.batch.sensor.internal.SensorContextTester
+import org.sonar.scanner.plugin.api.impl.fs.DefaultInputFile
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths

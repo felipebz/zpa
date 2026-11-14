@@ -7,7 +7,7 @@ package com.felipebz.zpa
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.sonar.api.config.internal.MapSettings
+import org.sonar.scanner.plugin.api.impl.config.MapSettings
 
 class PlSqlTest {
 

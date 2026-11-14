@@ -10,10 +10,10 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.squid.AstScanner
 import com.felipebz.zpa.squid.SonarQubePlSqlFile
+import com.sonarsource.scanner.engine.sensor.test.fixtures.TestInputFileBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.sonar.api.batch.fs.InputFile
-import org.sonar.api.batch.fs.internal.TestInputFileBuilder
 import java.nio.charset.StandardCharsets
 
 class ObjectLocatorTest {

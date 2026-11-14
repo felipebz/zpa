@@ -15,11 +15,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.sonar.api.batch.rule.internal.ActiveRulesBuilder
-import org.sonar.api.batch.rule.internal.NewActiveRule
 import org.sonar.api.rule.RuleKey
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.check.Rule
+import org.sonar.scanner.plugin.api.impl.rule.ActiveRulesBuilder
+import org.sonar.scanner.plugin.api.impl.rule.NewActiveRule
 
 class PlSqlChecksTest {
 
