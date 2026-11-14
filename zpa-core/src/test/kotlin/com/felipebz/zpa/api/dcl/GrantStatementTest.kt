@@ -114,6 +114,14 @@ class GrantStatementTest : RuleTest() {
     }
 
     @Test
+    fun matchesOnCommitRefreshPrivilege() {
+        assertThat(p).matches("grant on commit refresh on myschema.tab to user1;")
+        assertThat(p).matches("grant on commit refresh to user1;")
+        assertThat(p).matches("grant query rewrite, on commit refresh on tab to user1;")
+        assertThat(p).notMatches("grant on commit on tab to user1;")
+    }
+
+    @Test
     fun matchesGrantRoleToFunction() {
         assertThat(p).matches("grant foo to function bar;")
     }

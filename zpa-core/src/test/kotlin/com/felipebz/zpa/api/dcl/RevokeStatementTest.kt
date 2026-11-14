@@ -42,6 +42,14 @@ class RevokeStatementTest : RuleTest() {
     }
 
     @Test
+    fun matchesOnCommitRefreshPrivilege() {
+        assertThat(p).matches("revoke on commit refresh on myschema.tab from user1;")
+        assertThat(p).matches("revoke on commit refresh from user1;")
+        assertThat(p).matches("revoke query rewrite, on commit refresh on tab from user1;")
+        assertThat(p).notMatches("revoke on commit on tab from user1;")
+    }
+
+    @Test
     fun matchesOnObjectClauseForms() {
         assertThat(p).matches("revoke inherit privileges on user sh from hr;")
         assertThat(p).matches("revoke read on directory bfile_dir from hr;")

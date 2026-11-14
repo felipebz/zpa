@@ -43,6 +43,34 @@ class CreateTableBehaviorPropertyTest : RuleTest() {
     }
 
     @Test
+    fun matchesResultCache() {
+        assertMatches(
+            "create table t (id number) result_cache (mode default);",
+            "create table t (id number) result_cache (mode force);",
+            "create table t (id number) result_cache (standby enable);",
+            "create table t (id number) result_cache (mode default, standby disable);",
+            "create table t (id number) result_cache (standby enable, mode force);",
+            "create table t (id number) cache result_cache (mode force);",
+            "create table t (id number) result_cache (mode force) cache;",
+            "create table t (id number) tablespace users result_cache (mode default);",
+            "create table t (id number) result_cache (mode default) tablespace users;",
+            "create table t (id number) result_cache (mode default) read only;",
+            "create table t (id number) result_cache (mode default) partition by hash (id) partitions 2;",
+            "create table t (id number) partition by hash (id) partitions 2 result_cache (mode force);",
+            "create global temporary table t (id number) on commit preserve rows result_cache (mode force);",
+            "create table t result_cache (mode force) as select 1 id from dual;",
+        )
+        assertNotMatches(
+            "create table t (id number) result_cache;",
+            "create table t (id number) result_cache ();",
+            "create table t (id number) result_cache (mode);",
+            "create table t (id number) result_cache (mode manual);",
+            "create table t (id number) result_cache (mode default, mode force);",
+            "create table t (id number) result_cache (standby enable, standby disable);",
+        )
+    }
+
+    @Test
     fun matchesReadOnlyAndReadWrite() {
         assertMatches(
             "create table t (id number) read only;", "create table t (id number) read write;",
