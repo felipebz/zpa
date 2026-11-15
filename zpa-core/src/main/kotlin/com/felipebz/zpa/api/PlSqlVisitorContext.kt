@@ -260,6 +260,25 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     }
 
     /**
+     * Whether an outer join can give nulls for the columns of [source], a source [columnBinding] answered, in the query
+     * or statement that reads it: [source] is on the right side of an ANSI `LEFT` join or of `OUTER APPLY`, on the left
+     * side of a `RIGHT` join (every source joined before it in the same join), on either side of a `FULL` join, a lateral
+     * inline view marked `(+)`, or a source a `(+)` marks in its query's `WHERE` (`t.col(+) = …`). An outer join nested
+     * in a parenthesized join counts for the sources inside it. True also when a name marked `(+)` in that `WHERE` is
+     * not decided, or when the file was not analyzed.
+     */
+    @ZpaExperimentalApi
+    fun outerJoined(source: ColumnSource): Boolean {
+        if (localSemanticFacts == null) return true
+        val root = generateSequence(source.node) { it.parentOrNull }.last()
+        if (root !== rootTree) {
+            val text = dynamicSqlSupport?.textOf(root) ?: return true
+            return valueCategories?.outerJoined(text, source) ?: true
+        }
+        return valueCategories?.outerJoined(source) ?: true
+    }
+
+    /**
      * What the file's local analysis decided for the call whose name is [name], computed for every call of the file
      * before any visitor runs: this is a lookup, nothing is resolved again.
      *

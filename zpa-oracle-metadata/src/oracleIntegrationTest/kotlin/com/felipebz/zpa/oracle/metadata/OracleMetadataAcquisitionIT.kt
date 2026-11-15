@@ -61,6 +61,19 @@ class OracleMetadataAcquisitionIT {
             "CREATE TABLE addr_tab OF addr_t",
             "CREATE VIEW addr_v OF addr_t WITH OBJECT IDENTIFIER (street) AS SELECT street, city FROM addr_tab",
             "CREATE TABLE \"MixedCase\" (\"MixedCol\" NUMBER, plain DATE)",
+            "CREATE TABLE nl_strict (code VARCHAR2(10) NOT NULL, note VARCHAR2(10))",
+            "CREATE TABLE nl_loose (code VARCHAR2(10))",
+            "INSERT INTO nl_loose VALUES (NULL)",
+            "ALTER TABLE nl_loose MODIFY (code NOT NULL ENABLE NOVALIDATE)",
+            "CREATE TABLE nl_off (code VARCHAR2(10) NOT NULL DISABLE)",
+            "CREATE TABLE nl_late (code VARCHAR2(10) NOT NULL DEFERRABLE INITIALLY DEFERRED)",
+            "CREATE TABLE nl_key (code VARCHAR2(10) PRIMARY KEY)",
+            "CREATE TABLE nl_check (code VARCHAR2(10) CHECK (code IS NOT NULL))",
+            "CREATE VIEW nl_strict_v AS SELECT code FROM nl_strict",
+            "CREATE VIEW nl_outer_v AS SELECT s.code FROM nl_loose l LEFT JOIN nl_strict s ON s.code = l.code",
+            "CREATE TABLE nl_base (code VARCHAR2(10) NOT NULL)",
+            "CREATE VIEW nl_stale_v AS SELECT code FROM nl_base",
+            "ALTER TABLE nl_base MODIFY (code NULL)",
             "GRANT SELECT ON test_table TO ${reader.name}",
             pkg,
             """
@@ -106,6 +119,22 @@ class OracleMetadataAcquisitionIT {
         assertThat(type("CREATED").name).isEqualTo("TIMESTAMP(6)")
         assertThat(type("BORN").length).isEqualTo(OptionalInt.empty())
         assertThat(full.columnCount).isGreaterThanOrEqualTo(t.columns.size)
+    }
+
+    @Test
+    fun nullabilityIsKnownOnlyWhereNoRowCanHoldNull() {
+        fun code(relation: String) = relation(relation).columns.first { it.name == id("CODE") }.nullable
+        // An enabled, validated, not deferrable NOT NULL, a primary key, and a valid view's column over one.
+        assertThat(listOf("NL_STRICT", "NL_KEY", "NL_STRICT_V").map(::code)).allSatisfy { assertThat(it).contains(false) }
+        // NOVALIDATE over existing nulls, DISABLE, DEFERRABLE, a CHECK constraint, and a view's outer-joined column.
+        assertThat(listOf("NL_LOOSE", "NL_OFF", "NL_LATE", "NL_CHECK", "NL_OUTER_V").map(::code)).allSatisfy { assertThat(it).contains(true) }
+        assertThat(relation("NL_STRICT").columns.first { it.name == id("NOTE") }.nullable).contains(true)
+        // The view is invalid since its table's column became nullable, and keeps the NULLABLE of its last compilation.
+        val stale = owner.dataSource.connection.use { c ->
+            c.createStatement().use { s -> s.executeQuery("SELECT nullable FROM user_tab_cols WHERE table_name = 'NL_STALE_V'").use { rs -> rs.next(); rs.getString(1) } }
+        }
+        assertThat(stale).isEqualTo("N")
+        assertThat(code("NL_STALE_V")).isEmpty()
     }
 
     @Test

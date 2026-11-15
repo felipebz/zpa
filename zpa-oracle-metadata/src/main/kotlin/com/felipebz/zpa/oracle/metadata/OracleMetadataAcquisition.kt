@@ -141,8 +141,13 @@ object OracleMetadataAcquisition {
     }
 
     // Every relation query is paired with a column query over the same scope in the same transaction.
-    private fun relationRow(rs: ResultSet) =
-        RelationRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), columnsAcquired = true, view = rs.getString(5) == "VIEW")
+    private fun relationRow(rs: ResultSet): RelationRow {
+        val view = rs.getString(5) == "VIEW"
+        return RelationRow(
+            rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), columnsAcquired = true, view = view,
+            valid = !view || rs.getString(6) == "VALID"
+        )
+    }
 
     private fun columnRow(rs: ResultSet) = ColumnRow(
         schema = rs.getString(1),
@@ -155,7 +160,8 @@ object OracleMetadataAcquisition {
         charLength = rs.getBigDecimal(8),
         charUsed = rs.getString(9),
         precision = rs.getBigDecimal(10),
-        scale = rs.getBigDecimal(11)
+        scale = rs.getBigDecimal(11),
+        nullable = rs.getString(12)
     )
 
     private fun synonymRow(rs: ResultSet) = SynonymRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5))

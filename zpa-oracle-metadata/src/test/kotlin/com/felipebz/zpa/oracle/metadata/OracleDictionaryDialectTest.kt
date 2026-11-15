@@ -25,15 +25,15 @@ class OracleDictionaryDialectTest {
                 "SYS_CONTEXT('USERENV', 'CON_NAME'), SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') FROM dual"
         )
         assertThat(d.schemaRelationsSql).isEqualTo(
-            "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
+            "SELECT owner, table_name, table_type_owner, table_type, 'TABLE', NULL FROM all_all_tables " +
                 "WHERE owner = ? AND (dropped IS NULL OR dropped = 'NO') " +
-                "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE owner = ?"
+                "UNION ALL " + VIEW_LIST + "WHERE v.owner = ?"
         )
         assertThat(d.schemaColumnsSql).isEqualTo(COLUMN_LIST + "WHERE owner = ? AND user_generated = 'YES' ORDER BY table_name, internal_column_id")
         assertThat(d.targetedRelationsSql(2)).isEqualTo(
-            "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
+            "SELECT owner, table_name, table_type_owner, table_type, 'TABLE', NULL FROM all_all_tables " +
                 "WHERE (owner, table_name) IN ((?, ?), (?, ?)) AND (dropped IS NULL OR dropped = 'NO') " +
-                "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE (owner, view_name) IN ((?, ?), (?, ?))"
+                "UNION ALL " + VIEW_LIST + "WHERE (v.owner, v.view_name) IN ((?, ?), (?, ?))"
         )
         assertThat(d.targetedColumnsSql(2)).isEqualTo(
             COLUMN_LIST + "WHERE (owner, table_name) IN ((?, ?), (?, ?)) AND user_generated = 'YES' " +
@@ -82,7 +82,10 @@ class OracleDictionaryDialectTest {
     private companion object {
         const val COLUMN_LIST =
             "SELECT owner, table_name, column_name, column_id, data_type, data_type_owner, data_length, char_length, " +
-                "char_used, data_precision, data_scale FROM all_tab_cols "
+                "char_used, data_precision, data_scale, nullable FROM all_tab_cols "
         const val SYNONYM_LIST = "SELECT owner, synonym_name, table_owner, table_name, db_link FROM all_synonyms "
+        const val VIEW_LIST =
+            "SELECT v.owner, v.view_name, v.view_type_owner, v.view_type, 'VIEW', (SELECT o.status FROM all_objects o " +
+                "WHERE o.owner = v.owner AND o.object_name = v.view_name AND o.object_type = 'VIEW') FROM all_views v "
     }
 }

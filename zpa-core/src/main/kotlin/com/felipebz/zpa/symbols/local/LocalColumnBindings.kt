@@ -13,10 +13,8 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.semantics.*
-import com.felipebz.zpa.api.PlSqlTokenType
-import com.felipebz.zpa.api.dynamicsql.DynamicSqlHole
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
+import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.QualifiedName
 import java.util.*
@@ -84,6 +82,60 @@ internal class LocalColumnBindings(
         if (parent.type === PlSqlGrammar.METHOD_CALL && parent.firstChild === name) return methodCallee(name, start, segments)
         if (segments.size == 1) return unqualified(name, start, segments.single())
         return qualifiedName(name, start, segments)
+    }
+
+    private val plusJoined = IdentityHashMap<AstNode, Optional<Set<ColumnSource>>>()
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.outerJoined]. */
+    fun outerJoined(source: ColumnSource): Boolean {
+        val node = source.node
+        val clause = if (node.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE) node else node.parent.takeIf { it.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE }
+        if (clause != null && ansiOuterJoined(clause)) return true
+        val scope = owner(clause ?: node)?.takeIf { it.type in SCOPES } ?: return false
+        val joined = plusJoined.getOrPut(scope) { Optional.ofNullable(plusJoinedSources(scope)) }
+        return joined.map { source in it }.orElse(true)
+    }
+
+    private fun ansiOuterJoined(clause: AstNode): Boolean {
+        if (clause.hasDirectChildren(PlSqlPunctuator.PLUS)) return true
+        var child = clause
+        var node = clause.parentOrNull
+        while (node != null && node.type !== DmlGrammar.FROM_CLAUSE && node.type !== DmlGrammar.FROM_USING_CLAUSE && node.type !in OWNERS) {
+            if (fillsWithNulls(node, child)) return true
+            child = node
+            node = node.parentOrNull
+        }
+        return false
+    }
+
+    /** Whether the join [node] can give nulls for its part [child]: as its right side, or by a later join of its list. */
+    private fun fillsWithNulls(node: AstNode, child: AstNode): Boolean {
+        val ownSide = when (node.type) {
+            DmlGrammar.OUTER_JOIN_CLAUSE -> outerJoinType(node) in RIGHT_SIDE_NULLS
+            DmlGrammar.CROSS_OUTER_APPLY_CLAUSE -> node.hasDirectChildren(PlSqlKeyword.OUTER)
+            else -> false
+        }
+        if (ownSide || node.type !in JOIN_LISTS) return ownSide
+        // A later `RIGHT` or `FULL` join of the same list keeps the rows of its right side only.
+        return node.children.dropWhile { it !== child }.drop(1)
+            .any { it.type === DmlGrammar.OUTER_JOIN_CLAUSE && outerJoinType(it) in LEFT_SIDE_NULLS }
+    }
+
+    private fun outerJoinType(join: AstNode) = join.getFirstChildOrNull(DmlGrammar.OUTER_JOIN_TYPE)?.firstChild?.type
+
+    private fun plusJoinedSources(scope: AstNode): Set<ColumnSource>? {
+        val where = scope.getFirstChildOrNull(DmlGrammar.WHERE_CLAUSE) ?: return emptySet()
+        val result = HashSet<ColumnSource>()
+        for (sign in where.getDescendants(PlSqlGrammar.OUTER_JOIN_PLUS_SIGN)) {
+            if (owner(sign) !== scope) continue
+            val reference = sign.parent.takeIf { it.type === PlSqlGrammar.OBJECT_REFERENCE } ?: return null
+            result += when (val answer = binding(reference.firstChild)) {
+                is ColumnBinding.Column -> answer.source
+                is ColumnBinding.QueryColumn -> answer.source
+                else -> return null
+            }
+        }
+        return result
     }
 
     /**
@@ -703,6 +755,13 @@ internal class LocalColumnBindings(
             DmlGrammar.QUERY_BLOCK, DmlGrammar.SELECT_EXPRESSION, DmlGrammar.UPDATE_EXPRESSION,
             DmlGrammar.DELETE_EXPRESSION, DmlGrammar.INSERT_EXPRESSION, DmlGrammar.MERGE_EXPRESSION
         )
+
+        /** The joins whose right side may have no matching row, and those whose left side may have none. */
+        val RIGHT_SIDE_NULLS = setOf(PlSqlKeyword.LEFT, PlSqlKeyword.FULL)
+        val LEFT_SIDE_NULLS = setOf(PlSqlKeyword.RIGHT, PlSqlKeyword.FULL)
+
+        /** The nodes that hold a list of joins after their first operand. */
+        val JOIN_LISTS = setOf(DmlGrammar.JOIN_CLAUSE, DmlGrammar.INNER_CROSS_JOIN_CLAUSE, DmlGrammar.OUTER_JOIN_CLAUSE)
 
         /** Declarations whose name qualifies their members: packages, subprograms, labelled blocks. */
         val NAMING_UNITS = EnumSet.of(NameDeclarationKind.OTHER, NameDeclarationKind.FUNCTION, NameDeclarationKind.PROCEDURE)

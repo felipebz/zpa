@@ -16,11 +16,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockingDetails
 import org.mockito.kotlin.*
 import java.math.BigDecimal
-import java.sql.Connection
-import java.sql.PreparedStatement
-import java.sql.ResultSet
-import java.sql.SQLException
-import java.sql.Statement
+import java.sql.*
 import java.time.Duration
 import java.time.Instant
 import java.util.*
@@ -32,8 +28,9 @@ class OracleDictionaryMappingTest {
 
     private fun col(
         name: String, id: Int?, type: String?, owner: String? = null, dataLength: Int? = null, charLength: Int? = null,
-        charUsed: String? = null, precision: Int? = null, scale: Int? = null, relation: String = "T", schema: String = "APP"
-    ) = ColumnRow(schema, relation, name, n(id), type, owner, n(dataLength), n(charLength), charUsed, n(precision), n(scale))
+        charUsed: String? = null, precision: Int? = null, scale: Int? = null, relation: String = "T", schema: String = "APP",
+        nullable: String? = null
+    ) = ColumnRow(schema, relation, name, n(id), type, owner, n(dataLength), n(charLength), charUsed, n(precision), n(scale), nullable)
 
     private fun id(s: String) = ProjectIdentifier.fromSource("\"$s\"")
 
@@ -76,6 +73,32 @@ class OracleDictionaryMappingTest {
         assertThat(OracleDictionaryMapping.column(col("SECRET", null, "VARCHAR2", dataLength = 10, charLength = 10, charUsed = "B")).position)
             .isEqualTo(OptionalInt.empty())
         assertThat(OracleDictionaryMapping.column(col("ID", 3, "NUMBER")).position).isEqualTo(OptionalInt.of(3))
+    }
+
+    @Test
+    fun nullabilityIsKeptWhereTheDictionaryStatesIt() {
+        fun nullable(value: String?, trusted: Boolean = true) =
+            OracleDictionaryMapping.column(col("CODE", 1, "VARCHAR2", nullable = value), trusted).nullable
+        assertThat(nullable("N")).contains(false)
+        assertThat(nullable("Y")).contains(true)
+        assertThat(nullable(null)).isEmpty()
+        // An invalid view's NULLABLE may be out of date: its N is not kept, its Y is.
+        assertThat(nullable("N", trusted = false)).isEmpty()
+        assertThat(nullable("Y", trusted = false)).contains(true)
+
+        val result = OracleDictionaryMapping.assemble(
+            OracleMetadataRequest.builder().schema("APP").build(), session,
+            listOf(
+                RelationRow("APP", "FLEET", null, null, true),
+                RelationRow("APP", "FLEET_V", null, null, true, view = true),
+                RelationRow("APP", "STALE_V", null, null, true, view = true, valid = false)
+            ),
+            listOf("FLEET", "FLEET_V", "STALE_V").map { col("HULL", 1, "VARCHAR2", relation = it, nullable = "N") }, at
+        )
+        fun hull(relation: String) = result.metadata.findRelation(id("APP"), id(relation)).relation.get().columns.single().nullable
+        assertThat(hull("FLEET")).contains(false)
+        assertThat(hull("FLEET_V")).contains(false)
+        assertThat(hull("STALE_V")).isEmpty()
     }
 
     private val session = SessionInfo("APP", "APP", "FREEPDB1", "FREE")
@@ -407,7 +430,7 @@ class OracleDictionaryMappingTest {
     fun objectsAndSynonymsAreReadInTheTransactionWithBoundNamesAndTheTimeout() {
         val scripted = Scripted { sql ->
             when {
-                sql.contains("all_objects") -> listOf(listOf("APP", "PKG_ORDERS", "PACKAGE"), listOf("APP", "SALES_MV", "MATERIALIZED VIEW"))
+                sql.contains(OBJECTS) -> listOf(listOf("APP", "PKG_ORDERS", "PACKAGE"), listOf("APP", "SALES_MV", "MATERIALIZED VIEW"))
                 sql.contains("all_synonyms") && sql.contains("owner = ?") -> listOf(listOf("APP", "FAR_ORDERS", null, "ORDERS", "FAR_LINK.EXAMPLE.COM"))
                 sql.contains("all_synonyms") -> listOf(listOf("PUBLIC", "SHARED_CODES", "OTHER", "CODES", null))
                 else -> emptyList()
@@ -416,13 +439,13 @@ class OracleDictionaryMappingTest {
         val request = OracleMetadataRequest.builder().schema("APP").publicSynonymsFor("OTHER").publicSynonymsFor("SHARED")
             .queryTimeout(Duration.ofSeconds(30)).build()
         val result = OracleMetadataAcquisition.acquire(scripted.dataSource, request)
-        assertThat(scripted.parameters("FROM all_objects")).containsExactly(listOf("APP"))
+        assertThat(scripted.parameters(OBJECTS)).containsExactly(listOf("APP"))
         assertThat(scripted.parameters("FROM all_synonyms WHERE owner = ?")).containsExactly(listOf("APP"))
         assertThat(scripted.parameters("owner = 'PUBLIC' AND table_owner IN (?, ?)")).containsExactly(listOf("OTHER", "SHARED"))
         assertThat(scripted.statements.values).allSatisfy { verify(it).queryTimeout = 30 }
         inOrder(scripted.connection) {
             verify(scripted.connection).autoCommit = false
-            verify(scripted.connection).prepareStatement(argThat { contains("all_objects") })
+            verify(scripted.connection).prepareStatement(argThat { contains(OBJECTS) })
             verify(scripted.connection).prepareStatement(argThat { contains("owner = 'PUBLIC'") })
             verify(scripted.connection).rollback()
         }
@@ -450,6 +473,33 @@ class OracleDictionaryMappingTest {
         assertThat(all.parameters("all_synonyms")).containsExactly(emptyList())
         assertThat(publicOnly.metadata.isPublicSynonymsComplete).isTrue()
         assertThat(publicOnly.metadata.findSynonym(id("PUBLIC"), id("SHARED_CODES"))).isPresent()
+    }
+
+    @Test
+    fun theAcquisitionReadsNullabilityAndTheStatusOfViews() {
+        fun columnRow(relation: String, nullable: String) =
+            listOf("APP", relation, "HULL", null, "VARCHAR2", null, null, null, null, null, null, nullable)
+        val scripted = Scripted { sql ->
+            when {
+                sql.contains("all_all_tables") -> listOf(
+                    listOf("APP", "FLEET", null, null, "TABLE", null),
+                    listOf("APP", "FLEET_V", null, null, "VIEW", "VALID"),
+                    listOf("APP", "STALE_V", null, null, "VIEW", "INVALID")
+                )
+                sql.contains("all_tab_cols") -> listOf(columnRow("FLEET", "N"), columnRow("FLEET_V", "N"), columnRow("STALE_V", "N"))
+                else -> emptyList()
+            }
+        }
+        val metadata = OracleMetadataAcquisition.acquire(scripted.dataSource, OracleMetadataRequest.builder().schema("APP").build()).metadata
+        fun hull(relation: String) = metadata.findRelation(id("APP"), id(relation)).relation.get().columns.single().nullable
+        assertThat(hull("FLEET")).contains(false)
+        assertThat(hull("FLEET_V")).contains(false)
+        assertThat(hull("STALE_V")).isEmpty()
+    }
+
+    private companion object {
+        /** The object query; the relation query reads `ALL_OBJECTS` too, for the status of views. */
+        const val OBJECTS = "FROM all_objects WHERE owner = ?"
     }
 
     /** A connection answering each prepared statement with the rows [rows] gives for its SQL; records the statements. */

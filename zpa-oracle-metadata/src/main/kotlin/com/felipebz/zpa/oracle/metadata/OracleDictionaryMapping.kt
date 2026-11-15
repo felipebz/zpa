@@ -6,12 +6,7 @@
 package com.felipebz.zpa.oracle.metadata
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.project.ProjectExternalColumn
-import com.felipebz.zpa.api.project.ProjectExternalDatatype
-import com.felipebz.zpa.api.project.ProjectExternalMetadata
-import com.felipebz.zpa.api.project.ProjectExternalObject
-import com.felipebz.zpa.api.project.ProjectExternalRelation
-import com.felipebz.zpa.api.project.ProjectExternalSynonym
+import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.squid.DatabaseVersion
 import java.math.BigDecimal
 import java.time.Instant
@@ -22,7 +17,8 @@ internal class SessionInfo(val sessionUser: String, val currentSchema: String, v
 /**
  * One `ALL_ALL_TABLES` or `ALL_VIEWS` row ([view]); [typeName] is set for object tables and object views. [columnsAcquired]
  * states that the relation's user-generated columns were queried over the same scope in the same transaction, which is
- * what makes it column-complete (independently of how many columns were returned).
+ * what makes it column-complete (independently of how many columns were returned). [valid] is false for a view whose
+ * status is not `VALID`.
  */
 internal class RelationRow(
     val schema: String,
@@ -30,7 +26,8 @@ internal class RelationRow(
     val typeOwner: String?,
     val typeName: String?,
     val columnsAcquired: Boolean,
-    val view: Boolean = false
+    val view: Boolean = false,
+    val valid: Boolean = true
 )
 
 /** One user-generated `ALL_TAB_COLS` row, values as read (SQL NULL stays null). */
@@ -45,7 +42,8 @@ internal class ColumnRow(
     val charLength: BigDecimal?,
     val charUsed: String?,
     val precision: BigDecimal?,
-    val scale: BigDecimal?
+    val scale: BigDecimal?,
+    val nullable: String? = null
 )
 
 /** One `ALL_OBJECTS` row. */
@@ -79,8 +77,20 @@ internal object OracleDictionaryMapping {
         return ProjectExternalDatatype.of(type, row.dataTypeOwner, length, semantics, row.precision?.intValueExact(), row.scale?.intValueExact())
     }
 
-    /** The column descriptor; a NULL `COLUMN_ID` (invisible column) stays without position. */
-    fun column(row: ColumnRow): ProjectExternalColumn = ProjectExternalColumn.of(row.name, row.columnId?.intValueExact(), datatype(row))
+    /**
+     * The column descriptor; a NULL `COLUMN_ID` (invisible column) stays without position. `NULLABLE` is `N` only for a
+     * column under an enabled, validated, not deferrable `NOT NULL` or primary key, or for a view's column Oracle derives
+     * from one; a disabled, `NOVALIDATE` or deferrable constraint shows `Y`. An invalid view's `NULLABLE` may be out of
+     * date ([trusted] false): its `N` is not kept.
+     */
+    fun column(row: ColumnRow, trusted: Boolean = true): ProjectExternalColumn {
+        val nullable = when {
+            row.nullable == "Y" -> true
+            row.nullable == "N" && trusted -> false
+            else -> null
+        }
+        return ProjectExternalColumn.of(row.name, row.columnId?.intValueExact(), datatype(row), nullable)
+    }
 
     /**
      * The kind of an `ALL_OBJECTS` `OBJECT_TYPE`, or null for a type that cannot start a qualified name (bodies,
@@ -137,7 +147,7 @@ internal object OracleDictionaryMapping {
             if (!seen.add(key)) throw OracleMetadataException("The dictionary returned relation ${relation.schema}.${relation.name} more than once", null)
             val rows = columnsByRelation[key].orEmpty()
             try {
-                val descriptors = rows.map { column(it) }
+                val descriptors = rows.map { column(it, relation.valid) }
                 val rowType = relation.typeName?.let { ProjectExternalDatatype.of(it, relation.typeOwner, null, null, null, null) }
                 val descriptor = when {
                     relation.view && rowType != null -> ProjectExternalRelation.objectView(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)

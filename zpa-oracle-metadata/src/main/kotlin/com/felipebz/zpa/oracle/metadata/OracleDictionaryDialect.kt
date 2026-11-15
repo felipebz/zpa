@@ -7,9 +7,19 @@ package com.felipebz.zpa.oracle.metadata
 
 private const val COLUMN_LIST =
     "SELECT owner, table_name, column_name, column_id, data_type, data_type_owner, data_length, char_length, " +
-        "char_used, data_precision, data_scale FROM all_tab_cols "
+        "char_used, data_precision, data_scale, nullable FROM all_tab_cols "
 
 private const val SYNONYM_LIST = "SELECT owner, synonym_name, table_owner, table_name, db_link FROM all_synonyms "
+
+private const val TABLE_LIST = "SELECT owner, table_name, table_type_owner, table_type, 'TABLE', NULL FROM all_all_tables "
+
+/**
+ * A view's status comes with it: Oracle keeps the `NULLABLE` its columns had when it was last compiled, and does not
+ * recompile an invalid view until it is used, so the `NULLABLE` of an invalid view's column may be out of date.
+ */
+private const val VIEW_LIST =
+    "SELECT v.owner, v.view_name, v.view_type_owner, v.view_type, 'VIEW', (SELECT o.status FROM all_objects o " +
+        "WHERE o.owner = v.owner AND o.object_name = v.view_name AND o.object_type = 'VIEW') FROM all_views v "
 
 private fun placeholders(pairs: Int) = List(pairs) { "(?, ?)" }.joinToString(", ")
 
@@ -30,9 +40,8 @@ internal enum class OracleDictionaryDialect(private val containerExpression: Str
             "$containerExpression, SYS_CONTEXT('USERENV', 'DB_UNIQUE_NAME') FROM dual"
 
     val schemaRelationsSql: String =
-        "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
-            "WHERE owner = ? AND (dropped IS NULL OR dropped = 'NO') " +
-            "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE owner = ?"
+        TABLE_LIST + "WHERE owner = ? AND (dropped IS NULL OR dropped = 'NO') " +
+            "UNION ALL " + VIEW_LIST + "WHERE v.owner = ?"
 
     val schemaColumnsSql: String =
         COLUMN_LIST + "WHERE owner = ? AND $columnFilter ORDER BY table_name, internal_column_id"
@@ -40,9 +49,8 @@ internal enum class OracleDictionaryDialect(private val containerExpression: Str
     /** Relations of [pairs] `(owner, name)` pairs; parameters are the pairs twice. */
     fun targetedRelationsSql(pairs: Int): String {
         val placeholders = placeholders(pairs)
-        return "SELECT owner, table_name, table_type_owner, table_type, 'TABLE' FROM all_all_tables " +
-            "WHERE (owner, table_name) IN ($placeholders) AND (dropped IS NULL OR dropped = 'NO') " +
-            "UNION ALL SELECT owner, view_name, view_type_owner, view_type, 'VIEW' FROM all_views WHERE (owner, view_name) IN ($placeholders)"
+        return TABLE_LIST + "WHERE (owner, table_name) IN ($placeholders) AND (dropped IS NULL OR dropped = 'NO') " +
+            "UNION ALL " + VIEW_LIST + "WHERE (v.owner, v.view_name) IN ($placeholders)"
     }
 
     /** Columns of [pairs] `(owner, table_name)` pairs; parameters are the pairs once. */

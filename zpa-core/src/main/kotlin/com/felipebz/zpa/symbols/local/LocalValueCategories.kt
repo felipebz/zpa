@@ -550,18 +550,26 @@ internal class LocalValueCategories(
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.columnBinding]. */
     fun columnBinding(name: AstNode): ColumnBinding = columnBindings.binding(name)
 
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.outerJoined]. */
+    fun outerJoined(source: ColumnSource): Boolean = columnBindings.outerJoined(source)
+
     private val textBindings = IdentityHashMap<AstNode, LocalColumnBindings?>()
+
+    private fun textBindings(text: DynamicSqlText): LocalColumnBindings? = textBindings.getOrPut(text.root) {
+        val textFacts = text.context?.localSemanticFacts ?: return@getOrPut null
+        val anchor = text.expression ?: text.parts.first()
+        val region = LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, anchor))
+        LocalColumnBindings(textFacts.model, walk.forText(textFacts.model, region), textFacts.names::binding, LocalDynamicText(text, ::isNumber))
+    }
 
     /**
      * [columnBinding] of [name] in the dynamic SQL [text] this file runs, with the compilation schema of the unit that
      * holds the text's expression; null when the text was not analyzed.
      */
-    fun columnBinding(text: DynamicSqlText, name: AstNode): ColumnBinding? = textBindings.getOrPut(text.root) {
-        val textFacts = text.context?.localSemanticFacts ?: return@getOrPut null
-        val anchor = text.expression ?: text.parts.first()
-        val region = LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, anchor))
-        LocalColumnBindings(textFacts.model, walk.forText(textFacts.model, region), textFacts.names::binding, LocalDynamicText(text, ::isNumber))
-    }?.binding(name)
+    fun columnBinding(text: DynamicSqlText, name: AstNode): ColumnBinding? = textBindings(text)?.binding(name)
+
+    /** [outerJoined] of a source of the dynamic SQL [text]; null when the text was not analyzed. */
+    fun outerJoined(text: DynamicSqlText, source: ColumnSource): Boolean? = textBindings(text)?.outerJoined(source)
 
     /** A numeric literal, or a value whose declared type is a number. */
     fun isNumber(expression: AstNode): Boolean {
