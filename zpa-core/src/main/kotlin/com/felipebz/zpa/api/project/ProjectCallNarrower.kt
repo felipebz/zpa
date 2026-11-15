@@ -68,22 +68,34 @@ internal object ProjectCallNarrower {
     }
 
     /**
-     * Among several retained candidates, the one Oracle binds ([OverloadRank.select]), or null. Every retained candidate
-     * must be proven to receive the call: each binding compatible, or depending only on PLSQL_IMPLICIT_CONVERSION_BOOL
-     * (with the setting on or off, such a binding never makes its candidate the preferred one).
+     * Among several retained candidates, the one Oracle binds, or null. A candidate with a binding that depends on
+     * PLSQL_IMPLICIT_CONVERSION_BOOL ([bindable]) is out when another needs no such conversion; a single remaining
+     * candidate is the call whatever its other bindings. Among several, each must be proven to receive the call (each
+     * binding compatible, or depending only on that setting, which never makes its candidate the preferred one), and
+     * [OverloadRank.select] picks.
      */
     internal fun preferred(actuals: List<Evidence>, evaluations: List<ProjectCandidateCompatibility>, formalRanks: List<List<OverloadRank?>>): ProjectCallCandidate? {
         val retained = evaluations.indices.filter { evaluations[it].outcome == ProjectCandidateCompatibility.Outcome.RETAINED }
         if (retained.size < 2) return null
-        val proven = retained.all { index ->
+        val remaining = bindable(retained) { index -> evaluations[index].bindings.any { it.unknownReasonOrNull == UnknownReason.ENVIRONMENT_DEPENDENT } }
+        if (remaining.size == 1) return evaluations[remaining.single()].candidate
+        val proven = remaining.all { index ->
             evaluations[index].bindings.all {
                 it.outcome == Outcome.COMPATIBLE || it.unknownReasonOrNull == UnknownReason.ENVIRONMENT_DEPENDENT
             }
         }
         if (!proven) return null
-        val selected = OverloadRank.select(actuals.map { it.rank }, retained.map { formalRanks[it] }) ?: return null
-        return evaluations[retained[selected]].candidate
+        val selected = OverloadRank.select(actuals.map { it.rank }, remaining.map { formalRanks[it] }) ?: return null
+        return evaluations[remaining[selected]].candidate
     }
+
+    /**
+     * The [retained] candidates Oracle can bind under PLSQL_IMPLICIT_CONVERSION_BOOL's default (FALSE), which rejects a
+     * BOOLEAN actual for a numeric or character formal, and a numeric or character actual for a BOOLEAN formal: those
+     * with no binding that [needsConversion], when some have none; all of them otherwise.
+     */
+    internal fun <T> bindable(retained: List<T>, needsConversion: (T) -> Boolean): List<T> =
+        retained.filterNot(needsConversion).ifEmpty { retained }
 
     /**
      * Among the [formals] of candidates that all fit a call structurally (for each, the formal type of each actual, in
@@ -106,9 +118,11 @@ internal object ProjectCallNarrower {
         val retained = outcomes.indices.filter { candidate -> outcomes[candidate].none { it.first == Outcome.INCOMPATIBLE } }
         if (retained.size == 1) return retained.single()
         if (retained.size < 2) return null
-        val proven = retained.all { candidate -> outcomes[candidate].all { it.first == Outcome.COMPATIBLE || it.second == UnknownReason.ENVIRONMENT_DEPENDENT } }
+        val remaining = bindable(retained) { candidate -> outcomes[candidate].any { it.second == UnknownReason.ENVIRONMENT_DEPENDENT } }
+        if (remaining.size == 1) return remaining.single()
+        val proven = remaining.all { candidate -> outcomes[candidate].all { it.first == Outcome.COMPATIBLE || it.second == UnknownReason.ENVIRONMENT_DEPENDENT } }
         if (!proven) return null
-        return OverloadRank.select(actuals.map { it.rank }, retained.map { candidate -> evidence[candidate].map { it.rank } })?.let(retained::get)
+        return OverloadRank.select(actuals.map { it.rank }, remaining.map { candidate -> evidence[candidate].map { it.rank } })?.let(remaining::get)
     }
 
     /** Whether a package member may shadow a predefined type name, answered once per scope and name. */

@@ -157,12 +157,14 @@ internal class LocalOverloads(
     /** As the project's narrowing prefers ([ProjectCallNarrower.preferred]), over the retained local candidates. */
     private fun preferred(retained: List<LocalCallCandidate>, actuals: List<ProjectCallNarrower.Evidence>): LocalDeclarationId? {
         if (retained.size < 2) return null
-        val proven = retained.all { candidate ->
+        val remaining = ProjectCallNarrower.bindable(retained) { candidate -> candidate.bindings.any { it.reason == UnknownReason.ENVIRONMENT_DEPENDENT } }
+        if (remaining.size == 1) return remaining.single().declaration
+        val proven = remaining.all { candidate ->
             candidate.bindings.all { it.outcome == Outcome.COMPATIBLE || it.reason == UnknownReason.ENVIRONMENT_DEPENDENT }
         }
         if (!proven) return null
-        val formals = retained.map { candidate -> candidate.bindings.sortedBy { it.argumentOrdinal }.map { it.formalRank } }
-        return OverloadRank.select(actuals.map { it.rank }, formals)?.let { retained[it].declaration }
+        val formals = remaining.map { candidate -> candidate.bindings.sortedBy { it.argumentOrdinal }.map { it.formalRank } }
+        return OverloadRank.select(actuals.map { it.rank }, formals)?.let { remaining[it].declaration }
     }
 
     private fun candidate(

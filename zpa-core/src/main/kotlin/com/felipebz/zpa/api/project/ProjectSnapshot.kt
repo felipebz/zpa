@@ -331,6 +331,12 @@ class ProjectSnapshot private constructor(
      * incompatible on Oracle. The structural result, its candidates and bindings are reused, never recomputed; default
      * expressions are not evaluated. Without evidence the structural RESOLVED/AMBIGUOUS outcome is kept.
      *
+     * A BOOLEAN actual for a numeric or character formal, or a numeric or character actual for a BOOLEAN formal, is
+     * accepted only when PLSQL_IMPLICIT_CONVERSION_BOOL is on, so such a binding keeps its candidate among the remaining
+     * ones. When others remain that need no such conversion, that candidate is not chosen, as Oracle rejects it with the
+     * setting at its default: a single other candidate is then selected ([ProjectTypedCallResolution.ranked]), whatever
+     * its other actuals (a NULL, an actual of unknown type).
+     *
      * When several candidates remain and each is proven to receive the call, the one Oracle prefers is selected
      * ([ProjectTypedCallResolution.ranked]) if the exact types of every actual and of every remaining formal decide it,
      * as Oracle does: a candidate whose formals are each of the same type group as their actuals (numbers;

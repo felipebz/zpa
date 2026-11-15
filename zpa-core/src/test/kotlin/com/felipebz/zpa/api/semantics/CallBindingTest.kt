@@ -64,14 +64,14 @@ class CallBindingTest {
         else -> binding.toString()
     }
 
-    /** `line:name=answer` for every `VARIABLE_NAME` and `MEMBER_EXPRESSION` of the procedure body. */
-    private fun answers(): List<String> {
+    /** `line:name=answer` for every `VARIABLE_NAME` and `MEMBER_EXPRESSION` of [user] from [fromLine] on (its body). */
+    private fun answers(project: String = this.project, user: String = this.user, fromLine: Int = 9): List<String> {
         val sources = mapOf("project.sql" to project, "u.sql" to user)
         val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false))
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
-                node.getDescendants(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION).filter { it.token.line >= 9 }.forEach {
+                node.getDescendants(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION).filter { it.token.line >= fromLine }.forEach {
                     rows += "${it.token.line}:${it.tokens.joinToString("") { t -> t.originalValue }}=${render(this.context.callBinding(it))}"
                 }
             }
@@ -107,6 +107,36 @@ class CallBindingTest {
             "15:pk_audit.fmt=Project(RESOLVED () of 1)",
             "15:pk_audit=Unavailable(NOT_A_COVERED_NAME)",
             "15:x=Unavailable(NOT_A_COVERED_NAME)"
+        )
+    }
+
+    @Test
+    fun anArgumentThatCannotBePassedToItsParameterRulesTheOverloadOut() {
+        // With PLSQL_IMPLICIT_CONVERSION_BOOL at its default, a text cannot be passed to BOOLEAN and TRUE cannot be passed
+        // to VARCHAR2: Oracle rules out that overload whatever the other arguments are. NULL, or a call that omits the
+        // parameters the overloads differ by, still matches both (PLS-00307).
+        val project = "create package pk_cab as\n" +
+            "  procedure cab(a varchar2, b varchar2, c varchar2, d varchar2, e number, f varchar2 default null, g number default null);\n" +
+            "  procedure cab(a varchar2, b varchar2, c varchar2, d varchar2, e number, h boolean default false);\nend;\n/\n" +
+            "create package pk_lin as nr_linha number; end;\n/\n"
+        val user = "create procedure p_cab is\n" +
+            "begin\n" +
+            "  pk_cab.cab('x', 'NUMBER', 'm', 15, 1, 'z');\n" +
+            "  pk_cab.cab('x', 'NUMBER', null, 15, pk_lin.nr_linha, '');\n" +
+            "  pk_cab.cab('x', 'NUMBER', 'm', 15, 1, true);\n" +
+            "  pk_cab.cab('x', 'NUMBER', 'm', 15, 1, null);\n" +
+            "  pk_cab.cab('x', 'NUMBER', 'm', 15, 1);\n" +
+            "  pk_cab.cab('x', 'NUMBER', 'm', 15, 1, h => true);\n" +
+            "end;\n/\n"
+        val first = "(a varchar2, b varchar2, c varchar2, d varchar2, e number, f varchar2, g number)"
+        val second = "(a varchar2, b varchar2, c varchar2, d varchar2, e number, h boolean)"
+        assertThat(answers(project, user, fromLine = 3).filter { it.substringAfter(':').startsWith("pk_cab.cab=") }).containsExactly(
+            "3:pk_cab.cab=Project(RESOLVED $first of 2)",
+            "4:pk_cab.cab=Project(RESOLVED $first of 2)",
+            "5:pk_cab.cab=Project(RESOLVED $second of 2)",
+            "6:pk_cab.cab=Project(AMBIGUOUS of 2)",
+            "7:pk_cab.cab=Project(AMBIGUOUS of 2)",
+            "8:pk_cab.cab=Project(RESOLVED $second of 2)"
         )
     }
 
