@@ -7,6 +7,7 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.squid.DatabaseVersion
 import java.util.*
 import com.felipebz.zpa.project.ProjectCallKind as InternalCallKind
 
@@ -25,7 +26,9 @@ class ProjectSnapshot private constructor(
     fileIds: List<String>,
     // Plain identity token for declaration IDs; it holds no reference back to this snapshot.
     private val scope: ProjectSnapshotScope = ProjectSnapshotScope.issue(),
-    private val synonymScope: ProjectSynonymScope? = null
+    private val synonymScope: ProjectSynonymScope? = null,
+    /** What a written `json` names in the lookups of this snapshot. */
+    @get:JvmSynthetic internal val jsonTypeName: JsonTypeName = JsonTypeName.UNDECIDED
 ) {
     /**
      * This snapshot as seen from a unit compiling in [schema]: every lookup of the returned snapshot reads an
@@ -39,7 +42,7 @@ class ProjectSnapshot private constructor(
         if (schema == null) return this
         val index = preparationResult.index.preferring(schema.identifier)
         if (index === preparationResult.index && synonymScope == null) return this
-        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope)
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, jsonTypeName = jsonTypeName)
     }
 
     /**
@@ -55,7 +58,22 @@ class ProjectSnapshot private constructor(
     fun preferring(schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): ProjectSnapshot {
         if (schema == null || !metadata.origin.isPresent) return preferring(schema)
         val index = preparationResult.index.preferring(schema.identifier)
-        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(metadata, schema))
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(metadata, schema), jsonTypeName)
+    }
+
+    @JvmSynthetic
+    internal fun forDatabaseVersion(version: DatabaseVersion?): ProjectSnapshot {
+        val reading = JsonTypeName.of(version)
+        if (reading == jsonTypeName) return this
+        return ProjectSnapshot(preparationResult, preparationState, failures, fileIds, scope, synonymScope, reading)
+    }
+
+    @JvmSynthetic
+    internal fun namesSchemaJson(name: QualifiedName): Boolean {
+        if (jsonTypeName == JsonTypeName.PREDEFINED || preparationState == ProjectPreparationState.NOT_PREPARED) return false
+        val segment = name.segments.singleOrNull() ?: return false
+        if (segment.quoted || segment.lookupName != "JSON") return false
+        return resolveNamedType(ProjectQualifiedName.wrap(name), null).status == ProjectNamedTypeResolution.Status.RESOLVED
     }
 
     private fun synonymReading(name: ProjectQualifiedName): SynonymReading? =

@@ -13,18 +13,19 @@ import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.squid.SemanticFileNode
 import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.squid.DatabaseVersion
 import com.felipebz.zpa.utils.log.Loggers
 
 /**
  * Computes the file's [LocalSemanticFacts] before any other visitor runs and leaves them on the visitor context.
  *
- * Forwarded calls use the scan's own project analysis: its snapshot (a not-prepared one answers them with no evidence)
- * and its external metadata.
+ * Forwarded calls use the scan's own project analysis: its snapshot (a not-prepared one answers them with no evidence),
+ * read for the [databaseVersion] the code compiles for (null when not known), and its external metadata.
  *
  * It never fails the analysis: an exception, or a stack overflow from a deeply nested file, is logged once for the
  * file and leaves the facts absent. Under zpa's own tests it fails the scan instead ([LocalPassFailures]).
  */
-internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
+internal class LocalSemanticPrepass(private val fileId: FileId, private val databaseVersion: DatabaseVersion? = null) : PlSqlCheck() {
 
     override fun visitFile(node: AstNode) {
         context.localSemanticFacts = null
@@ -36,18 +37,19 @@ internal class LocalSemanticPrepass(private val fileId: FileId) : PlSqlCheck() {
             val model = LocalSemanticModelBuilder.build(node, fileId, context.plSqlFile()?.contents(), context.tokensAreWholeText)
             val references = LocalReferenceCollector.collect(node, model)
             val analysis = projectAnalysis()
-            val coverage = LocalSpecificationCoverage.of(model, analysis.snapshot)
+            val snapshot = analysis.snapshot.forDatabaseVersion(databaseVersion)
+            val coverage = LocalSpecificationCoverage.of(model, snapshot)
             val outcomes = LocalReferenceOutcomes(model, coverage)
             val resolutions = references.map(outcomes::steps)
-            val forward = LocalForwardCalls(model, references, LocalCallCollector.collect(node), analysis.snapshot, analysis.externalContext, outcomes, context.formsMetadata, node)
+            val forward = LocalForwardCalls(model, references, LocalCallCollector.collect(node), snapshot, analysis.externalContext, outcomes, context.formsMetadata, node)
             val calls = forward.analyze()
             LocalSemanticFacts(model, references, resolutions, calls, coverage?.specificationValues().orEmpty(),
                 coverage?.specificationMembers.orEmpty().toMap(), LocalMemberCollector.collect(node, fileId), forward.itemActualTypes(),
                 LocalNames.sqlRelationAlternatives(references, resolutions, outcomes)).also {
-                val walk = LocalTypeWalk(model, analysis.snapshot, analysis.externalContext, outcomes)
+                val walk = LocalTypeWalk(model, snapshot, analysis.externalContext, outcomes)
                 val categories = LocalValueCategories(it, walk, context.formsMetadata)
                 context.valueCategories = categories
-                val prepared = analysis.snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
+                val prepared = snapshot.preparationState != ProjectPreparationState.NOT_PREPARED
                 context.fields = LocalFields(
                     it, analysis.snapshot.projectIndex.takeIf { prepared }, coverage, analysis.projectAnalysisContext.takeIf { prepared }, walk, categories
                 )

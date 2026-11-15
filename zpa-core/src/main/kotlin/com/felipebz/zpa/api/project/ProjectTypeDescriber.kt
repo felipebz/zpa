@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectTypeDescriber.category
 import com.felipebz.zpa.project.*
 
 /** Why an anchor step stopped; recorded only for composition, never part of a public result. */
@@ -117,6 +118,11 @@ internal object ProjectTypeDescriber {
         class Written(val owner: QualifiedName?) : AnchorContext
     }
 
+    /** Set when the walk read a written `json` as the schema's type under [JsonTypeName.UNDECIDED]. */
+    private class JsonMark {
+        var undecided = false
+    }
+
     @JvmSynthetic
     fun describe(
         snapshot: ProjectSnapshot,
@@ -125,6 +131,23 @@ internal object ProjectTypeDescriber {
         startOwner: ProjectQualifiedName?,
         written: ProjectWrittenAnchor? = null,
         trace: AnchorTrace? = null
+    ): ProjectTypeDescription {
+        val mark = JsonMark()
+        val description = walk(snapshot, startName, startReference, startOwner, written, trace, mark)
+        if (!mark.undecided || description.status != ProjectTypeDescription.Status.DECLARED_TYPE) return description
+        return ProjectTypeDescription.declared(
+            description.steps, description.declaration.get(), description.terminalReference.orElse(null), description.writtenAnchor.orElse(null), true
+        )
+    }
+
+    private fun walk(
+        snapshot: ProjectSnapshot,
+        startName: ProjectQualifiedName,
+        startReference: ProjectTypeReference?,
+        startOwner: ProjectQualifiedName?,
+        written: ProjectWrittenAnchor?,
+        trace: AnchorTrace?,
+        mark: JsonMark
     ): ProjectTypeDescription {
         val steps = LinkedHashMap<ProjectDeclarationId, ProjectDeclarationView>()
         val pending = PendingFields()
@@ -167,12 +190,12 @@ internal object ProjectTypeDescriber {
                 }
                 null -> Unit
             }
-            category(name)?.let {
+            category(snapshot, name, mark)?.let {
                 // A scalar has no field to select.
                 return if (pending.isEmpty()) ProjectTypeDescription.builtIn(steps.values.toList(), it, reference, written)
                 else pending.stop(steps, ProjectTypeDescription.AnchorStop.FIELD_NOT_FOUND, AnchorStopCause.FIELD_NOT_FOUND, written, trace)
             }
-            val resolution = snapshot.resolveNamedType(name, owner)
+            val resolution = typeResolution(snapshot, name, owner)
             val reached = resolution.declaration.orElse(null)?.takeIf { resolution.status == ProjectNamedTypeResolution.Status.RESOLVED }
             if (!pending.isEmpty() && reached != null && reached !is ProjectSubtypeView) {
                 if (steps.containsKey(reached.id)) return ProjectTypeDescription.cycle(steps.values.toList(), reference, written, pending.path())
@@ -401,5 +424,23 @@ internal object ProjectTypeDescriber {
     private fun completedBefore(value: ProjectSourceRange, reference: ProjectSourceRange): Boolean =
         value.endLine < reference.startLine || (value.endLine == reference.startLine && value.endColumn <= reference.startColumn)
 
-    private fun category(name: ProjectQualifiedName): ProjectBuiltInTypeCategory? = BuiltInTypeRefClassifier.classify(name.name)
+    private fun category(snapshot: ProjectSnapshot, name: ProjectQualifiedName, mark: JsonMark): ProjectBuiltInTypeCategory? {
+        val category = BuiltInTypeRefClassifier.classify(name.name) ?: return null
+        if (category != ProjectBuiltInTypeCategory.JSON || !snapshot.namesSchemaJson(name.name)) return category
+        if (snapshot.jsonTypeName == JsonTypeName.UNDECIDED) mark.undecided = true
+        return null
+    }
+
+    /**
+     * The lookup of the type [name] from the package [owner]. A `json` that names the schema's type or synonym
+     * ([category] read it so) and that the package does not declare is that schema-level type, the one
+     * [ProjectSnapshot.namesSchemaJson] found, synonym included.
+     */
+    private fun typeResolution(snapshot: ProjectSnapshot, name: ProjectQualifiedName, owner: ProjectQualifiedName?): ProjectNamedTypeResolution {
+        val resolution = snapshot.resolveNamedType(name, owner)
+        if (owner == null || resolution.status == ProjectNamedTypeResolution.Status.RESOLVED) return resolution
+        if (BuiltInTypeRefClassifier.classify(name.name) != ProjectBuiltInTypeCategory.JSON) return resolution
+        if (resolution.candidates.any { it is ProjectPackageTypeView }) return resolution
+        return snapshot.resolveNamedType(name, null)
+    }
 }

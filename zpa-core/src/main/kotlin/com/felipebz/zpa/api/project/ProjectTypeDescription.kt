@@ -30,7 +30,8 @@ class ProjectTypeDescription private constructor(
     valueResolution: ProjectValueResolution?,
     anchorStop: AnchorStop?,
     writtenAnchor: ProjectWrittenAnchor?,
-    fieldPath: List<ProjectIdentifier> = emptyList()
+    fieldPath: List<ProjectIdentifier> = emptyList(),
+    @get:JvmSynthetic internal val predefinedJsonAlternative: Boolean = false
 ) {
     enum class Status {
         /** A non-subtype type declaration was reached: [declaration] is present. */
@@ -178,8 +179,10 @@ class ProjectTypeDescription private constructor(
 
     internal companion object {
         @JvmSynthetic
-        fun declared(steps: List<ProjectDeclarationView>, declaration: ProjectTypeDeclarationView, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =
-            ProjectTypeDescription(Status.DECLARED_TYPE, steps, declaration, null, terminal, null, null, null, written)
+        fun declared(
+            steps: List<ProjectDeclarationView>, declaration: ProjectTypeDeclarationView, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null,
+            predefinedJsonAlternative: Boolean = false
+        ) = ProjectTypeDescription(Status.DECLARED_TYPE, steps, declaration, null, terminal, null, null, null, written, predefinedJsonAlternative = predefinedJsonAlternative)
 
         @JvmSynthetic
         fun builtIn(steps: List<ProjectDeclarationView>, category: ProjectBuiltInTypeCategory, terminal: ProjectTypeReference?, written: ProjectWrittenAnchor? = null) =

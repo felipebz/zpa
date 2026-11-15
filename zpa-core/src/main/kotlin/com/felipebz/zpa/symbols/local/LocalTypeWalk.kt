@@ -559,6 +559,17 @@ internal class LocalTypeWalk(
         return LocalTypeEvidence(ProjectArgumentType.described(described, null), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
+    /** Whether the written type [name], seen from [region], is `json` naming the schema's type or synonym `json`. */
+    private fun namesSchemaJson(name: QualifiedName, region: LocalRegionId): Boolean =
+        snapshot?.takeIf { prepared }?.preferring(compilationSchema(region), metadata)?.namesSchemaJson(name) == true
+
+    /**
+     * Evidence of the value `JSON(…)` builds, seen from [region]: the constructor's result when `json` names the
+     * schema's type or synonym `json`; null when it is the predefined JSON type.
+     */
+    fun jsonConstructorResult(region: LocalRegionId): LocalTypeEvidence? =
+        JSON_NAME.takeIf { namesSchemaJson(it, region) }?.let { constructorResult(it, region) }
+
     /** A predefined type written as [typeRef], with its exact type read from the whole written type. */
     private fun builtIn(typeRef: NamedTypeRef): ProjectArgumentType =
         ProjectArgumentType.builtIn(typeRef.name.last.originalSpelling, OverloadRank.of(typeRef.name, typeRef.headerTypeIdentity))
@@ -570,7 +581,7 @@ internal class LocalTypeWalk(
     fun schemaType(use: LocalTypeUse): LocalTypeEvidence {
         val typeRef = use.typeRef as? NamedTypeRef ?: return LocalTypeEvidence.unknown("not a named type in SQL")
         val name = typeRef.name
-        if (name.segments.size == 1 && DatatypeFamilies.ofTypeName(name.last.originalSpelling) != null) {
+        if (name.segments.size == 1 && DatatypeFamilies.ofTypeName(name.last.originalSpelling) != null && !namesSchemaJson(name, use.lookupRegion)) {
             return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
         }
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
@@ -923,8 +934,10 @@ internal class LocalTypeWalk(
                 if (kind == CompositeKind.REF_CURSOR) {
                     return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null, terminalUse = use, constrainedUse = constrained)
                 }
-                // A schema type never shadows a predefined name; any other one-segment name is a schema type.
-                if (DatatypeFamilies.ofTypeName(spelling) != null || snapshot == null && kind == null) {
+                // A schema type never shadows a predefined name, except `json` where the schema's type or synonym takes
+                // it; any other one-segment name is a schema type.
+                val predefined = DatatypeFamilies.ofTypeName(spelling) != null && !namesSchemaJson(name, use.lookupRegion)
+                if (predefined || snapshot == null && kind == null) {
                     return LocalTypeEvidence(builtIn(typeRef), LocalTypeEvidence.Terminal.BUILT_IN, followed.toList(), null, terminalUse = use, constrainedUse = constrained)
                 }
                 val described = snapshot?.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
@@ -993,3 +1006,4 @@ internal class LocalTypeWalk(
 
 private const val NO_WRITTEN_TYPE = "no written type"
 private const val NO_PREPARED_PROJECT = "no prepared project"
+private val JSON_NAME = QualifiedName(listOf(OracleIdentifier.fromSource("json")))

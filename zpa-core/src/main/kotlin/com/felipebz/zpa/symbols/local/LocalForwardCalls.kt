@@ -465,8 +465,7 @@ internal class LocalForwardCalls(
         is LocalActualForm.HostVariable -> forms?.let { FormsHostVariables.type(it, form.qualifier.lookupName, form.name.lookupName) }?.let(::builtIn)
             ?: LocalTypeEvidence.unknown("a host variable the Forms metadata does not type")
         is LocalActualForm.Constructor -> walk.constructorResult(form.type, region) ?: LocalTypeEvidence.unknown("not an object type the project describes")
-        // zpa reads a written `json` as the predefined JSON type, so the value and a `json` formal of the file match.
-        LocalActualForm.JsonConstructor -> builtIn("JSON")
+        LocalActualForm.JsonConstructor -> walk.jsonConstructorResult(region) ?: builtIn("JSON")
     }
 
     /**

@@ -13,12 +13,12 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.parser.PlSqlParser
-import com.felipebz.zpa.project.FileId
-import com.felipebz.zpa.project.ProjectAnalysisContext
-import com.felipebz.zpa.project.ProjectIndexPreparation
-import com.felipebz.zpa.project.ProjectSource
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
+import com.felipebz.zpa.squid.ConditionalCompilationSettings
+import com.felipebz.zpa.squid.DatabaseVersion
 import com.felipebz.zpa.squid.PlSqlConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -64,10 +64,16 @@ class CallBindingTest {
         else -> binding.toString()
     }
 
-    /** `line:name=answer` for every `VARIABLE_NAME` and `MEMBER_EXPRESSION` of [user] from [fromLine] on (its body). */
-    private fun answers(project: String = this.project, user: String = this.user, fromLine: Int = 9): List<String> {
+    private fun answers(
+        project: String = this.project, user: String = this.user, fromLine: Int = 9,
+        metadata: ProjectExternalMetadata = ProjectExternalMetadata.none(), version: DatabaseVersion? = null
+    ): List<String> {
         val sources = mapOf("project.sql" to project, "u.sql" to user)
-        val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false))
+        val external = ProjectExternalContext.of(metadata, ProjectIdentifier.fromSource("APP"), ProjectSchemaPaths.none())
+        val context = ProjectAnalysisContext.prepared(
+            ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(), external)
+                .prepare(sources.map { (id, text) -> ProjectSource(FileId(id)) { text } }, concurrent = false)
+        )
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
@@ -76,7 +82,8 @@ class CallBindingTest {
                 }
             }
         }
-        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, context).scanFile(Source("u.sql", user), listOf(check), FileId("u.sql"))
+        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, context, ConditionalCompilationSettings(databaseVersion = version))
+            .scanFile(Source("u.sql", user), listOf(check), FileId("u.sql"))
         return rows
     }
 
@@ -206,6 +213,76 @@ class CallBindingTest {
         for (project in projects) {
             assertThat(answers(project, user, fromLine = 3).filter { it.contains("pk_doc.put=") })
                 .containsExactly(json, "4:pk_doc.put=Project(RESOLVED (p json) of 2)")
+        }
+    }
+
+    private val docType = "create type doc_t as object (body varchar2(4000));\n/\n"
+
+    private val jsonSynonym = ProjectExternalMetadata.builder("fixture").completeSchema("APP").completePublicSynonyms()
+        .synonym(ProjectExternalSynonym.of("PUBLIC", "JSON", "APP", "DOC_T", null))
+        .build()
+
+    private val jsonCalls = "create procedure doc_it is\n  j json;\nbegin\n" +
+        "  pk_doc.keep(j);\n  pk_doc.keep(json('{}'));\n  pk_doc.keep(new json('{}'));\nend;\n/\n"
+
+    /** The answer for each of the three calls of [jsonCalls]. */
+    private fun keeps(project: String, metadata: ProjectExternalMetadata, version: DatabaseVersion?) =
+        answers(project, jsonCalls, fromLine = 4, metadata = metadata, version = version).filter { it.contains("pk_doc.keep=") }.map { it.substringAfter('=') }
+
+    private fun thrice(answer: String) = listOf(answer, answer, answer)
+
+    @Test
+    fun aWrittenJsonNamesTheSchemaSynonymBeforeThePredefinedType() {
+        val project = docType + "create package pk_doc as\n  procedure keep(p doc_t);\n  procedure keep(p varchar2);\nend;\n/\n"
+        // Before 21 `json` is the synonym's type, in the declaration and in JSON(…) and NEW JSON(…).
+        assertThat(keeps(project, jsonSynonym, DatabaseVersion(19, 0))).isEqualTo(thrice("Project(RESOLVED (p doc_t) of 2)"))
+        // From 21 on it is the predefined JSON type, which neither formal takes.
+        assertThat(keeps(project, jsonSynonym, DatabaseVersion(21, 0))).isEqualTo(thrice("Project(NO_COMPATIBLE_CANDIDATE of 2)"))
+        // Without the version, doc_t is not ruled out; varchar2 is, in both readings.
+        assertThat(keeps(project, jsonSynonym, null)).isEqualTo(thrice("Project(RESOLVED (p doc_t) of 2)"))
+        // Without a type or synonym json, `json` is the predefined type whatever the version.
+        assertThat(keeps(project, ProjectExternalMetadata.none(), DatabaseVersion(19, 0))).isEqualTo(thrice("Project(NO_COMPATIBLE_CANDIDATE of 2)"))
+    }
+
+    @Test
+    fun aWrittenJsonNamesTheProjectTypeJsonBeforeThePredefinedType() {
+        val project = "create type json as object (body varchar2(4000));\n/\n" +
+            "create package pk_doc as\n  procedure keep(p json);\n  procedure keep(p varchar2);\nend;\n/\n"
+        for (version in listOf(DatabaseVersion(11, 2), DatabaseVersion(21, 0), null)) {
+            assertThat(keeps(project, ProjectExternalMetadata.none(), version)).describedAs("$version").isEqualTo(thrice("Project(RESOLVED (p json) of 2)"))
+        }
+    }
+
+    @Test
+    fun aJsonFormalTakesAJsonActualInEveryReading() {
+        val project = docType + "create package pk_doc as\n  procedure keep(p json);\n  procedure keep(p varchar2);\nend;\n/\n"
+        for (version in listOf(DatabaseVersion(11, 2), DatabaseVersion(21, 0), null)) {
+            assertThat(keeps(project, jsonSynonym, version)).describedAs("$version").isEqualTo(thrice("Project(RESOLVED (p json) of 2)"))
+        }
+    }
+
+    private val readings = listOf(DatabaseVersion(11, 2), DatabaseVersion(21, 0), null)
+
+    @Test
+    fun aJsonFormalRejectsScalarActualsInEveryReading() {
+        val project = docType + "create package pk_doc as\n  procedure put(p json);\n  procedure put(p varchar2);\nend;\n/\n"
+        val user = "create procedure doc_it is\n  s varchar2(10);\nbegin\n  pk_doc.put('x');\n  pk_doc.put(s);\n  pk_doc.put(1);\nend;\n/\n"
+        for (version in readings) {
+            assertThat(answers(project, user, fromLine = 4, metadata = jsonSynonym, version = version).filter { it.contains("pk_doc.put=") }.map { it.substringAfter('=') })
+                .describedAs("$version").isEqualTo(thrice("Project(RESOLVED (p varchar2) of 2)"))
+        }
+    }
+
+    @Test
+    fun aJsonFormalOfAMemberMethodRejectsScalarActualsInEveryReading() {
+        // The method's result tells which overload took the call: keep(p varchar2) only for render(p varchar2).
+        val project = docType +
+            "create type doc_box as object (n number,\n  member function render(p json) return doc_t,\n  member function render(p varchar2) return varchar2);\n/\n" +
+            "create package pk_doc as\n  procedure keep(p doc_t);\n  procedure keep(p varchar2);\nend;\n/\n"
+        val user = "create procedure doc_it is\n  b doc_box;\nbegin\n  pk_doc.keep(b.render('x'));\nend;\n/\n"
+        for (version in readings) {
+            assertThat(answers(project, user, fromLine = 4, metadata = jsonSynonym, version = version).filter { it.contains("pk_doc.keep=") })
+                .describedAs("$version").containsExactly("4:pk_doc.keep=Project(RESOLVED (p varchar2) of 2)")
         }
     }
 

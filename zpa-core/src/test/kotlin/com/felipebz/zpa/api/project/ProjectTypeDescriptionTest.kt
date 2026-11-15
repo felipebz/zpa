@@ -291,7 +291,7 @@ class ProjectTypeDescriptionTest {
         val byReference = ProjectSnapshot::class.java.getMethod("describeType", ProjectTypeReference::class.java, ProjectQualifiedName::class.java)
         assertThat(byName.returnType).isEqualTo(ProjectTypeDescription::class.java)
         assertThat(byReference.returnType).isEqualTo(ProjectTypeDescription::class.java)
-        val getters = ProjectTypeDescription::class.java.declaredMethods.filter { it.name.startsWith("get") && java.lang.reflect.Modifier.isPublic(it.modifiers) }
+        val getters = ProjectTypeDescription::class.java.declaredMethods.filter { it.name.startsWith("get") && java.lang.reflect.Modifier.isPublic(it.modifiers) && !it.isSynthetic }
             .associate { it.name to it.genericReturnType.typeName }
         assertThat(getters).containsEntry("getStatus", ProjectTypeDescription.Status::class.java.name)
         assertThat(getters["getSubtypes"]).isEqualTo("java.util.List<com.felipebz.zpa.api.project.ProjectSubtypeView>")
@@ -309,7 +309,7 @@ class ProjectTypeDescriptionTest {
         assertThat(byWritten.returnType).isEqualTo(ProjectTypeDescription::class.java)
         assertThat((ProjectTypeDescription::class.java.getMethod("getSteps").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectDeclarationView::class.java)
         assertThat((ProjectTypeDescription::class.java.getMethod("getValues").genericReturnType as ParameterizedType).actualTypeArguments.single()).isEqualTo(ProjectPackageValueView::class.java)
-        assertThat(ProjectTypeDescription::class.java.declaredMethods.filter { it.name.startsWith("get") && Modifier.isPublic(it.modifiers) }.map { it.name })
+        assertThat(ProjectTypeDescription::class.java.declaredMethods.filter { it.name.startsWith("get") && Modifier.isPublic(it.modifiers) && !it.isSynthetic }.map { it.name })
             .containsExactlyInAnyOrder(
                 "getStatus", "getSteps", "getValues", "getSubtypes", "getDeclaration", "getBuiltInCategory", "getTerminalReference", "getResolution",
                 "getValueResolution", "getAnchorStop", "getWrittenAnchor", "getFieldPath"

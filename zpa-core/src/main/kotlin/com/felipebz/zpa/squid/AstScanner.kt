@@ -49,7 +49,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
     private val configuration = PlSqlConfiguration(charset, isErrorRecoveryEnabled, conditionalCompilation)
     private val parser: Parser<Grammar> = PlSqlParser.create(configuration)
     private val dynamicSqlTools = DynamicSqlTools(configuration)
-    private val semanticAnalysisPipeline = SemanticAnalysisPipeline(projectAnalysisContext)
+    private val semanticAnalysisPipeline = SemanticAnalysisPipeline(projectAnalysisContext, conditionalCompilation.databaseVersion)
     @OptIn(ZpaExperimentalApi::class)
     private val semanticScanCapabilities = SemanticScanCapabilities(
         createProjectAnalysis(projectAnalysisContext)

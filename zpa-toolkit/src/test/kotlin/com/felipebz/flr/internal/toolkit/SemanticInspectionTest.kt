@@ -152,9 +152,33 @@ class SemanticInspectionTest {
         assertThat(inspection.fields).isEmpty()
     }
 
-    private fun model(source: String): SourceCodeModel = SourceCodeModel(ZpaConfigurationModel()).apply {
-        setSourceCode(source)
+    @Test
+    fun theConfiguredDatabaseVersionDecidesWhatAWrittenJsonIs() {
+        val source = """
+            create type json as object (body varchar2(4000));
+            /
+            create procedure doc_it is
+              j json;
+              n number;
+            begin
+              n := j;
+            end;
+            /
+        """.trimIndent()
+        fun category(version: String): String? {
+            val model = model(source, version)
+            val value = model.findNode(PlSqlGrammar.VARIABLE_NAME) { it.tokenOriginalValue == "j" }
+            return model.inspect(value)!!.valueCategory
+        }
+        // The schema's type json before 21, the predefined JSON type from 21 on.
+        assertThat(category("11.2")).isEqualTo("ObjectInstance")
+        assertThat(category("21")).isEqualTo("Scalar(JSON)")
     }
+
+    private fun model(source: String, databaseVersion: String = ""): SourceCodeModel =
+        SourceCodeModel(ZpaConfigurationModel().apply { databaseVersionProperty.value = databaseVersion }).apply {
+            setSourceCode(source)
+        }
 
     private fun SourceCodeModel.findMember(parts: List<String>): AstNode =
         astNode.descendantsAndSelf().single {

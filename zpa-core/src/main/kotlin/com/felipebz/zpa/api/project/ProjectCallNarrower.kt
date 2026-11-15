@@ -25,8 +25,14 @@ internal object ProjectCallNarrower {
         val compositeKind: CompositeKind? = null,
         val declaredType: DeclaredCompositeType? = null,
         /** An object type the project declares, the side's own type. */
-        val objectType: ProjectDeclarationId? = null
-    )
+        val objectType: ProjectDeclarationId? = null,
+        /** The side is of the schema's type `json`, or of the predefined JSON type: the database version decides. */
+        val predefinedJsonAlternative: Boolean = false
+    ) {
+        /** This side as the predefined JSON type, when that is its other reading. */
+        fun predefinedJsonReading(): Evidence =
+            if (predefinedJsonAlternative) Evidence(ProjectDatatypeFamily.JSON, null, DatatypeFamilies.rankOfTypeName("JSON")) else this
+    }
 
     @JvmSynthetic
     fun narrow(
@@ -176,7 +182,7 @@ internal object ProjectCallNarrower {
             val name = type.shadowName
             when {
                 family != null && scope != null && name != null && shadowed(scope, name) -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
-                family != null -> Evidence(family, null, type.rank, type.compositeKind, type.declaredType, type.objectType)
+                family != null -> Evidence(family, null, type.rank, type.compositeKind, type.declaredType, type.objectType, type.predefinedJsonAlternative)
                 type.unclassified -> Evidence(null, UnknownReason.UNCLASSIFIED_TYPE)
                 else -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
             }
@@ -191,7 +197,7 @@ internal object ProjectCallNarrower {
         val declared = (evidence.declaredType as? DeclaredCompositeType.Project)?.id
         val foreign = listOfNotNull(declared, evidence.objectType).any { snapshot.occurrenceOf(it) == null }
         if (!foreign) return evidence
-        return Evidence(evidence.family, evidence.reason, evidence.rank, evidence.compositeKind)
+        return Evidence(evidence.family, evidence.reason, evidence.rank, evidence.compositeKind, predefinedJsonAlternative = evidence.predefinedJsonAlternative)
     }
 
     /**
@@ -226,7 +232,7 @@ internal object ProjectCallNarrower {
             ?: DatatypeFamilies.externalRank(description)
         return Evidence(
             family, null, rank, DatatypeFamilies.compositeKind(description), DatatypeFamilies.declaredCompositeType(description),
-            DatatypeFamilies.objectType(description)
+            DatatypeFamilies.objectType(description), description.source.predefinedJsonAlternative
         )
     }
 
@@ -245,10 +251,27 @@ internal object ProjectCallNarrower {
     }
 
     /**
+     * One binding's outcome from its two sides, as [oneReading] gives it. When a side's `json` is the schema's type or
+     * the predefined JSON type depending on the database version, both readings are compared, every such side read
+     * the same way: the outcome they agree on, else unknown.
+     */
+    internal inline fun <R> compare(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?, result: (Outcome, UnknownReason?) -> R): R {
+        if (!actual.predefinedJsonAlternative && !formal.predefinedJsonAlternative) return oneReading(actual, formal, hierarchy, result)
+        val (outcome, reason) = eitherJsonReading(actual, formal, hierarchy)
+        return result(outcome, reason)
+    }
+
+    internal fun eitherJsonReading(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?): Pair<Outcome, UnknownReason?> {
+        val schema = oneReading(actual, formal, hierarchy) { outcome, reason -> outcome to reason }
+        val predefined = oneReading(actual.predefinedJsonReading(), formal.predefinedJsonReading(), hierarchy) { outcome, reason -> outcome to reason }
+        return if (schema == predefined) schema else Outcome.UNKNOWN to UnknownReason.UNSUPPORTED_PAIR
+    }
+
+    /**
      * One binding's outcome from its two sides: unknown when either side is, else the families' compatibility. Only
      * INCOMPATIBLE eliminates a candidate. Two object types the project declares are compared through [hierarchy].
      */
-    internal inline fun <R> compare(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?, result: (Outcome, UnknownReason?) -> R): R {
+    internal inline fun <R> oneReading(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?, result: (Outcome, UnknownReason?) -> R): R {
         val reason = actual.reason ?: formal.reason
         if (reason != null) return result(Outcome.UNKNOWN, reason)
         // The interval family does not tell DAY TO SECOND from YEAR TO MONTH; their exact types do: each rejects the

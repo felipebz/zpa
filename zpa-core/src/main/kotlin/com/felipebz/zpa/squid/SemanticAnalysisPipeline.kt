@@ -21,7 +21,8 @@ import com.felipebz.zpa.symbols.local.LocalSemanticPrepass
  * semantic decoration order used by ZPA.
  */
 internal class SemanticAnalysisPipeline(
-    private val projectAnalysisContext: ProjectAnalysisContext
+    private val projectAnalysisContext: ProjectAnalysisContext,
+    private val databaseVersion: DatabaseVersion? = null
 ) {
 
     @Suppress("DEPRECATION")
@@ -50,11 +51,11 @@ internal class SemanticAnalysisPipeline(
             visitors.add(ProjectSubprogramDeclarationResolutionVisitor(projectIndex, fileId))
         }
 
-        return Visitors(symbolVisitor, LocalSemanticPrepass(fileId), visitors)
+        return Visitors(symbolVisitor, LocalSemanticPrepass(fileId, databaseVersion), visitors)
     }
 
     companion object {
-        fun forTooling(projectAnalysisContext: ProjectAnalysisContext): SemanticAnalysisPipeline =
-            SemanticAnalysisPipeline(projectAnalysisContext)
+        fun forTooling(projectAnalysisContext: ProjectAnalysisContext, databaseVersion: DatabaseVersion? = null): SemanticAnalysisPipeline =
+            SemanticAnalysisPipeline(projectAnalysisContext, databaseVersion)
     }
 }

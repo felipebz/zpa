@@ -46,7 +46,9 @@ class ProjectArgumentType private constructor(
     @get:JvmSynthetic internal val compositeKind: CompositeKind? = null,
     @get:JvmSynthetic internal val declaredType: DeclaredCompositeType? = null,
     /** For a value of an object type the project declares, that type: it orders the overloads its supertypes take. */
-    @get:JvmSynthetic internal val objectType: ProjectDeclarationId? = null
+    @get:JvmSynthetic internal val objectType: ProjectDeclarationId? = null,
+    /** True when the value is of the schema's type `json` or of the predefined JSON type, as the database version decides. */
+    @get:JvmSynthetic internal val predefinedJsonAlternative: Boolean = false
 ) {
     enum class Kind {
         /** No usable evidence. */
@@ -153,7 +155,8 @@ class ProjectArgumentType private constructor(
                 ?: return ProjectArgumentType(
                     Kind.DESCRIBED, family, family == null && conclusive, null, null,
                     family?.let { DatatypeFamilies.externalRank(description) }, DatatypeFamilies.compositeKind(description),
-                    family?.let { DatatypeFamilies.declaredCompositeType(description) }, family?.let { DatatypeFamilies.objectType(description) }
+                    family?.let { DatatypeFamilies.declaredCompositeType(description) }, family?.let { DatatypeFamilies.objectType(description) },
+                    family != null && description.source.predefinedJsonAlternative
                 )
             // The package that resolved the built-in name: the last retained step's owner, else the request's owner.
             val stepScope = DatatypeFamilies.builtInScope(description, null)

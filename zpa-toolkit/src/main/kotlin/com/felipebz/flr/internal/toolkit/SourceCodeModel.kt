@@ -60,7 +60,8 @@ internal class SourceCodeModel(private val configurationModel: ZpaConfigurationM
         val projectSources = configurationModel.projectSourceFiles
             .filter { it.toString() != fileId.value }
             .map { path -> ProjectSource(FileId(path.toString())) { Files.readString(path, charset) } }
-        val preparation = ProjectIndexPreparation(ProjectDeclarationExtractor(configurationModel.configuration)).prepare(
+        val configuration = configurationModel.configuration
+        val preparation = ProjectIndexPreparation(ProjectDeclarationExtractor(configuration)).prepare(
             projectSources + ProjectSource(fileId) { sourceCode },
             concurrent = true
         )
@@ -68,7 +69,8 @@ internal class SourceCodeModel(private val configurationModel: ZpaConfigurationM
             astNode,
             fileId,
             ProjectAnalysisContext.prepared(preparation),
-            sourceCode
+            sourceCode,
+            configuration.conditionalCompilation.databaseVersion
         )
         semanticInspectionResult = result
     }

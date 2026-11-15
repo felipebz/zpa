@@ -21,10 +21,7 @@ import com.felipebz.zpa.api.squid.SemanticAstNode
 import com.felipebz.zpa.api.symbols.SymbolTable
 import com.felipebz.zpa.api.symbols.datatype.UnknownDatatype
 import com.felipebz.zpa.project.*
-import com.felipebz.zpa.squid.PlSqlAstWalker
-import com.felipebz.zpa.squid.SemanticAnalysisPipeline
-import com.felipebz.zpa.squid.SemanticScanCapabilities
-import com.felipebz.zpa.squid.createProjectAnalysis
+import com.felipebz.zpa.squid.*
 import com.felipebz.zpa.symbols.local.*
 import java.nio.file.Path
 
@@ -37,7 +34,8 @@ import java.nio.file.Path
 public class SemanticInspectionService {
     /**
      * [sourceCode] is the text [root] was parsed from: with it the local resolution, and so the highlighting pairs, are
-     * the scanner's for the same file and project.
+     * the scanner's for the same file and project. [databaseVersion] is the version the code compiles for, as the
+     * scanner's conditional compilation settings give it (null when not known).
      */
     @OptIn(ZpaExperimentalApi::class)
     @JvmOverloads
@@ -45,9 +43,10 @@ public class SemanticInspectionService {
         root: AstNode,
         fileId: FileId,
         projectAnalysisContext: ProjectAnalysisContext,
-        sourceCode: String? = null
+        sourceCode: String? = null,
+        databaseVersion: DatabaseVersion? = null
     ): SemanticInspectionResult {
-        val visitors = SemanticAnalysisPipeline.forTooling(projectAnalysisContext).create(fileId)
+        val visitors = SemanticAnalysisPipeline.forTooling(projectAnalysisContext, databaseVersion).create(fileId)
         val context = PlSqlVisitorContext(root, sourceCode?.let { InspectedFile(fileId, it) }, null)
         // The scan's project analysis, as the scanner installs it.
         PlSqlAstWalker(visitors.all).walk(context, SemanticScanCapabilities(createProjectAnalysis(projectAnalysisContext)))
