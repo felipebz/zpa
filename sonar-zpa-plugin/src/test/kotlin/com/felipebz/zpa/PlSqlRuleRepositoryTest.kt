@@ -28,6 +28,23 @@ class PlSqlRuleRepositoryTest {
     }
 
     @Test
+    fun aDescriptionWithExamplesIsSplitIntoSections() {
+        val rule = repository.rule("TooManyRowsHandler")!!
+        val sections = rule.ruleDescriptionSections().associate { it.key to it.htmlContent }
+        assertThat(sections.keys).containsExactly("root_cause", "how_to_fix")
+        assertThat(sections["root_cause"]).startsWith("<p>").contains("TOO_MANY_ROWS").doesNotContain("<h2>", "section:")
+        assertThat(sections["how_to_fix"]).startsWith("<h2>Noncompliant Code Example</h2>")
+        val file = javaClass.getResource("/org/sonar/l10n/plsqlopen/rules/plsql/TooManyRowsHandler.html")!!.readText()
+        // The plugin API trims the description it keeps.
+        assertThat(rule.htmlDescription()).isEqualTo(file.trim())
+    }
+
+    @Test
+    fun aDescriptionWithoutExamplesHasNoSections() {
+        assertThat(repository.rule("UnusedVariable")!!.ruleDescriptionSections()).isEmpty()
+    }
+
+    @Test
     fun aRuleWithoutTheBugTagHasAMaintainabilityImpact() {
         val rule = repository.rule("VariableName")!!
         assertThat(rule.cleanCodeAttribute()).isEqualTo(CleanCodeAttribute.IDENTIFIABLE)

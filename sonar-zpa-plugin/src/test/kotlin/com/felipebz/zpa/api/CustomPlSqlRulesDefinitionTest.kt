@@ -8,6 +8,7 @@ package com.felipebz.zpa.api
 import com.felipebz.zpa.api.annotations.RuleCategory
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.sonar.api.rules.CleanCodeAttribute
 import org.sonar.api.server.rule.RulesDefinition
@@ -45,6 +46,20 @@ class CustomPlSqlRulesDefinitionTest {
         val zpaRule = checkNotNull(repository.rule(ZPA_RULE_KEY))
         assertThat(zpaRule.cleanCodeAttribute()).isEqualTo(CleanCodeAttribute.IDENTIFIABLE)
     }
+
+    @Test
+    fun aDescriptionWithTwoFixSectionsFailsNamingTheRule() {
+        val definition = object : CustomPlSqlRulesDefinition() {
+            override fun repositoryName() = REPOSITORY_NAME
+            override fun repositoryKey() = REPOSITORY_KEY
+            override fun checkClasses(): Array<Class<*>> = arrayOf(TwiceSplitRule::class.java)
+        }
+        assertThatThrownBy { definition.define(RulesDefinition.Context()) }
+            .hasMessageContaining("TwiceSplitRule")
+    }
+
+    @ZpaRule(key = "TwiceSplitRule", name = "A rule whose description is split twice")
+    class TwiceSplitRule : PlSqlCheck()
 
     @Rule(key = RULE_KEY, name = RULE_NAME, description = "desc", tags = ["bug"])
     inner class MyCustomRule : PlSqlCheck() {
