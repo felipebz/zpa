@@ -13,7 +13,7 @@ sonarscanner = "7.5.0.8588"
 flatlaf = "3.7.2"
 flr = "1.6.4-SNAPSHOT"
 jackson = "2.22.4"
-jsoup = "1.23.2"
+jsoup = "1.24.1"
 # see https://github.com/SonarSource/sonar-plugin-api/#sonarqube-community-build
 min-sonarqube = "26.7.0.124771"
 min-sonarqubeapi = "13.8.0.4399"
