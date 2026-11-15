@@ -8,15 +8,14 @@
 package com.felipebz.zpa.api.semantics
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.DmlGrammar
-import com.felipebz.zpa.api.PlSqlFile
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlVisitorContext
+import com.felipebz.zpa.api.*
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.parser.PlSqlParser
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -158,6 +157,82 @@ class CursorRowTest {
         assertThat(cursors(body, "pk_ord.pks" to spec)).containsExactly(
             "4:c_lines=Project(pk_ord.c_lines, BOUND[#1->p_order#1] omitted [p_min#2])",
             "7:c_full=Project(pk_ord.c_full)"
+        )
+    }
+
+    @Test
+    fun aCursorOfTheSpecificationQualifiedByItsOwnPackageInTheBody() {
+        // Oracle accepts a member of the specification qualified by the package's own name inside its body.
+        val nota = "create package pk_nota as\n" +
+            "  cursor cur_cli(c_emp number, c_emb number) is select 1 x from dual where c_emp = c_emb;\n" +
+            "  g_total number;\n" +
+            "end;\n/\n"
+        val body = "create package body pk_nota as\n" +
+            "  procedure emite is\n" +
+            "  begin\n" +
+            "    for r in pk_nota.cur_cli(1, 2) loop null; end loop;\n" +
+            "    for r in cur_cli(1, 2) loop null; end loop;\n" +
+            "    pk_nota.g_total := 0;\n" +
+            "    select count(*) into pk_nota.g_total from dual where 1 = pk_nota.g_total;\n" +
+            "  end;\n" +
+            "end;\n/\n"
+        val totals: PlSqlVisitorContext.(AstNode) -> List<String> = { root ->
+            root.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).filter { text(it).lowercase() == "pk_nota.g_total" }
+                .map { "${it.token.line}:${text(it)}=${nameBinding(it.lastChild)}" }
+        }
+        // The specification in another file: the same answers as from another file.
+        assertThat(cursors(body, "pk_nota.pks" to nota)).containsExactly(
+            "4:pk_nota.cur_cli=Project(pk_nota.cur_cli, BOUND[#1->c_emp#1, #2->c_emb#2])",
+            "5:cur_cli=Project(pk_nota.cur_cli, BOUND[#1->c_emp#1, #2->c_emb#2])"
+        )
+        assertThat(analyze(body, "pk_nota.pks" to nota, query = totals)).containsExactly(
+            "6:pk_nota.g_total=Local(VARIABLE@pk_nota.pks:3:2)",
+            "7:pk_nota.g_total=Local(VARIABLE@pk_nota.pks:3:2)",
+            "7:pk_nota.g_total=Local(VARIABLE@pk_nota.pks:3:2)"
+        )
+        // The specification in the same file: its own declarations.
+        assertThat(cursors(nota + body)).containsExactly(
+            "9:pk_nota.cur_cli=Local(CURSOR@2:9, BOUND[#1->c_emp#1, #2->c_emb#2])",
+            "10:cur_cli=Local(CURSOR@2:9, BOUND[#1->c_emp#1, #2->c_emb#2])"
+        )
+        assertThat(analyze(nota + body, query = totals)).containsExactly(
+            "11:pk_nota.g_total=Local(VARIABLE@3:2)",
+            "12:pk_nota.g_total=Local(VARIABLE@3:2)",
+            "12:pk_nota.g_total=Local(VARIABLE@3:2)"
+        )
+    }
+
+    @Test
+    fun aCursorTheSpecificationDeclaresWithReturnOnlyAndTheBodyDefines() {
+        // The specification declares the cursor with RETURN only and the body repeats the heading with the query: Oracle
+        // reads both names as that one cursor of the specification.
+        val nota = "create package pk_nota as\n" +
+            "  type t_cli is record (id_cli number);\n" +
+            "  cursor cur_cli(c_emp number, c_emb number) return t_cli;\n" +
+            "end;\n/\n"
+        val body = "create package body pk_nota as\n" +
+            "  cursor cur_cli(c_emp number, c_emb number) return t_cli is\n" +
+            "    select id_cli from cli_x where cd_emp = c_emp and nr_emb = c_emb;\n" +
+            "  procedure run is\n" +
+            "  begin\n" +
+            "    for r in pk_nota.cur_cli(1, 2) loop null; end loop;\n" +
+            "    for r in cur_cli(1, 2) loop null; end loop;\n" +
+            "  end;\n" +
+            "end;\n/\n"
+        // The specification in another file: the body's definition, as with the specification in the file.
+        assertThat(cursors(body, "pk_nota.pks" to nota)).containsExactly(
+            "6:pk_nota.cur_cli=Local(CURSOR@2:9, BOUND[#1->c_emp#1, #2->c_emb#2])",
+            "7:cur_cli=Local(CURSOR@2:9, BOUND[#1->c_emp#1, #2->c_emb#2])"
+        )
+        assertThat(cursors(nota + body)).containsExactly(
+            "11:pk_nota.cur_cli=Local(CURSOR@7:9, BOUND[#1->c_emp#1, #2->c_emb#2])",
+            "12:cur_cli=Local(CURSOR@7:9, BOUND[#1->c_emp#1, #2->c_emb#2])"
+        )
+        // A definition whose parameters differ from the heading (Oracle's PLS-00323) defines nothing: undecided.
+        val other = body.replace("cursor cur_cli(c_emp number, c_emb number) return t_cli is", "cursor cur_cli(c_x number, c_emb number) return t_cli is")
+        assertThat(cursors(other, "pk_nota.pks" to nota)).containsExactly(
+            "6:pk_nota.cur_cli=Unknown[DECLARATION_OUTSIDE_FILE]",
+            "7:cur_cli=Unknown[DECLARATION_OUTSIDE_FILE]"
         )
     }
 

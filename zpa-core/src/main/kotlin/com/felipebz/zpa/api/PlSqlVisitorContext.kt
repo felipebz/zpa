@@ -328,9 +328,13 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      *
      * A cursor declared in the file gives [CursorBinding.Local]. A cursor of a package specification in another project
      * file gives [CursorBinding.Project] with that cursor: named through its package (`pk.c`, `schema.pk.c`, as the
-     * project reads the name from the unit's schema), or alone in the body of that package. A name the project names no
-     * single cursor for gives [CursorBinding.Unknown], as does text the file may hold differently; a name proven to be
-     * something else (a cursor variable, a package variable, a relation) gives [CursorBinding.Unavailable].
+     * project reads the name from the unit's schema), from another unit as inside the body of that package, or alone in
+     * that body. A cursor that the specification in another file declares with a RETURN clause alone, defined in the
+     * body with its query and the same parameters, gives [CursorBinding.Local] with that definition inside the body,
+     * named alone or through the package, as with the specification in the file. A name the project names no single
+     * cursor for gives [CursorBinding.Unknown], as does text the file may hold differently (a cursor of the specification
+     * under conditional compilation); a name proven to be something else (a cursor variable, a package variable, a
+     * relation) gives [CursorBinding.Unavailable].
      *
      * The actuals of `OPEN` and of the loop are associated as the actuals of a call: positional ones in order, then
      * named ones, a parameter with a default left out ([CursorArguments.omittedParameters]); a list Oracle rejects says

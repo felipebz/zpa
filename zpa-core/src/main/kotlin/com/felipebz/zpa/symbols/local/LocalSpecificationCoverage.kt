@@ -308,10 +308,29 @@ internal class LocalSpecificationCoverage private constructor(
     /**
      * The body's definition of each specification heading of [name], in heading order. Null unless every member of the
      * name is a retained, unconditional subprogram heading of a specification whose members are all known, and each
-     * heading has exactly one definition in the body with the same heading (Oracle's PLS-00323 otherwise).
+     * heading has exactly one definition in the body with the same heading (Oracle's PLS-00323 otherwise); or the name is
+     * a cursor the specification declares with a RETURN clause alone, which the body defines ([cursorDefinition]).
      */
     private fun definitions(specification: IndexedDeclaration, body: LocalRegion, name: OracleIdentifier): List<LocalDeclarationId>? =
-        matches(specification, body, name)?.map { it.second }
+        matches(specification, body, name)?.map { it.second } ?: cursorDefinition(specification, body, name)?.let(::listOf)
+
+    /**
+     * The body's definition of the cursor [name] that the specification declares with a RETURN clause and no query:
+     * the only retained, unconditional member of that name in a specification whose members are all known, and exactly
+     * one cursor of the body with a query and the same parameter names, which Oracle requires of the definition.
+     */
+    private fun cursorDefinition(specification: IndexedDeclaration, body: LocalRegion, name: OracleIdentifier): LocalDeclarationId? {
+        val names = (specification.declaration as PackageDeclaration).memberNames ?: return null
+        if (!names.completeFor(name) || names.unretained.any { it.name == name }) return null
+        val heading = PackageMemberNames.members(index, specification, name).singleOrNull() as? PackageCursorDeclaration ?: return null
+        if (heading.selectList != null || heading.returnType == null || !names.isUnconditional(heading.sourceRange)) return null
+        val definition = model.index.named(body.id, name).singleOrNull { (it.details as? LocalCursor)?.isForward == false } ?: return null
+        val parameters = (definition.details as LocalCursor).parameters?.let { region ->
+            model.region(region).declarations.map(model::declaration).filter { it.kind == LocalDeclarationKind.CURSOR_PARAMETER }
+                .sortedBy { (it.details as LocalCursorParameter).ordinal }.map { it.name.lookupName }
+        }.orEmpty()
+        return definition.id.takeIf { parameters == heading.parameters.map { it.name.lookupName } }
+    }
 
     private val defaults = HashMap<LocalDeclarationId, Optional<List<Boolean>>>()
 
