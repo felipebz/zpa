@@ -28,8 +28,15 @@ testing {
     }
 }
 
+val mockitoAgent = configurations.create("mockitoAgent")
+dependencies {
+    mockitoAgent(libs.findLibrary("mockito").get()) { isTransitive = false }
+}
+
 tasks.test {
     finalizedBy(tasks.jacocoTestReport)
+    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-javaagent:${mockitoAgent.singleFile}") })
+    jvmArgs("-Xshare:off")
 }
 
 // zpa's own test runs, the ruling included, fail on a file the local pass cannot analyze instead of logging it.
