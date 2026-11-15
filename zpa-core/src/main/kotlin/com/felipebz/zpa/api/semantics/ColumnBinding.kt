@@ -150,7 +150,13 @@ sealed interface ColumnBinding {
  * external metadata (as a `%ROWTYPE` of that name); null for any other source.
  */
 @ZpaExperimentalApi
-class ColumnSource internal constructor(val node: AstNode, val kind: ColumnSourceKind, val alias: String?, val relation: ProjectExternalTypeDescription?) {
+class ColumnSource internal constructor(
+    val node: AstNode,
+    val kind: ColumnSourceKind,
+    val alias: String?,
+    val relation: ProjectExternalTypeDescription?,
+    internal val withDefinition: AstNode? = null
+) {
     internal val label: String get() = alias ?: if (node.type === DmlGrammar.TABLE_REFERENCE) node.tokens.joinToString("") { it.originalValue } else kind.name
 
     override fun equals(other: Any?) = other is ColumnSource && node === other.node

@@ -48,6 +48,8 @@ import com.felipebz.zpa.project.*
  */
 internal object LocalReferenceCollector {
 
+    internal val QUERY_TAILS = setOf(DmlGrammar.ORDER_BY_CLAUSE, DmlGrammar.FOR_UPDATE_CLAUSE)
+
     private val SQL_STATEMENTS = setOf(
         DmlGrammar.SELECT_EXPRESSION, DmlGrammar.INSERT_EXPRESSION, DmlGrammar.UPDATE_EXPRESSION,
         DmlGrammar.DELETE_EXPRESSION, DmlGrammar.MERGE_EXPRESSION
@@ -136,8 +138,9 @@ internal object LocalReferenceCollector {
                     state.with(inSql = true, inValues = false, sql = if (skipsEnclosing(node)) state.sql?.parent else state.sql)
                 type in SQL_STATEMENTS -> state.with(inSql = true, inValues = false, sql = LocalSqlScope.of(node, state.sql))
                 type === DmlGrammar.QUERY_BLOCK -> state.with(sql = LocalSqlScope.of(node, state.sql))
-                // The `ORDER BY` of a query that is not compound sees the relations of its query block.
-                type === DmlGrammar.ORDER_BY_CLAUSE && node.parent.type === DmlGrammar.SELECT_EXPRESSION ->
+                // The `ORDER BY` and `FOR UPDATE OF` of a query that is not compound see the relations of its query block
+                // (a compound query cannot be locked: ORA-01786).
+                type in QUERY_TAILS && node.parent.type === DmlGrammar.SELECT_EXPRESSION ->
                     node.parent.getChildren(DmlGrammar.QUERY_BLOCK).singleOrNull()?.let { state.with(sql = LocalSqlScope.of(it, state.sql)) } ?: state
                 type === DmlGrammar.INTO_CLAUSE -> state.with(inSql = false, sql = null)
                 type === PlSqlGrammar.CREATE_TRIGGER -> state.with(inTrigger = true)

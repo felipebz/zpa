@@ -553,6 +553,9 @@ internal class LocalValueCategories(
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.outerJoined]. */
     fun outerJoined(source: ColumnSource): Boolean = columnBindings.outerJoined(source)
 
+    /** The source a `TABLE_REFERENCE` of the file's static SQL is, as [columnBinding] reads it; null for any other node. */
+    fun columnSource(reference: AstNode): ColumnSource? = columnBindings.source(reference)
+
     private val textBindings = IdentityHashMap<AstNode, LocalColumnBindings?>()
 
     private fun textBindings(text: DynamicSqlText): LocalColumnBindings? = textBindings.getOrPut(text.root) {

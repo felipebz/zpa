@@ -278,6 +278,9 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
         return valueCategories?.outerJoined(source) ?: true
     }
 
+    @OptIn(ZpaExperimentalApi::class)
+    internal fun columnSource(reference: AstNode): ColumnSource? = valueCategories?.columnSource(reference)
+
     /**
      * What the file's local analysis decided for the call whose name is [name], computed for every call of the file
      * before any visitor runs: this is a lookup, nothing is resolved again.

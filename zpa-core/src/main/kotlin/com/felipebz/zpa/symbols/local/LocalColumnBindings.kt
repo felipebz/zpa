@@ -145,6 +145,8 @@ internal class LocalColumnBindings(
     private fun objectReference(name: AstNode, reference: AstNode, start: AstNode): ColumnBinding? = when {
         reference.lastChild.type === PlSqlPunctuator.MULTIPLICATION -> starQualifier(name, start)
         reference.children.size == 2 && reference.lastChild.type === PlSqlGrammar.OUTER_JOIN_PLUS_SIGN -> null
+        // A column of `FOR UPDATE OF`: answered as a name.
+        reference.children.size == 1 && reference.parent.type === DmlGrammar.FOR_UPDATE_CLAUSE -> null
         else -> unavailable()
     }
 
@@ -557,7 +559,7 @@ internal class LocalColumnBindings(
             withQuery(reference, written.last)?.let { factoring ->
                 val listed = factoring.children.drop(1).takeWhile { it.type !== PlSqlKeyword.AS }.filter { it.type === PlSqlGrammar.IDENTIFIER_NAME }
                     .map(LocalSyntax::identifier)
-                return Source(ColumnSource(reference, ColumnSourceKind.WITH_QUERY, alias?.lookupName, null), qualifier, written,
+                return Source(ColumnSource(reference, ColumnSourceKind.WITH_QUERY, alias?.lookupName, null, factoring), qualifier, written,
                     factoring.getFirstChildOrNull(DmlGrammar.SELECT_EXPRESSION), listed.ifEmpty { null })
             }
         }
@@ -568,12 +570,30 @@ internal class LocalColumnBindings(
         return Source(ColumnSource(reference, ColumnSourceKind.RELATION, alias?.lookupName, relation), qualifier, written, null, null)
     }
 
-    /** The `WITH` query named [name] visible from [reference], the nearest first. */
-    private fun withQuery(reference: AstNode, name: OracleIdentifier): AstNode? =
-        generateSequence(reference.parent) { it.parentOrNull }.filter { it.type === DmlGrammar.SELECT_EXPRESSION }.firstNotNullOfOrNull { select ->
-            select.getFirstChildOrNull(DmlGrammar.WITH_CLAUSE)?.getChildren(DmlGrammar.SUBQUERY_FACTORING_CLAUSE)
-                ?.firstOrNull { LocalSyntax.identifier(it.firstChild) == name }
+    /**
+     * The `WITH` query named [name] visible from [reference], the nearest first. Inside a definition of a `WITH`
+     * clause, the definitions written before it are visible, and the definition itself (a recursive query).
+     */
+    private fun withQuery(reference: AstNode, name: OracleIdentifier): AstNode? {
+        var inside: AstNode? = null
+        var node: AstNode? = reference.parent
+        while (node != null) {
+            if (node.type === DmlGrammar.SUBQUERY_FACTORING_CLAUSE) inside = node
+            if (node.type === DmlGrammar.SELECT_EXPRESSION) {
+                val definitions = node.getFirstChildOrNull(DmlGrammar.WITH_CLAUSE)?.getChildren(DmlGrammar.SUBQUERY_FACTORING_CLAUSE).orEmpty()
+                val visible = if (inside != null && inside in definitions) definitions.subList(0, definitions.indexOf(inside) + 1) else definitions
+                visible.firstOrNull { LocalSyntax.identifier(it.firstChild) == name }?.let { return it }
+            }
+            node = node.parentOrNull
         }
+        return null
+    }
+
+    /** See [LocalValueCategories.columnSource]. */
+    fun source(reference: AstNode): ColumnSource? {
+        val scope = owner(reference)?.takeIf { it.type in SCOPES } ?: return null
+        return sourcesOf(scope).firstOrNull { it.source.node === reference }?.source
+    }
 
     /**
      * The columns of an inline view or a `WITH` query: its column list, else the names its select list gives (of the
@@ -633,12 +653,15 @@ internal class LocalColumnBindings(
 
     // Scopes.
 
-    /** The innermost scope of [name]: its query block or DML statement, or for an `ORDER BY` name the query it orders. */
+    /**
+     * The innermost scope of [name]: its query block or DML statement, or for an `ORDER BY` or `FOR UPDATE OF` name the
+     * query it belongs to.
+     */
     private fun startScope(name: AstNode): AstNode? {
         var node: AstNode? = name.parent
         while (node != null) {
             when {
-                node.type === DmlGrammar.ORDER_BY_CLAUSE && node.parent.type === DmlGrammar.SELECT_EXPRESSION -> return node.parent
+                node.type in LocalReferenceCollector.QUERY_TAILS && node.parent.type === DmlGrammar.SELECT_EXPRESSION -> return node.parent
                 node.type in SCOPES -> return node
             }
             node = node.parentOrNull

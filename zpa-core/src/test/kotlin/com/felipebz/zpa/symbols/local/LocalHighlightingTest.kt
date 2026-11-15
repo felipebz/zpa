@@ -242,4 +242,34 @@ class LocalHighlightingTest {
         assertThat(sqlPairs("for l in (select 7 qty from dual) loop select l.qty into v from bed l; end loop;"))
             .noneMatch { it.startsWith("l@4:66") }
     }
+
+    @Test
+    fun aColumnOfForUpdateOfRefersToItsSource() {
+        assertThat(sqlPairs("select w.id into v from ward w for update of w.label;")).containsExactly("w@4:31 <- w@4:9, w@4:47")
+        assertThat(sqlPairs("select ward.id into v from ward for update of ward.label;")).containsExactly("ward@4:29 <- ward@4:9, ward@4:48")
+    }
+
+    @Test
+    fun eachFromOccurrenceOfAWithNameRefersToItsDefinition() {
+        // The aliased occurrence still reads the WITH name; its alias declares the qualifier a.
+        assertThat(sqlPairs("with lots as (select id from yard) select a.id into v from lots, lots a where lots.id = a.id;"))
+            .containsExactlyInAnyOrder("lots@4:7 <- lots@4:61, lots@4:67, lots@4:80", "a@4:72 <- a@4:44, a@4:90")
+    }
+
+    @Test
+    fun aLaterDefinitionOfTheSameClauseReadsAnEarlierWithName() {
+        assertThat(sqlPairs("with p as (select id from yard), q as (select id from p) select q.id into v from q;"))
+            .containsExactlyInAnyOrder("p@4:7 <- p@4:56", "q@4:35 <- q@4:66, q@4:83")
+    }
+
+    @Test
+    fun aNestedWithHidesAnOuterNameOfTheSameName() {
+        assertThat(sqlPairs("with p as (select id from yard) select x.id into v from (with p as (select id from dock) select p.id from p) x;"))
+            .containsExactlyInAnyOrder("p@4:7 <- ", "p@4:64 <- p@4:98, p@4:108", "x@4:111 <- x@4:41")
+    }
+
+    @Test
+    fun aWithNameNeverReadIsADeclarationWithoutReferences() {
+        assertThat(sqlPairs("with unused as (select 1 n from dual) select 1 into v from dual;")).containsExactly("unused@4:7 <- ")
+    }
 }

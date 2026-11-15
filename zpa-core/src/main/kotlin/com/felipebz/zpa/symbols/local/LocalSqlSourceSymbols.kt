@@ -20,7 +20,8 @@ import com.felipebz.zpa.project.SourceRange
 internal class LocalSqlSourceSymbols(
     private val facts: LocalSemanticFacts,
     private val root: AstNode,
-    private val binding: (AstNode) -> ColumnBinding
+    private val binding: (AstNode) -> ColumnBinding,
+    private val source: (AstNode) -> ColumnSource?
 ) {
     class Symbol(val declaration: SourceRange, val references: List<SourceRange>)
 
@@ -28,7 +29,8 @@ internal class LocalSqlSourceSymbols(
 
     fun symbols(): List<Symbol> {
         val declarations = HashMap<ColumnSource, AstNode?>()
-        val references = LinkedHashMap<ColumnSource, MutableList<SourceRange>>()
+        val references = LinkedHashMap<AstNode, MutableList<SourceRange>>()
+        withNames(references)
         for (name in root.getDescendants(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)) {
             if (name.type === PlSqlGrammar.VARIABLE_NAME && name.parent.type === PlSqlGrammar.MEMBER_EXPRESSION) continue
             if (!leftToSql(name) && !isCorrelationArgument(name) && !isWrittenColumn(name)) continue
@@ -41,9 +43,22 @@ internal class LocalSqlSourceSymbols(
             }
             val declaration = declarations.getOrPut(source) { declaration(source) } ?: continue
             val qualifier = qualifier(segments, source, LocalSyntax.identifier(declaration).lookupName) ?: continue
-            references.getOrPut(source) { ArrayList() } += LocalSyntax.range(fileId, qualifier)
+            references.getOrPut(declaration) { ArrayList() } += LocalSyntax.range(fileId, qualifier)
         }
-        return references.mapNotNull { (source, ranges) -> declarations[source]?.let { Symbol(LocalSyntax.range(fileId, it), ranges) } }
+        return references.map { (declaration, ranges) -> Symbol(LocalSyntax.range(fileId, declaration), ranges) }
+    }
+
+    private fun withNames(references: MutableMap<AstNode, MutableList<SourceRange>>) {
+        val definitions = root.getDescendants(DmlGrammar.SUBQUERY_FACTORING_CLAUSE)
+        if (definitions.isEmpty()) return
+        definitions.forEach { references[it.firstChild] = ArrayList() }
+        val names = definitions.mapTo(HashSet()) { LocalSyntax.identifier(it.firstChild).lookupName }
+        for (reference in root.getDescendants(DmlGrammar.TABLE_REFERENCE)) {
+            val name = reference.children.singleOrNull()?.takeIf { it.type === PlSqlGrammar.IDENTIFIER_NAME } ?: continue
+            if (LocalSyntax.identifier(name).lookupName !in names) continue
+            val definition = source(reference)?.withDefinition ?: continue
+            references[definition.firstChild]?.add(LocalSyntax.range(fileId, name))
+        }
     }
 
     /**
@@ -87,6 +102,7 @@ internal class LocalSqlSourceSymbols(
     private fun declaration(source: ColumnSource): AstNode? {
         val alias = source.alias
         if (alias != null) return aliasNode(source.node)?.takeIf { LocalSyntax.identifier(it).lookupName == alias }
+        if (source.kind == ColumnSourceKind.WITH_QUERY) return source.withDefinition?.firstChild
         if (source.kind != ColumnSourceKind.RELATION || source.node.type !== DmlGrammar.TABLE_REFERENCE) return null
         return source.node.children.takeWhile { it.type !== PlSqlPunctuator.REMOTE }.lastOrNull { it.type === PlSqlGrammar.IDENTIFIER_NAME }
     }

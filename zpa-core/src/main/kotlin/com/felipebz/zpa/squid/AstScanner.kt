@@ -142,7 +142,7 @@ class AstScanner @JvmOverloads constructor(private val checks: Collection<PlSqlV
     @OptIn(ZpaExperimentalApi::class)
     private fun highlightingPairs(facts: LocalSemanticFacts, inputFile: PlSqlFile, context: PlSqlVisitorContext): List<HighlightingPair> =
         try {
-            LocalHighlighting.pairs(facts, highlightingIndex, inputFile.contents(), context.rootTree(), context::columnBinding)
+            LocalHighlighting.pairs(facts, highlightingIndex, inputFile.contents(), context.rootTree(), context::columnBinding, context::columnSource)
         } catch (e: Exception) {
             LocalPassFailures.report(LOG, "Highlighting pairs failed for $inputFile", e)
             emptyList()

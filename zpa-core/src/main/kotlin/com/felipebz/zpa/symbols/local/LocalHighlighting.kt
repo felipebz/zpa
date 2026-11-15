@@ -11,6 +11,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectPreparationState
 import com.felipebz.zpa.api.semantics.ColumnBinding
+import com.felipebz.zpa.api.semantics.ColumnSource
 import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.semantics.HighlightingRange
 import com.felipebz.zpa.project.*
@@ -180,19 +181,20 @@ internal class LocalHighlighting(
             context.createSnapshot().takeIf { it.preparationState != ProjectPreparationState.NOT_PREPARED }?.projectIndex
 
         /**
-         * The file's pairs, as the scanner and the toolkit both build them. With [root] and [binding], the sources of
-         * its SQL statements are paired too.
+         * The file's pairs, as the scanner and the toolkit both build them. With [root], [binding] and [source], the
+         * sources of its SQL statements are paired too.
          */
         fun pairs(
             facts: LocalSemanticFacts,
             index: ProjectSymbolIndex?,
             text: String?,
             root: AstNode? = null,
-            binding: ((AstNode) -> ColumnBinding)? = null
+            binding: ((AstNode) -> ColumnBinding)? = null,
+            source: ((AstNode) -> ColumnSource?)? = null
         ): List<HighlightingPair> {
             // A failure of the SQL source pass keeps the local pairs.
-            val sources = if (root == null || binding == null) emptyList() else try {
-                LocalSqlSourceSymbols(facts, root, binding).symbols()
+            val sources = if (root == null || binding == null || source == null) emptyList() else try {
+                LocalSqlSourceSymbols(facts, root, binding, source).symbols()
             } catch (e: Exception) {
                 LocalPassFailures.report(LOG, "SQL source highlighting failed for ${facts.model.fileId.value}", e)
                 emptyList()
