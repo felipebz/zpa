@@ -12,7 +12,7 @@ import com.felipebz.zpa.api.syntax.IfStatement
 import com.felipebz.zpa.api.syntax.SyntaxViews
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.MINOR, tags = [Tags.CLUMSY])
+@Rule(priority = Priority.MINOR, tags = [Tags.CLUMSY], category = RuleCategory.READABILITY)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

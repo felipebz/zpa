@@ -9,7 +9,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.MINOR, tags = [Tags.UNUSED])
+@Rule(priority = Priority.MINOR, tags = [Tags.UNUSED], category = RuleCategory.INCOMPLETE)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

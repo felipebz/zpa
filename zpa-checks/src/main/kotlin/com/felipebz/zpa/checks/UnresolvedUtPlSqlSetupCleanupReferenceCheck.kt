@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.project.PackageProcedureResolution
 import com.felipebz.zpa.checks.utplsql.*
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @RuleInfo(scope = RuleInfo.Scope.TEST)
 @ActivatedByDefault
 @OptIn(ZpaExperimentalApi::class)

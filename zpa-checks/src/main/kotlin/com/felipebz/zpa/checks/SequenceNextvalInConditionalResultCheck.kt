@@ -13,7 +13,7 @@ import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.project.SequenceReferenceResolution
 import java.util.*
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

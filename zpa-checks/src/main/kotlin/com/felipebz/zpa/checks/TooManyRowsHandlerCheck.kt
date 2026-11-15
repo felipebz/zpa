@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

@@ -7,6 +7,7 @@ package com.felipebz.zpa
 
 import com.felipebz.zpa.api.annotations.ConstantRemediation
 import com.felipebz.zpa.api.annotations.Rule
+import com.felipebz.zpa.api.annotations.RuleCategory
 import com.felipebz.zpa.api.annotations.RuleProperty
 import com.felipebz.zpa.rules.Repository
 import com.felipebz.zpa.rules.RuleMetadataLoader
@@ -115,6 +116,22 @@ class CustomAnnotationBasedRulesDefinitionTest {
 
         val repository = load(RuleClass::class.java)
         assertThat(repository.availableRules).hasSize(1)
+    }
+
+    @Test
+    fun ruleCategory() {
+        @Rule(key = "key1", name = "name1", description = "description1", category = RuleCategory.PERFORMANCE)
+        class RuleClass
+
+        assertThat(buildSingleRuleRepository(RuleClass::class.java).category).isEqualTo(RuleCategory.PERFORMANCE)
+    }
+
+    @Test
+    fun aRuleWithoutCategory() {
+        @Rule(key = "key1", name = "name1", description = "description1")
+        class RuleClass
+
+        assertThat(buildSingleRuleRepository(RuleClass::class.java).category).isEqualTo(RuleCategory.UNSPECIFIED)
     }
 
     private fun assertParam(param: ZpaRuleParam, expectedKey: String, expectedDescription: String?) {

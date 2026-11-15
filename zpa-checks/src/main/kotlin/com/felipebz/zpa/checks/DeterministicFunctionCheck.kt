@@ -21,7 +21,7 @@ import com.felipebz.zpa.api.syntax.SyntaxViews
  * semantic evidence of changing state or a side effect. User-defined calls and unresolved package
  * or global state are intentionally not treated as proof of impurity.
  */
-@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

@@ -12,7 +12,7 @@ import com.felipebz.zpa.api.project.PackageParameter
 import com.felipebz.zpa.api.project.PackageSpecificationResolution
 
 @OptIn(ZpaExperimentalApi::class)
-@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

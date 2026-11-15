@@ -12,4 +12,6 @@ annotation class Rule(val key: String = "",
                       val description: String = "",
                       val priority: Priority = Priority.MAJOR,
                       val tags: Array<String> = [],
-                      val status: String = "READY")
+                      val status: String = "READY",
+                      /** The kind of problem the rule finds; [RuleCategory.UNSPECIFIED] when not declared. */
+                      val category: RuleCategory = RuleCategory.UNSPECIFIED)

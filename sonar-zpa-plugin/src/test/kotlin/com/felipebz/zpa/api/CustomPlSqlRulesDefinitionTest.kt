@@ -5,12 +5,15 @@
 
 package com.felipebz.zpa.api
 
+import com.felipebz.zpa.api.annotations.RuleCategory
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.sonar.api.rules.CleanCodeAttribute
 import org.sonar.api.server.rule.RulesDefinition
 import org.sonar.check.Rule
 import org.sonar.check.RuleProperty
+import com.felipebz.zpa.api.annotations.Rule as ZpaRule
 
 class CustomPlSqlRulesDefinitionTest {
 
@@ -24,7 +27,7 @@ class CustomPlSqlRulesDefinitionTest {
 
         assertThat(repository.name()).isEqualTo(REPOSITORY_NAME)
         assertThat(repository.language()).isEqualTo("plsqlopen")
-        assertThat(repository.rules()).hasSize(1)
+        assertThat(repository.rules()).hasSize(2)
 
         val alertUseRule = repository.rule(RULE_KEY)
         assertThat(alertUseRule).isNotNull
@@ -35,6 +38,12 @@ class CustomPlSqlRulesDefinitionTest {
                 assertThat(param.description()).`as`("description for " + param.key()).isNotEmpty
             }
         }
+
+        // org.sonar.check.Rule has no category: SonarQube keeps its default attribute.
+        assertThat(alertUseRule?.cleanCodeAttribute()).isNull()
+
+        val zpaRule = checkNotNull(repository.rule(ZPA_RULE_KEY))
+        assertThat(zpaRule.cleanCodeAttribute()).isEqualTo(CleanCodeAttribute.IDENTIFIABLE)
     }
 
     @Rule(key = RULE_KEY, name = RULE_NAME, description = "desc", tags = ["bug"])
@@ -42,6 +51,9 @@ class CustomPlSqlRulesDefinitionTest {
         @RuleProperty(key = "customParam", description = "Custom parameter", defaultValue = "value")
         var customParam = "value"
     }
+
+    @ZpaRule(key = ZPA_RULE_KEY, name = "A rule with ZPA's annotations", description = "desc", category = RuleCategory.NAMING)
+    class MyZpaAnnotatedRule : PlSqlCheck()
 
     class MyCustomPlSqlRulesDefinition : CustomPlSqlRulesDefinition() {
         override fun repositoryName(): String {
@@ -53,7 +65,7 @@ class CustomPlSqlRulesDefinitionTest {
         }
 
         override fun checkClasses(): Array<Class<*>> {
-            return arrayOf(MyCustomRule::class.java)
+            return arrayOf(MyCustomRule::class.java, MyZpaAnnotatedRule::class.java)
         }
     }
 
@@ -63,5 +75,6 @@ class CustomPlSqlRulesDefinitionTest {
 
         private const val RULE_NAME = "This is my custom rule"
         private const val RULE_KEY = "MyCustomRule"
+        private const val ZPA_RULE_KEY = "MyZpaAnnotatedRule"
     }
 }

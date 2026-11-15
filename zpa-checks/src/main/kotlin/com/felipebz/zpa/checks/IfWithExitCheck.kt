@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.syntax.IfStatement
 import com.felipebz.zpa.api.syntax.SyntaxViews
 
-@Rule(priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR, category = RuleCategory.READABILITY)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

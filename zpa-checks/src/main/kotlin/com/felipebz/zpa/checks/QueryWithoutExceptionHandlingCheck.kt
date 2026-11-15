@@ -16,7 +16,7 @@ import com.felipebz.zpa.api.syntax.SelectStatement
 import com.felipebz.zpa.api.syntax.SyntaxViews
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.CRITICAL)
+@Rule(priority = Priority.CRITICAL, category = RuleCategory.INCOMPLETE)
 @ConstantRemediation("20min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault

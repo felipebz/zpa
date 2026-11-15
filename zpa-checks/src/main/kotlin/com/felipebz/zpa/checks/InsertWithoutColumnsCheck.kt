@@ -15,7 +15,7 @@ import com.felipebz.zpa.api.semantics.RecordOrigin
 import com.felipebz.zpa.api.semantics.RecordRelation
 import com.felipebz.zpa.api.semantics.ValueCategory
 
-@Rule(priority = Priority.CRITICAL, tags = [Tags.CONVENTION, Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.CONVENTION, Tags.BUG], category = RuleCategory.INCOMPLETE)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

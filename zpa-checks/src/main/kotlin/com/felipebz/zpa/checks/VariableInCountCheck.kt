@@ -15,7 +15,7 @@ import com.felipebz.zpa.api.semantics.NameBinding
 import com.felipebz.zpa.api.semantics.NameDeclarationKind
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

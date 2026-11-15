@@ -14,7 +14,7 @@ import com.felipebz.zpa.api.matchers.MethodMatcher
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

@@ -16,7 +16,7 @@ import com.felipebz.zpa.api.semantics.ExceptionDeclaration
 import com.felipebz.zpa.api.semantics.ExceptionErrorCode
 import com.felipebz.zpa.api.semantics.ExceptionScope
 
-@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG])
+@Rule(priority = Priority.CRITICAL, tags = [Tags.BUG], category = RuleCategory.INCOMPLETE)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @OptIn(ZpaExperimentalApi::class)

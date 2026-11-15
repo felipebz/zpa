@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.ConditionsGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG])
+@Rule(priority = Priority.BLOCKER, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("2min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

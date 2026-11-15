@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.matchers.MethodMatcher
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.TEST)
 @ActivatedByDefault

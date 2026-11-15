@@ -15,7 +15,7 @@ import com.felipebz.zpa.api.semantics.RecordOrigin
 import com.felipebz.zpa.api.semantics.ValueCategory
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.PERFORMANCE])
+@Rule(priority = Priority.MAJOR, tags = [Tags.PERFORMANCE], category = RuleCategory.PERFORMANCE)
 @ConstantRemediation("30min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

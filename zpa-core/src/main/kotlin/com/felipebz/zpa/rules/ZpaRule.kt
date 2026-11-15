@@ -5,6 +5,7 @@
 
 package com.felipebz.zpa.rules
 
+import com.felipebz.zpa.api.annotations.RuleCategory
 import com.felipebz.zpa.api.annotations.RuleInfo
 
 interface ZpaRule {
@@ -19,5 +20,7 @@ interface ZpaRule {
     var severity: String
     var htmlDescription: String
     var isActivatedByDefault: Boolean
+    /** The kind of problem the rule finds; [RuleCategory.UNSPECIFIED] when not declared. */
+    var category: RuleCategory
     fun createParam(fieldKey: String): ZpaRuleParam
 }

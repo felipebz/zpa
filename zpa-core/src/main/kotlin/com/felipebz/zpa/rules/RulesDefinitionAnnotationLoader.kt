@@ -38,6 +38,7 @@ class RulesDefinitionAnnotationLoader(private val ruleMetadataLoader: RuleMetada
         rule.severity = ruleAnnotation.priority.name
         rule.status = RuleStatus.valueOf(ruleAnnotation.status)
         rule.tags = ruleAnnotation.tags
+        rule.category = ruleAnnotation.category
 
         val fields = getFields(clazz, true)
         for (field in fields) {

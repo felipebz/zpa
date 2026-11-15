@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.syntax.SyntaxViews
 import com.felipebz.zpa.api.syntax.VariableDeclaration
 import java.util.regex.Pattern
 
-@Rule(priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR, category = RuleCategory.NAMING)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

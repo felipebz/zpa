@@ -22,7 +22,7 @@ import com.felipebz.zpa.api.semantics.ValueCategory
  * Recommends DETERMINISTIC only for a deliberately small, locally verifiable subset of functions.
  * Unknown calls, references, statements and execution models fail closed.
  */
-@Rule(priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR, category = RuleCategory.PERFORMANCE)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @OptIn(ZpaExperimentalApi::class)

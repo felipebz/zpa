@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.syntax.IfStatement
 import com.felipebz.zpa.api.syntax.SyntaxViews
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

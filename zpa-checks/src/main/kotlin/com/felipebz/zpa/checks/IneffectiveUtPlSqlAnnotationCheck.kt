@@ -7,14 +7,11 @@ package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.annotations.ActivatedByDefault
-import com.felipebz.zpa.api.annotations.Priority
-import com.felipebz.zpa.api.annotations.Rule
-import com.felipebz.zpa.api.annotations.RuleInfo
+import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationCollector
 import com.felipebz.zpa.checks.utplsql.UtPlSqlAnnotationKind
 
-@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG])
+@Rule(priority = Priority.MAJOR, tags = [Tags.UTPLSQL, Tags.BUG], category = RuleCategory.LOGIC_ERROR)
 @RuleInfo(scope = RuleInfo.Scope.TEST)
 @ActivatedByDefault
 class IneffectiveUtPlSqlAnnotationCheck : AbstractBaseCheck() {

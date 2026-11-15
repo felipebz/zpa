@@ -12,7 +12,7 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR, category = RuleCategory.DESIGN)
 @ConstantRemediation("30min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault

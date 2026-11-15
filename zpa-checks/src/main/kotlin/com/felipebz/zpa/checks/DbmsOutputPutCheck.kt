@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.matchers.MethodMatcher
 import com.felipebz.zpa.api.syntax.MethodCall
 import com.felipebz.zpa.api.syntax.SyntaxViews
 
-@Rule(priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR, category = RuleCategory.DESIGN)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 @ActivatedByDefault

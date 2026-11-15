@@ -7,13 +7,16 @@ package com.felipebz.zpa.rules
 
 import com.felipebz.zpa.api.annotations.Priority
 import com.felipebz.zpa.api.annotations.Rule
+import com.felipebz.zpa.api.annotations.RuleCategory
 
 class RuleData(val key: String,
                val name: String,
                val description: String,
                val priority: Priority,
                val tags: Array<String>,
-               val status: String) {
+               val status: String,
+               /** [RuleCategory.UNSPECIFIED] for an annotation that has no category. */
+               val category: RuleCategory = RuleCategory.UNSPECIFIED) {
     companion object {
         fun from(rule: Rule?): RuleData? =
             if (rule == null) null
@@ -22,6 +25,7 @@ class RuleData(val key: String,
                 rule.description,
                 rule.priority,
                 rule.tags,
-                rule.status)
+                rule.status,
+                rule.category)
     }
 }

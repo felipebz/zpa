@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR, category = RuleCategory.CONVENTION)
 @ConstantRemediation("20min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

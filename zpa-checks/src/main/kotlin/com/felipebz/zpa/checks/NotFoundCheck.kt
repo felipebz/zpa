@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR, category = RuleCategory.READABILITY)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

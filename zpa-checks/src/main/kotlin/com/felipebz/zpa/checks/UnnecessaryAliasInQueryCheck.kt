@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.MINOR)
+@Rule(priority = Priority.MINOR, category = RuleCategory.READABILITY)
 @ConstantRemediation("1min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 class UnnecessaryAliasInQueryCheck : AbstractBaseCheck() {

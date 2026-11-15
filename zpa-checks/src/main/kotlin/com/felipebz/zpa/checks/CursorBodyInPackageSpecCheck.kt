@@ -8,12 +8,9 @@ package com.felipebz.zpa.checks
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.annotations.ConstantRemediation
-import com.felipebz.zpa.api.annotations.Priority
-import com.felipebz.zpa.api.annotations.Rule
-import com.felipebz.zpa.api.annotations.RuleInfo
+import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.MAJOR)
+@Rule(priority = Priority.MAJOR, category = RuleCategory.DESIGN)
 @ConstantRemediation("10min")
 @RuleInfo(scope = RuleInfo.Scope.MAIN)
 class CursorBodyInPackageSpecCheck : AbstractBaseCheck() {

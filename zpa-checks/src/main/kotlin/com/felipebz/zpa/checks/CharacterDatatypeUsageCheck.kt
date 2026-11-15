@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.typeIs
 
-@Rule(priority = Priority.MINOR, tags = [Tags.OBSOLETE])
+@Rule(priority = Priority.MINOR, tags = [Tags.OBSOLETE], category = RuleCategory.CONVENTION)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

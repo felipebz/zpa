@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.MINOR, tags = [Tags.CONFUSING])
+@Rule(priority = Priority.MINOR, tags = [Tags.CONFUSING], category = RuleCategory.READABILITY)
 @ConstantRemediation("5min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault

@@ -9,9 +9,10 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.Priority
 import com.felipebz.zpa.api.annotations.Rule
+import com.felipebz.zpa.api.annotations.RuleCategory
 import com.felipebz.zpa.api.annotations.RuleInfo
 
-@Rule(priority = Priority.INFO)
+@Rule(priority = Priority.INFO, category = RuleCategory.CONVENTION)
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 class ParsingErrorCheck : AbstractBaseCheck() {
 

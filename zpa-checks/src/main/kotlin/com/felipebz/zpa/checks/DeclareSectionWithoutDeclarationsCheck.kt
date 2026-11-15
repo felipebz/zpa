@@ -10,7 +10,7 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
 import com.felipebz.zpa.api.annotations.*
 
-@Rule(priority = Priority.INFO)
+@Rule(priority = Priority.INFO, category = RuleCategory.READABILITY)
 @ConstantRemediation("1min")
 @RuleInfo(scope = RuleInfo.Scope.ALL)
 @ActivatedByDefault
