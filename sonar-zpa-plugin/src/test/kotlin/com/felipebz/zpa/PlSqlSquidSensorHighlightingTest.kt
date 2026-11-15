@@ -15,6 +15,7 @@ import com.sonarsource.scanner.engine.sensor.test.fixtures.SensorContextTester
 import com.sonarsource.scanner.engine.sensor.test.fixtures.TestInputFileBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.tuple
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mockito.*
@@ -71,5 +72,26 @@ class PlSqlSquidSensorHighlightingTest {
                 .map { listOf(it.start().line(), it.start().lineOffset(), it.end().line(), it.end().lineOffset()) }
             assertThat(saved).containsExactlyInAnyOrderElementsOf(pair.references.map { listOf(it.startLine, it.startColumn, it.endLine, it.endColumn) })
         }
+    }
+
+    @Test
+    fun anAliasOfASqlStatementIsASymbol() {
+        val text = "declare\n  v number;\nbegin\n  select p.id into v from pond p where p.depth > 2;\nend;\n"
+        val inputFile = TestInputFileBuilder("key", "pond.sql")
+            .setLanguage(PlSql.KEY)
+            .setCharset(StandardCharsets.UTF_8)
+            .setContents(text)
+            .initMetadata(text)
+            .build()
+        val context = SensorContextTester.create(File("."))
+        context.fileSystem().add(inputFile)
+        val fileLinesContextFactory = mock(FileLinesContextFactory::class.java)
+        `when`(fileLinesContextFactory.createFor(any(InputFile::class.java))).thenReturn(mock(FileLinesContext::class.java))
+        PlSqlSquidSensor(ActiveRulesBuilder().build(), MapSettings().asConfig(), mock(NoSonarFilter::class.java), fileLinesContextFactory, null, ObjectLocator())
+            .execute(context)
+
+        // The alias `p` of `pond p` is declared at 4:31 and read by `p.id` and `p.depth`.
+        assertThat(context.referencesForSymbolAt(inputFile.key(), 4, 31)).extracting("start.line", "start.lineOffset")
+            .containsExactly(tuple(4, 9), tuple(4, 39))
     }
 }

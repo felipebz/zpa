@@ -144,4 +144,102 @@ class LocalHighlightingTest {
         )
         assertThat(pairs(sources)).isEmpty()
     }
+
+    /** The pairs of [statements], written one per line in a block that declares `v`, without the pair of `v`. */
+    private fun sqlPairs(vararg statements: String): List<String> =
+        pairs("declare\n  v number;\nbegin\n" + statements.joinToString("") { "  $it\n" } + "end;\n").filterNot { it.startsWith("v@") }
+
+    @Test
+    fun aRelationWithoutAliasIsDeclaredByItsName() {
+        assertThat(sqlPairs("select dept.id into v from dept;")).containsExactly("dept@4:29 <- dept@4:9")
+    }
+
+    @Test
+    fun anAliasIsDeclaredOnceAndEveryQualifierRefersToIt() {
+        assertThat(sqlPairs("select w.id, w.label into v, v from ward w where w.id = 1 order by w.label;"))
+            .containsExactly("w@4:43 <- w@4:9, w@4:15, w@4:51, w@4:69")
+    }
+
+    @Test
+    fun theRelationSegmentOfAThreePartNameRefersToTheRelation() {
+        assertThat(sqlPairs("select clinic.ward.id into v from clinic.ward;")).containsExactly("ward@4:43 <- ward@4:16")
+    }
+
+    @Test
+    fun theAliasIsTheReferenceWhateverFollowsTheColumn() {
+        // An attribute of an object column, a method called on a column, an attribute of an inline view's column.
+        assertThat(sqlPairs("select w.loc.city into v from ward w;")).containsExactly("w@4:37 <- w@4:9")
+        assertThat(sqlPairs("select w.doc.getclobval() into v from ward w;")).containsExactly("w@4:45 <- w@4:9")
+        assertThat(sqlPairs("select s.item.label into v from (select value(t) item from table(f_beds) t) s;"))
+            .contains("s@4:78 <- s@4:9")
+    }
+
+    @Test
+    fun theColumnsOfAMultiColumnSetReferToTheTarget() {
+        assertThat(sqlPairs("update ward w set (w.label, w.floor) = (select 'x', 1 from dual) where w.id = 1;"))
+            .containsExactly("w@4:14 <- w@4:21, w@4:30, w@4:73")
+    }
+
+    @Test
+    fun aColumnOfAnInsertListRefersToTheTarget() {
+        assertThat(sqlPairs("insert into ward w (w.id, w.label) values (1, 'x');")).containsExactly("w@4:19 <- w@4:22, w@4:28")
+    }
+
+    @Test
+    fun theQualifierOfAStarAndTheArgumentOfRefReferToTheSource() {
+        assertThat(pairs("begin\n  for r in (select k.* from kennel k) loop null; end loop;\nend;\n")).contains("k@2:35 <- k@2:19")
+        assertThat(sqlPairs("select ref(o) into v from hutch_objs o;")).containsExactly("o@4:39 <- o@4:13")
+    }
+
+    @Test
+    fun anInlineViewIsDeclaredByItsAlias() {
+        assertThat(sqlPairs("select iv.n into v from (select 1 n from dual) iv;")).containsExactly("iv@4:49 <- iv@4:9")
+    }
+
+    @Test
+    fun eachAliasOfAJoinHasItsOwnReferences() {
+        assertThat(sqlPairs("select a.id into v from ward a join bed b on a.id = b.ward_id where b.free = 'Y';"))
+            .containsExactly("a@4:31 <- a@4:9, a@4:47", "b@4:42 <- b@4:54, b@4:70")
+    }
+
+    @Test
+    fun aCorrelatedSubqueryReadsTheOuterAlias() {
+        assertThat(sqlPairs("select w.id into v from ward w where exists (select 1 from bed b where b.ward_id = w.id);"))
+            .containsExactly("w@4:31 <- w@4:9, w@4:85", "b@4:65 <- b@4:73")
+    }
+
+    @Test
+    fun theSameAliasInTwoStatementsIsTwoSymbols() {
+        assertThat(sqlPairs("select w.id into v from ward w;", "select w.id into v from bed w;"))
+            .containsExactly("w@4:31 <- w@4:9", "w@5:30 <- w@5:9")
+    }
+
+    @Test
+    fun theTargetsOfUpdateDeleteAndMergeAreDeclaredByTheirAliases() {
+        assertThat(sqlPairs(
+            "update ward w set w.label = 'x' where w.id = 2;",
+            "delete from bed b where b.id = 3;",
+            "merge into ward t using bed s on (t.id = s.ward_id) when matched then update set t.label = s.label;"
+        )).containsExactly(
+            "w@4:14 <- w@4:20, w@4:40",
+            "b@5:18 <- b@5:26",
+            "t@6:18 <- t@6:36, t@6:83",
+            "s@6:30 <- s@6:43, s@6:93"
+        )
+    }
+
+    @Test
+    fun aQualifierThatIsAlsoARecordGoesToTheSourceInsideTheStatementOnly() {
+        val text = "declare\n  type row_t is record (id number);\n  q row_t;\nbegin\n" +
+            "  select q.id into q.id from (select 1 id from dual) q;\n  q.id := 2;\nend;\n"
+        assertThat(pairs(text)).contains("q@3:2 <- q@5:19, q@6:2", "q@5:53 <- q@5:9")
+    }
+
+    @Test
+    fun anUnqualifiedColumnOrAnUndecidedQualifierPairsNothing() {
+        assertThat(sqlPairs("select id into v from ward;")).isEmpty()
+        // The loop record or the column of the alias may take `l.qty`: the alias stays unpaired.
+        assertThat(sqlPairs("for l in (select 7 qty from dual) loop select l.qty into v from bed l; end loop;"))
+            .noneMatch { it.startsWith("l@4:66") }
+    }
 }

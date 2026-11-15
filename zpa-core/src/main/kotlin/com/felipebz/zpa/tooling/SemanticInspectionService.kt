@@ -61,7 +61,9 @@ public class SemanticInspectionService {
             val facts = context.localSemanticFacts
             it.localSemanticFacts = facts
             it.context = context.takeIf { facts != null }
-            it.highlightingPairs = facts?.let { local -> LocalHighlighting.pairs(local, LocalHighlighting.indexOf(projectAnalysisContext), sourceCode) }.orEmpty()
+            it.highlightingPairs = facts?.let { local ->
+                LocalHighlighting.pairs(local, LocalHighlighting.indexOf(projectAnalysisContext), sourceCode, root, context::columnBinding)
+            }.orEmpty()
         }
     }
 

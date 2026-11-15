@@ -7,11 +7,14 @@
 
 package com.felipebz.zpa.symbols.local
 
+import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectPreparationState
+import com.felipebz.zpa.api.semantics.ColumnBinding
 import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.semantics.HighlightingRange
 import com.felipebz.zpa.project.*
+import com.felipebz.zpa.utils.log.Loggers
 
 /**
  * The highlighting pairs of a file from its local facts: each declaration's name and the names that refer to it.
@@ -27,8 +30,8 @@ import com.felipebz.zpa.project.*
 internal class LocalHighlighting(
     private val facts: LocalSemanticFacts,
     private val index: ProjectSymbolIndex?,
-    /** The length of each line of the file, for range validation; null when the text is not known. */
-    private val lineLengths: IntArray?
+    private val lineLengths: IntArray?,
+    private val sqlSources: List<LocalSqlSourceSymbols.Symbol> = emptyList()
 ) {
     enum class Drop {
         INVALID_RANGE, OVERLAPS_DECLARATION, REPEATED_DECLARATION, SAME_START, MEMBER_POSITION, CONSTRUCTOR_FOR_TYPE
@@ -62,6 +65,11 @@ internal class LocalHighlighting(
             if (declaration.id !in bodyToSpecification) addDeclaration(declaration.nameRange)
         }
         for ((body, specification) in bodyToSpecification) add(model.declaration(body).nameRange, specification to true)
+        for (symbol in sqlSources) {
+            addDeclaration(symbol.declaration)
+            val key = LocalRangeKey.of(symbol.declaration)
+            if (key in declarations) symbol.references.forEach { addAt(it, key, certain = true) }
+        }
         for ((index, reference) in facts.references.withIndex()) addReference(reference, facts.resolutions[index])
         val byDeclaration = references.values.groupBy { it.declaration }
         val pairs = declarations.map { (key, range) ->
@@ -93,12 +101,16 @@ internal class LocalHighlighting(
         if (range == null || target == null) return
         val declaration = LocalRangeKey.of(target.first.nameRange)
         if (declaration !in declarations) return
+        addAt(range, declaration, target.second)
+    }
+
+    private fun addAt(range: SourceRange, declaration: LocalRangeKey, certain: Boolean) {
         val start = range.startLine to range.startColumn
         when {
             start in memberStarts -> drop(Drop.MEMBER_POSITION, range)
             !valid(range) -> drop(Drop.INVALID_RANGE, range)
             overlaps(range, declaration) -> drop(Drop.OVERLAPS_DECLARATION, range)
-            else -> keepOnePerStart(start, Candidate(range, declaration, target.second))
+            else -> keepOnePerStart(start, Candidate(range, declaration, certain))
         }
     }
 
@@ -167,9 +179,28 @@ internal class LocalHighlighting(
         fun indexOf(context: ProjectAnalysisContext): ProjectSymbolIndex? =
             context.createSnapshot().takeIf { it.preparationState != ProjectPreparationState.NOT_PREPARED }?.projectIndex
 
-        /** The file's pairs, as the scanner and the toolkit both build them. */
-        fun pairs(facts: LocalSemanticFacts, index: ProjectSymbolIndex?, text: String?): List<HighlightingPair> =
-            LocalHighlighting(facts, index, text?.let(::lineLengths)).build().pairs
+        /**
+         * The file's pairs, as the scanner and the toolkit both build them. With [root] and [binding], the sources of
+         * its SQL statements are paired too.
+         */
+        fun pairs(
+            facts: LocalSemanticFacts,
+            index: ProjectSymbolIndex?,
+            text: String?,
+            root: AstNode? = null,
+            binding: ((AstNode) -> ColumnBinding)? = null
+        ): List<HighlightingPair> {
+            // A failure of the SQL source pass keeps the local pairs.
+            val sources = if (root == null || binding == null) emptyList() else try {
+                LocalSqlSourceSymbols(facts, root, binding).symbols()
+            } catch (e: Exception) {
+                LocalPassFailures.report(LOG, "SQL source highlighting failed for ${facts.model.fileId.value}", e)
+                emptyList()
+            }
+            return LocalHighlighting(facts, index, text?.let(::lineLengths), sources).build().pairs
+        }
+
+        private val LOG = Loggers.getLogger(LocalHighlighting::class.java)
 
         /** The lengths of the lines of [text], split as the lexer counts lines. */
         fun lineLengths(text: String): IntArray {

@@ -136,6 +136,9 @@ internal object LocalReferenceCollector {
                     state.with(inSql = true, inValues = false, sql = if (skipsEnclosing(node)) state.sql?.parent else state.sql)
                 type in SQL_STATEMENTS -> state.with(inSql = true, inValues = false, sql = LocalSqlScope.of(node, state.sql))
                 type === DmlGrammar.QUERY_BLOCK -> state.with(sql = LocalSqlScope.of(node, state.sql))
+                // The `ORDER BY` of a query that is not compound sees the relations of its query block.
+                type === DmlGrammar.ORDER_BY_CLAUSE && node.parent.type === DmlGrammar.SELECT_EXPRESSION ->
+                    node.parent.getChildren(DmlGrammar.QUERY_BLOCK).singleOrNull()?.let { state.with(sql = LocalSqlScope.of(it, state.sql)) } ?: state
                 type === DmlGrammar.INTO_CLAUSE -> state.with(inSql = false, sql = null)
                 type === PlSqlGrammar.CREATE_TRIGGER -> state.with(inTrigger = true)
                 type === PlSqlGrammar.EXCEPTION_HANDLER -> state.with(handler = LocalSyntax.range(fileId, node))
