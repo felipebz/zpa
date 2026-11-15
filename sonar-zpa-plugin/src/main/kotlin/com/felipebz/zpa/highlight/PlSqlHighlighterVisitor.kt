@@ -20,8 +20,9 @@ class PlSqlHighlighterVisitor(context: SensorContext, inputFile: InputFile) : Pl
     private val highlighting: NewHighlighting = context.newHighlighting().onFile(inputFile)
 
     override fun visitToken(token: Token) {
-        if (token.type is PlSqlTokenType) {
-            highlight(token, TypeOfText.STRING)
+        val type = token.type
+        if (type is PlSqlTokenType) {
+            textOf(type)?.let { highlight(token, it) }
         }
         if (token.type is PlSqlKeyword) {
             highlight(token, TypeOfText.KEYWORD)
@@ -35,6 +36,23 @@ class PlSqlHighlighterVisitor(context: SensorContext, inputFile: InputFile) : Pl
         } else {
             highlight(token, TypeOfText.COMMENT)
         }
+    }
+
+    private fun textOf(type: PlSqlTokenType): TypeOfText? = when (type) {
+        PlSqlTokenType.INTEGER_LITERAL,
+        PlSqlTokenType.NUMBER_LITERAL,
+        PlSqlTokenType.DATE_LITERAL,
+        PlSqlTokenType.TIMESTAMP_LITERAL,
+        PlSqlTokenType.TIME_LITERAL -> TypeOfText.CONSTANT
+        PlSqlTokenType.STRING_LITERAL,
+        PlSqlTokenType.MLE_INLINE_SOURCE,
+        PlSqlTokenType.MLE_MODULE_SOURCE,
+        PlSqlTokenType.WRAPPED_SOURCE,
+        PlSqlTokenType.GRAPHQL_DUALITY_SOURCE -> TypeOfText.STRING
+        PlSqlTokenType.CONDITIONAL_BRANCH_BOUNDARY,
+        PlSqlTokenType.CONDITIONAL_DIRECTIVE,
+        PlSqlTokenType.CONDITIONAL_DECIDED_BOUNDARY,
+        PlSqlTokenType.CONDITIONAL_DECIDED_DIRECTIVE -> null
     }
 
     /**

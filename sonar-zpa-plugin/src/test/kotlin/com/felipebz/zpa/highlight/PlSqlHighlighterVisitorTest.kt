@@ -58,8 +58,16 @@ class PlSqlHighlighterVisitorTest {
         assertThat(context.highlightingTypeAt(key, 1, lineOffset(1))).containsExactly(TypeOfText.KEYWORD)
         assertThat(context.highlightingTypeAt(key, 2, lineOffset(3))).containsExactly(TypeOfText.COMMENT)
         assertThat(context.highlightingTypeAt(key, 3, lineOffset(3))).containsExactly(TypeOfText.STRUCTURED_COMMENT)
-        assertThat(context.highlightingTypeAt(key, 6, lineOffset(8))).containsExactly(TypeOfText.STRING)
-        assertThat(context.highlightingTypeAt(key, 7, lineOffset(1))).containsExactly(TypeOfText.KEYWORD)
+        assertThat(context.highlightingTypeAt(key, 6, lineOffset(8))).containsExactly(TypeOfText.CONSTANT)
+        assertThat(context.highlightingTypeAt(key, 7, lineOffset(8))).containsExactly(TypeOfText.CONSTANT)
+        assertThat(context.highlightingTypeAt(key, 8, lineOffset(8))).containsExactly(TypeOfText.CONSTANT)
+        // The keyword belongs to the literal's token.
+        assertThat(context.highlightingTypeAt(key, 9, lineOffset(8))).containsExactly(TypeOfText.CONSTANT)
+        assertThat(context.highlightingTypeAt(key, 9, lineOffset(14))).containsExactly(TypeOfText.CONSTANT)
+        assertThat(context.highlightingTypeAt(key, 10, lineOffset(8))).containsExactly(TypeOfText.CONSTANT)
+        assertThat(context.highlightingTypeAt(key, 10, lineOffset(20))).containsExactly(TypeOfText.CONSTANT)
+        assertThat(context.highlightingTypeAt(key, 11, lineOffset(8))).containsExactly(TypeOfText.STRING)
+        assertThat(context.highlightingTypeAt(key, 12, lineOffset(1))).containsExactly(TypeOfText.KEYWORD)
     }
 
     private fun lineOffset(offset: Int): Int {
