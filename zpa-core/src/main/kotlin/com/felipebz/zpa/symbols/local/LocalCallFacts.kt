@@ -81,6 +81,12 @@ internal sealed interface LocalActualForm {
 
     /** A Forms host variable `:qualifier.name`. */
     class HostVariable(val qualifier: OracleIdentifier, val name: OracleIdentifier) : LocalActualForm
+
+    /** `NEW t(…)`: the constructor of the object type [type], the same call as `t(…)`. */
+    class Constructor(val type: QualifiedName) : LocalActualForm
+
+    /** `JSON(…)` or `NEW JSON(…)`, which builds a value of the type a `json` written in the same file names. */
+    data object JsonConstructor : LocalActualForm
 }
 
 /** One written actual of a call: its notation and its form. */
@@ -161,6 +167,12 @@ internal object LocalCallCollector {
             return LocalActual(label, null, 0, 0, form = LocalActualForm.Concatenation(operands))
         }
         treatType(expression)?.let { return LocalActual(label, null, 0, 0, form = LocalActualForm.Treat(it)) }
+        constructed(expression)?.let { return LocalActual(label, null, 0, 0, form = LocalActualForm.Constructor(it)) }
+        // `NEW json(…)` is parsed as `NEW` and the JSON function, the same call.
+        val constructor = if (expression.type === PlSqlGrammar.NEW_OBJECT_EXPRESSION) expression.lastChild else expression
+        if (constructor.type === SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION && constructor.hasDirectChildren(SingleRowSqlFunctionsGrammar.JSON_CONSTRUCTOR)) {
+            return LocalActual(label, null, 0, 0, form = LocalActualForm.JsonConstructor)
+        }
         if (expression.type === PlSqlGrammar.OBJECT_REFERENCE) return LocalActual(label, null, 0, 0, form = members(expression))
         if (expression.type === PlSqlGrammar.METHOD_CALL) {
             val lists = expression.getChildren(PlSqlGrammar.ARGUMENTS)
@@ -225,6 +237,13 @@ internal object LocalCallCollector {
     private fun nameSegments(expression: AstNode): List<AstNode>? = name(expression)?.let { node ->
         if (node.type === PlSqlGrammar.VARIABLE_NAME) listOf(node.firstChild)
         else listOf(node.firstChild.firstChild) + node.children.drop(1).filter { it.type === PlSqlGrammar.IDENTIFIER_NAME }
+    }
+
+    /** The type of `NEW t(…)`, when `t` is a plain or qualified name followed by one argument list. */
+    private fun constructed(expression: AstNode): QualifiedName? {
+        if (expression.type !== PlSqlGrammar.NEW_OBJECT_EXPRESSION) return null
+        val call = expression.getFirstChildOrNull(PlSqlGrammar.METHOD_CALL)?.takeIf { it.getChildren(PlSqlGrammar.ARGUMENTS).size == 1 } ?: return null
+        return nameSegments(call.firstChild)?.let { segments -> QualifiedName(segments.map(LocalSyntax::identifier)) }
     }
 
     /** The type named in `TREAT(x AS t)`, when it is a plain or qualified name. */

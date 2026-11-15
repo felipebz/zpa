@@ -140,6 +140,88 @@ class CallBindingTest {
         )
     }
 
+    private val shapes = "create type crate as object (n number);\n/\n" +
+        "create type shape_t as object (n number) not final;\n/\n" +
+        "create type circle_t under shape_t (r number);\n/\n" +
+        "create type square_t under shape_t (side number);\n/\n"
+
+    @Test
+    fun anObjectTypeArgumentBindsTheOverloadOfItsTypeOrNearestSupertype() {
+        val project = shapes + "create package pk_draw as\n" +
+            "  procedure tag(o crate, e varchar2);\n  procedure tag(o crate, e number);\n" +
+            "  procedure stamp(o in out nocopy crate, path varchar2, e varchar2, base number default 1);\n" +
+            "  procedure stamp(o in out nocopy crate, path varchar2, e date, base number default 1);\n" +
+            "  procedure fill(e shape_t);\n  procedure fill(e circle_t);\n  procedure fill(e varchar2);\n" +
+            "  procedure trace(e shape_t);\n  procedure trace(e square_t);\n" +
+            "  procedure label(e shape_t, x varchar2);\n  procedure label(e shape_t, x number);\n" +
+            "  procedure pack(e crate);\n  procedure pack(e varchar2);\n  procedure pack(e number);\n" +
+            "end;\n/\n"
+        val user = "create procedure draw_all is\n" +
+            "  c crate; sh shape_t; ci circle_t; u unheard_t;\n" +
+            "begin\n" +
+            "  pk_draw.tag(c, 'y');\n" +
+            "  pk_draw.stamp(c, 'a', 'y');\n" +
+            "  pk_draw.stamp(c, 'a', date '2020-01-01');\n" +
+            "  pk_draw.fill(sh);\n" +
+            "  pk_draw.trace(ci);\n" +
+            "  pk_draw.fill(ci);\n" +
+            "  pk_draw.fill(circle_t(1, 2));\n" +
+            "  pk_draw.label(sh, 'y');\n" +
+            "  pk_draw.pack(new crate(1));\n" +
+            "  pk_draw.fill(u);\n" +
+            "end;\n/\n"
+        assertThat(answers(project, user, fromLine = 4).filter { it.substringAfter(':').startsWith("pk_draw.") }).containsExactly(
+            // The same object type in every candidate is an exact match: the other actual chooses.
+            "4:pk_draw.tag=Project(RESOLVED (o crate, e varchar2) of 2)",
+            "5:pk_draw.stamp=Project(RESOLVED (o crate, path varchar2, e varchar2, base number) of 2)",
+            "6:pk_draw.stamp=Project(RESOLVED (o crate, path varchar2, e date, base number) of 2)",
+            // A supertype value cannot go to a subtype formal, nor a subtype to a sibling's.
+            "7:pk_draw.fill=Project(RESOLVED (e shape_t) of 3)",
+            "8:pk_draw.trace=Project(RESOLVED (e shape_t) of 2)",
+            // Among the formals that take it, the nearest type in the hierarchy.
+            "9:pk_draw.fill=Project(RESOLVED (e circle_t) of 3)",
+            "10:pk_draw.fill=Project(RESOLVED (e circle_t) of 3)",
+            "11:pk_draw.label=Project(RESOLVED (e shape_t, x varchar2) of 2)",
+            // NEW t(…) is the constructor call t(…).
+            "12:pk_draw.pack=Project(RESOLVED (e crate) of 3)",
+            // A type the project does not declare: a synonym or an unknown relation could still connect the names.
+            "13:pk_draw.fill=Project(AMBIGUOUS of 3)"
+        )
+    }
+
+    @Test
+    fun theJsonConstructorBindsTheJsonOverload() {
+        val overloads = "create package pk_doc as\n  procedure put(p json);\n  procedure put(p varchar2);\nend;\n/\n"
+        val json = "3:pk_doc.put=Project(RESOLVED (p json) of 2)"
+        // The predefined JSON type.
+        val builtIn = "create procedure doc_it is\nbegin\n  pk_doc.put(json('{}'));\nend;\n/\n"
+        assertThat(answers(overloads, builtIn, fromLine = 3).filter { it.contains("pk_doc.put=") }).containsExactly(json)
+        // A project type named json, and a synonym json for a project type: JSON(…) and NEW JSON(…) are its constructor
+        // where JSON is not a predefined type, and a `json` formal names that type.
+        val user = "create procedure doc_it is\nbegin\n  pk_doc.put(json('{}'));\n  pk_doc.put(new json('{}'));\nend;\n/\n"
+        val projects = listOf(
+            "create type json as object (body varchar2(4000));\n/\n" + overloads,
+            "create type doc_t as object (body varchar2(4000));\n/\ncreate synonym json for doc_t;\n" + overloads
+        )
+        for (project in projects) {
+            assertThat(answers(project, user, fromLine = 3).filter { it.contains("pk_doc.put=") })
+                .containsExactly(json, "4:pk_doc.put=Project(RESOLVED (p json) of 2)")
+        }
+    }
+
+    @Test
+    fun aLocalOverloadSetOrdersObjectTypesTheSameWay() {
+        val user = "create procedure draw_local is\n" +
+            "  ci circle_t;\n" +
+            "  procedure paint(e shape_t) is begin null; end;\n" +
+            "  procedure paint(e circle_t) is begin null; end;\n" +
+            "begin\n" +
+            "  paint(ci);\n" +
+            "end;\n/\n"
+        assertThat(answers(shapes, user, fromLine = 6).filter { it.startsWith("6:paint=") })
+            .containsExactly("6:paint=Local(RESOLVED PROCEDURE@4:12 of [PROCEDURE@3:12, PROCEDURE@4:12])")
+    }
+
     @Test
     fun aFileThatWasNotAnalyzed() {
         val context = PlSqlVisitorContext(PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(user), null, null)

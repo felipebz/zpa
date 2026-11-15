@@ -118,7 +118,7 @@ internal enum class OverloadRank(val group: Group) {
         }
 
         /** The position of [formal] in what a value of [actual] prefers; null when it is of another group. */
-        private fun tier(actual: OverloadRank, formal: OverloadRank): Int? =
+        fun tier(actual: OverloadRank, formal: OverloadRank): Int? =
             if (actual.group != formal.group) null else preference(actual).indexOfFirst { formal in it }.takeIf { it >= 0 }
 
         /**
@@ -133,20 +133,29 @@ internal enum class OverloadRank(val group: Group) {
          * Oracle cannot tell apart) the call stays undecided: Oracle raises PLS-00307 there, or its choice is not known.
          */
         fun select(actuals: List<OverloadRank?>, candidates: List<List<OverloadRank?>>): Int? {
-            if (candidates.size < 2 || actuals.any { it == null }) return null
-            if (candidates.any { formals -> formals.size != actuals.size || formals.any { it == null } }) return null
-            val same = candidates.indices.filter { c -> candidates[c].indices.all { tier(actuals[it]!!, candidates[c][it]!!) != null } }
-            val winners = same.filter { x -> same.all { y -> y == x || beats(actuals, candidates[x], candidates[y]) } }
+            if (actuals.any { it == null }) return null
+            return selectBy(actuals.size, candidates) { index, formal -> tier(actuals[index]!!, formal) }
+        }
+
+        /**
+         * [select] over any formal keys: each candidate lists, by argument index, a key for the formal that actual binds
+         * to (equal keys for formals Oracle cannot tell apart), and [tier] gives the key's position in the preference of
+         * the actual at that index, best first, or null when it is of another group.
+         */
+        fun <K : Any> selectBy(arguments: Int, candidates: List<List<K?>>, tier: (Int, K) -> Int?): Int? {
+            if (candidates.size < 2) return null
+            if (candidates.any { formals -> formals.size != arguments || formals.any { it == null } }) return null
+            val same = candidates.indices.filter { c -> (0 until arguments).all { tier(it, candidates[c][it]!!) != null } }
+            val winners = same.filter { x -> same.all { y -> y == x || beats(arguments, candidates[x], candidates[y], tier) } }
             return winners.singleOrNull()
         }
 
-        private fun beats(actuals: List<OverloadRank?>, x: List<OverloadRank?>, y: List<OverloadRank?>): Boolean {
+        private fun <K : Any> beats(arguments: Int, x: List<K?>, y: List<K?>, tier: (Int, K) -> Int?): Boolean {
             var differs = false
-            for (index in actuals.indices) {
+            for (index in 0 until arguments) {
                 if (x[index] == y[index]) continue
                 differs = true
-                val actual = actuals[index]!!
-                if (tier(actual, x[index]!!)!! >= tier(actual, y[index]!!)!!) return false
+                if (tier(index, x[index]!!)!! >= tier(index, y[index]!!)!!) return false
             }
             return differs
         }

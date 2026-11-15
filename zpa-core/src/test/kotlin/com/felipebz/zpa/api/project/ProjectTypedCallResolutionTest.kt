@@ -209,16 +209,18 @@ class ProjectTypedCallResolutionTest {
     }
 
     @Test
-    fun objectTypesAreNotToldApartByDeclaredType() {
-        // An instance of a subtype is accepted where its supertype is expected: both overloads receive a ship_sub value.
+    fun aSubtypeValueBindsTheNearestTypeOfItsHierarchy() {
+        // A subtype instance is accepted where its supertype is expected: both overloads receive a ship_sub value, and
+        // Oracle binds the one of its own type.
         val s = prepare(
             "obj.sql" to "CREATE TYPE ship_obj AS OBJECT (id NUMBER) NOT FINAL;",
             "sub.sql" to "CREATE TYPE ship_sub UNDER ship_obj (code VARCHAR2(10));",
             "keep.sql" to "CREATE PACKAGE pk_keep AS\n  PROCEDURE keep(p ship_obj);\n  PROCEDURE keep(p ship_sub);\nEND pk_keep;"
         )
         val c = narrowOne(s, "pk_keep", "keep", valueOf(s, "ship_sub"))
-        assertThat(c.status).isEqualTo(Status.AMBIGUOUS)
-        assertThat(c.evaluations.map { it.bindings.single().unknownReason.get() }).containsOnly(UnknownReason.UNSUPPORTED_PAIR)
+        assertThat(c.status).isEqualTo(Status.RESOLVED)
+        assertThat(selected(c)).isEqualTo("(p ship_sub)")
+        assertThat(c.evaluations.map { it.bindings.single().outcome }).containsOnly(Outcome.COMPATIBLE)
     }
 
     @Test

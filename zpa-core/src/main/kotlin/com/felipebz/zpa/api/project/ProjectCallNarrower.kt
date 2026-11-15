@@ -23,7 +23,9 @@ internal object ProjectCallNarrower {
         val reason: UnknownReason?,
         val rank: OverloadRank? = null,
         val compositeKind: CompositeKind? = null,
-        val declaredType: DeclaredCompositeType? = null
+        val declaredType: DeclaredCompositeType? = null,
+        /** An object type the project declares, the side's own type. */
+        val objectType: ProjectDeclarationId? = null
     )
 
     @JvmSynthetic
@@ -44,27 +46,28 @@ internal object ProjectCallNarrower {
         }
         val shadowed = shadowCheck(snapshot)
         val actuals = types.map { issued(snapshot, actual(it, shadowed)) }
-        val formalRanks = ArrayList<List<OverloadRank?>>()
+        val hierarchy = ObjectTypeHierarchy(snapshot)
+        val formalEvidence = ArrayList<List<Evidence?>>()
         val evaluations = structural.candidates
             .filter { it.applicability == ProjectCallCandidate.Applicability.APPLICABLE }
             .map { candidate ->
                 val declaration = candidate.declaration
                 val owner = (declaration as? ProjectPackageSubprogramView)?.packageOwner
                 val inSpecification = declaration.role == ProjectDeclarationRole.SPECIFICATION
-                val ranks = arrayOfNulls<OverloadRank>(actuals.size)
+                val formals = arrayOfNulls<Evidence>(actuals.size)
                 val undeclared: ((OracleIdentifier) -> Boolean)? = if (owner != null && inSpecification) { name -> !shadowed(owner.name, name) } else null
                 val bindings = candidate.bindings.map { binding ->
                     val actual = actuals[binding.argumentOrdinal - 1]
                     val formal = formal(snapshot, binding.parameter.typeRef, owner, undeclared, metadata, currentSchema, shadowed)
-                    ranks[binding.argumentOrdinal - 1] = formal.rank
-                    compare(actual, formal) { outcome, reason ->
+                    formals[binding.argumentOrdinal - 1] = formal
+                    compare(actual, formal, hierarchy) { outcome, reason ->
                         ProjectBindingCompatibility.of(binding, outcome, actual.family, formal.family, reason)
                     }
                 }
-                formalRanks += ranks.toList()
+                formalEvidence += formals.toList()
                 ProjectCandidateCompatibility.of(candidate, bindings)
             }
-        return ProjectTypedCallResolution.of(structural, evaluations, preferred(actuals, evaluations, formalRanks))
+        return ProjectTypedCallResolution.of(structural, evaluations, preferred(actuals, evaluations, formalEvidence, hierarchy))
     }
 
     /**
@@ -72,9 +75,14 @@ internal object ProjectCallNarrower {
      * PLSQL_IMPLICIT_CONVERSION_BOOL ([bindable]) is out when another needs no such conversion; a single remaining
      * candidate is the call whatever its other bindings. Among several, each must be proven to receive the call (each
      * binding compatible, or depending only on that setting, which never makes its candidate the preferred one), and
-     * [OverloadRank.select] picks.
+     * [select] picks.
      */
-    internal fun preferred(actuals: List<Evidence>, evaluations: List<ProjectCandidateCompatibility>, formalRanks: List<List<OverloadRank?>>): ProjectCallCandidate? {
+    internal fun preferred(
+        actuals: List<Evidence>,
+        evaluations: List<ProjectCandidateCompatibility>,
+        formals: List<List<Evidence?>>,
+        hierarchy: ObjectTypeHierarchy
+    ): ProjectCallCandidate? {
         val retained = evaluations.indices.filter { evaluations[it].outcome == ProjectCandidateCompatibility.Outcome.RETAINED }
         if (retained.size < 2) return null
         val remaining = bindable(retained) { index -> evaluations[index].bindings.any { it.unknownReasonOrNull == UnknownReason.ENVIRONMENT_DEPENDENT } }
@@ -85,8 +93,35 @@ internal object ProjectCallNarrower {
             }
         }
         if (!proven) return null
-        val selected = OverloadRank.select(actuals.map { it.rank }, remaining.map { formalRanks[it] }) ?: return null
+        val selected = select(actuals, remaining.map { formals[it] }, hierarchy) ?: return null
         return evaluations[remaining[selected]].candidate
+    }
+
+    /**
+     * [OverloadRank.select] over the [formals] of each candidate (by argument index), with an actual of an object type
+     * the project declares ranking the formals of that type and its supertypes, nearest first ([hierarchy]): the same
+     * type is an exact match, and does not keep the other actuals from choosing.
+     */
+    internal fun select(actuals: List<Evidence>, formals: List<List<Evidence?>>, hierarchy: ObjectTypeHierarchy?): Int? {
+        val keys = formals.map { candidate ->
+            actuals.indices.map { index ->
+                val actual = actuals[index]
+                val formal = candidate.getOrNull(index)
+                when {
+                    actual.rank != null -> formal?.rank
+                    actual.objectType != null && hierarchy != null -> formal?.objectType
+                    else -> null
+                }
+            }
+        }
+        return OverloadRank.selectBy(actuals.size, keys) { index, key ->
+            val actual = actuals[index]
+            when (key) {
+                is OverloadRank -> actual.rank?.let { OverloadRank.tier(it, key) }
+                is ProjectDeclarationId -> actual.objectType?.let { hierarchy?.distance(it, key) }
+                else -> null
+            }
+        }
     }
 
     /**
@@ -114,7 +149,8 @@ internal object ProjectCallNarrower {
         val shadowed = shadowCheck(snapshot)
         val actuals = argumentTypes.map { issued(snapshot, actual(it, shadowed)) }
         val evidence = formals.map { types -> types.map { formal(snapshot, it, null, { true }, metadata, currentSchema, shadowed) } }
-        val outcomes = evidence.map { types -> actuals.indices.map { compare(actuals[it], types[it]) { outcome, reason -> outcome to reason } } }
+        val hierarchy = ObjectTypeHierarchy(snapshot)
+        val outcomes = evidence.map { types -> actuals.indices.map { compare(actuals[it], types[it], hierarchy) { outcome, reason -> outcome to reason } } }
         val retained = outcomes.indices.filter { candidate -> outcomes[candidate].none { it.first == Outcome.INCOMPATIBLE } }
         if (retained.size == 1) return retained.single()
         if (retained.size < 2) return null
@@ -122,7 +158,7 @@ internal object ProjectCallNarrower {
         if (remaining.size == 1) return remaining.single()
         val proven = remaining.all { candidate -> outcomes[candidate].all { it.first == Outcome.COMPATIBLE || it.second == UnknownReason.ENVIRONMENT_DEPENDENT } }
         if (!proven) return null
-        return OverloadRank.select(actuals.map { it.rank }, remaining.map { candidate -> evidence[candidate].map { it.rank } })?.let(remaining::get)
+        return select(actuals, remaining.map { evidence[it] }, hierarchy)?.let(remaining::get)
     }
 
     /** Whether a package member may shadow a predefined type name, answered once per scope and name. */
@@ -140,7 +176,7 @@ internal object ProjectCallNarrower {
             val name = type.shadowName
             when {
                 family != null && scope != null && name != null && shadowed(scope, name) -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
-                family != null -> Evidence(family, null, type.rank, type.compositeKind, type.declaredType)
+                family != null -> Evidence(family, null, type.rank, type.compositeKind, type.declaredType, type.objectType)
                 type.unclassified -> Evidence(null, UnknownReason.UNCLASSIFIED_TYPE)
                 else -> Evidence(null, UnknownReason.ACTUAL_UNKNOWN)
             }
@@ -148,12 +184,13 @@ internal object ProjectCallNarrower {
     }
 
     /**
-     * [evidence] without its declared type when that type is a declaration of another snapshot: identities of two
-     * snapshots are never equal, so such a type would reject every formal.
+     * [evidence] without its declared or object type when that type is a declaration of another snapshot: identities of
+     * two snapshots are never equal, so such a type would reject every formal.
      */
     private fun issued(snapshot: ProjectSnapshot, evidence: Evidence): Evidence {
-        val type = evidence.declaredType as? DeclaredCompositeType.Project ?: return evidence
-        if (snapshot.occurrenceOf(type.id) != null) return evidence
+        val declared = (evidence.declaredType as? DeclaredCompositeType.Project)?.id
+        val foreign = listOfNotNull(declared, evidence.objectType).any { snapshot.occurrenceOf(it) == null }
+        if (!foreign) return evidence
         return Evidence(evidence.family, evidence.reason, evidence.rank, evidence.compositeKind)
     }
 
@@ -187,7 +224,10 @@ internal object ProjectCallNarrower {
         }
         val rank = builtIn?.let { OverloadRank.of(it.name, description.source.terminalReference.map { ref -> ref.writtenIdentity }.orElse(null)) }
             ?: DatatypeFamilies.externalRank(description)
-        return Evidence(family, null, rank, DatatypeFamilies.compositeKind(description), DatatypeFamilies.declaredCompositeType(description))
+        return Evidence(
+            family, null, rank, DatatypeFamilies.compositeKind(description), DatatypeFamilies.declaredCompositeType(description),
+            DatatypeFamilies.objectType(description)
+        )
     }
 
     /**
@@ -206,9 +246,9 @@ internal object ProjectCallNarrower {
 
     /**
      * One binding's outcome from its two sides: unknown when either side is, else the families' compatibility. Only
-     * INCOMPATIBLE eliminates a candidate.
+     * INCOMPATIBLE eliminates a candidate. Two object types the project declares are compared through [hierarchy].
      */
-    internal inline fun <R> compare(actual: Evidence, formal: Evidence, result: (Outcome, UnknownReason?) -> R): R {
+    internal inline fun <R> compare(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?, result: (Outcome, UnknownReason?) -> R): R {
         val reason = actual.reason ?: formal.reason
         if (reason != null) return result(Outcome.UNKNOWN, reason)
         // The interval family does not tell DAY TO SECOND from YEAR TO MONTH; their exact types do: each rejects the
@@ -216,22 +256,36 @@ internal object ProjectCallNarrower {
         if (actual.family == ProjectDatatypeFamily.INTERVAL && formal.family == ProjectDatatypeFamily.INTERVAL && actual.rank != null && formal.rank != null) {
             return result(if (actual.rank == formal.rank) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
         }
-        // Composites: a formal of a declared record or collection type accepts only a value of that same declared type
-        // (another one with the same fields or element is rejected); a ref cursor and a schema object type reject each
-        // other; a SYS_REFCURSOR formal takes any ref cursor.
         if (actual.family == ProjectDatatypeFamily.COMPOSITE && formal.family == ProjectDatatypeFamily.COMPOSITE) {
-            if (actual.declaredType != null && formal.declaredType != null) {
-                return result(if (actual.declaredType == formal.declaredType) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE, null)
-            }
-            val kinds = setOfNotNull(actual.compositeKind, formal.compositeKind)
-            if (actual.compositeKind != null && formal.compositeKind != null && kinds.size == 2) return result(Outcome.INCOMPATIBLE, null)
-            if (kinds == setOf(CompositeKind.REF_CURSOR) && actual.compositeKind != null && formal.compositeKind != null) return result(Outcome.COMPATIBLE, null)
+            compositeOutcome(actual, formal, hierarchy)?.let { return result(it, null) }
         }
         return when (DatatypeFamilies.compatibility(actual.family, formal.family)) {
             DatatypeCompatibility.COMPATIBLE -> result(Outcome.COMPATIBLE, null)
             DatatypeCompatibility.INCOMPATIBLE -> result(Outcome.INCOMPATIBLE, null)
             DatatypeCompatibility.ENVIRONMENT_DEPENDENT -> result(Outcome.UNKNOWN, UnknownReason.ENVIRONMENT_DEPENDENT)
             DatatypeCompatibility.UNKNOWN -> result(Outcome.UNKNOWN, UnknownReason.UNSUPPORTED_PAIR)
+        }
+    }
+
+    /**
+     * Two composites, when what they are decides it: a value of an object type goes to a formal of that type or of a
+     * supertype, never to another object type; a formal of a declared record or collection type accepts only a value of
+     * that same declared type (another one with the same fields or element is rejected); a ref cursor and a schema object
+     * type reject each other; a SYS_REFCURSOR formal takes any ref cursor. Null when none of these applies.
+     */
+    internal fun compositeOutcome(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?): Outcome? {
+        if (actual.objectType != null && formal.objectType != null && hierarchy != null) {
+            hierarchy.outcome(actual.objectType, formal.objectType)?.let { return it }
+        }
+        if (actual.declaredType != null && formal.declaredType != null) {
+            return if (actual.declaredType == formal.declaredType) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE
+        }
+        val actualKind = actual.compositeKind ?: return null
+        val formalKind = formal.compositeKind ?: return null
+        return when {
+            actualKind != formalKind -> Outcome.INCOMPATIBLE
+            actualKind == CompositeKind.REF_CURSOR -> Outcome.COMPATIBLE
+            else -> null
         }
     }
 

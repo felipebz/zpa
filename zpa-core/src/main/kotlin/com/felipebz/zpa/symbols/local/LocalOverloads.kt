@@ -13,6 +13,7 @@ import com.felipebz.zpa.api.project.ProjectBindingCompatibility.Outcome
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.UnknownReason
 import com.felipebz.zpa.api.project.ProjectCallNarrower
 import com.felipebz.zpa.api.project.ProjectDatatypeFamily
+import com.felipebz.zpa.api.project.ProjectDeclarationId
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.ProjectCallCandidate.Applicability
 
@@ -31,7 +32,9 @@ internal class LocalBindingCompatibility(
     /** Why the outcome is unknown; null otherwise. */
     val reason: UnknownReason?,
     /** The formal's exact type, for Oracle's preference among compatible candidates; null when not known. */
-    val formalRank: OverloadRank? = null
+    val formalRank: OverloadRank? = null,
+    /** The formal's object type, when the project declares it; its supertypes order the candidates. */
+    val formalObjectType: ProjectDeclarationId? = null
 ) {
     override fun toString() = "$argumentOrdinal>$parameterOrdinal $outcome" + (reason?.let { " $it" } ?: "")
 }
@@ -58,7 +61,7 @@ internal class LocalCallCandidate(
 /**
  * A call to a local overload set: every entity bound and narrowed as the project binds and narrows its candidates.
  * Narrowing removes candidates with a binding proven incompatible, and picks among candidates all proven compatible the
- * one Oracle prefers when the exact types decide it ([OverloadRank.select]), outside methods; source order never chooses.
+ * one Oracle prefers when the exact types decide it ([ProjectCallNarrower.select]), outside methods; source order never chooses.
  */
 internal class LocalCallResolution(
     val status: Status,
@@ -163,8 +166,12 @@ internal class LocalOverloads(
             candidate.bindings.all { it.outcome == Outcome.COMPATIBLE || it.reason == UnknownReason.ENVIRONMENT_DEPENDENT }
         }
         if (!proven) return null
-        val formals = remaining.map { candidate -> candidate.bindings.sortedBy { it.argumentOrdinal }.map { it.formalRank } }
-        return OverloadRank.select(actuals.map { it.rank }, formals)?.let { remaining[it].declaration }
+        val formals = remaining.map { candidate ->
+            candidate.bindings.sortedBy { it.argumentOrdinal }.map {
+                ProjectCallNarrower.Evidence(it.formalFamily, it.reason, it.formalRank, objectType = it.formalObjectType)
+            }
+        }
+        return ProjectCallNarrower.select(actuals, formals, walk.objectTypes)?.let { remaining[it].declaration }
     }
 
     private fun candidate(
@@ -184,8 +191,8 @@ internal class LocalOverloads(
         val bindings = if (bound.applicability != Applicability.APPLICABLE) emptyList() else actuals.mapIndexed { index, actual ->
             val parameter = parameters[bound.formalIndices[index]]
             val formal = formal(walk.written(parameter.type))
-            ProjectCallNarrower.compare(actual, formal) { outcome, reason ->
-                LocalBindingCompatibility(index + 1, parameter.ordinal, outcome, actual.family, formal.family, reason, formal.rank)
+            ProjectCallNarrower.compare(actual, formal, walk.objectTypes) { outcome, reason ->
+                LocalBindingCompatibility(index + 1, parameter.ordinal, outcome, actual.family, formal.family, reason, formal.rank, formal.objectType)
             }
         }
         return LocalCallCandidate(

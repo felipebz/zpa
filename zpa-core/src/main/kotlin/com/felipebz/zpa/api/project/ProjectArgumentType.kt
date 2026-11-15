@@ -44,7 +44,9 @@ class ProjectArgumentType private constructor(
     @get:JvmSynthetic internal val rank: OverloadRank? = null,
     /** For a composite, what it is where Oracle's compatibility between composites depends on it; null when not known. */
     @get:JvmSynthetic internal val compositeKind: CompositeKind? = null,
-    @get:JvmSynthetic internal val declaredType: DeclaredCompositeType? = null
+    @get:JvmSynthetic internal val declaredType: DeclaredCompositeType? = null,
+    /** For a value of an object type the project declares, that type: it orders the overloads its supertypes take. */
+    @get:JvmSynthetic internal val objectType: ProjectDeclarationId? = null
 ) {
     enum class Kind {
         /** No usable evidence. */
@@ -151,7 +153,7 @@ class ProjectArgumentType private constructor(
                 ?: return ProjectArgumentType(
                     Kind.DESCRIBED, family, family == null && conclusive, null, null,
                     family?.let { DatatypeFamilies.externalRank(description) }, DatatypeFamilies.compositeKind(description),
-                    family?.let { DatatypeFamilies.declaredCompositeType(description) }
+                    family?.let { DatatypeFamilies.declaredCompositeType(description) }, family?.let { DatatypeFamilies.objectType(description) }
                 )
             // The package that resolved the built-in name: the last retained step's owner, else the request's owner.
             val stepScope = DatatypeFamilies.builtInScope(description, null)

@@ -116,6 +116,9 @@ internal class LocalTypeWalk(
 
     private val metadata = external.metadata
 
+    /** How the object types of the project relate, for the overloads a value of one of them may bind to. */
+    val objectTypes: ObjectTypeHierarchy? by lazy(LazyThreadSafetyMode.NONE) { snapshot?.let(::ObjectTypeHierarchy) }
+
     /** The project as seen from the unit holding [region]: its compilation schema first, and the run's synonyms. */
     fun projectView(region: LocalRegionId): ProjectSnapshot? = snapshot?.preferring(compilationSchema(region), metadata)
 
