@@ -10,7 +10,7 @@ spotless = "8.11.0"
 sonarscanner = "7.5.0.8588"
 
 # libs
-flatlaf = "3.7.2"
+flatlaf = "3.8"
 flr = "1.6.4-SNAPSHOT"
 jackson = "2.22.4"
 jsoup = "1.23.2"
