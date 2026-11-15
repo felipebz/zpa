@@ -1,0 +1,34 @@
+<p>
+A column under an enabled <code>NOT NULL</code> constraint, or part of a primary key, never holds null. An
+<code>IS NULL</code> condition on it is always false, so a <code>WHERE</code> that requires it selects no row, and an
+<code>IS NOT NULL</code> condition on it is always true and filters nothing. Either the condition is useless, or it
+tests a different column than the one intended.
+</p>
+
+<p>
+This rule uses the table and view metadata read from the database, and reports nothing without it. A column is
+reported only when the database guarantees that no row holds null: a <code>NOT NULL</code> constraint that is disabled,
+<code>NOVALIDATE</code> or deferrable does not count, and neither does a <code>CHECK</code> constraint. A column read
+from the side of an outer join that has no matching row is null even when the table does not allow it, so it is never
+reported.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- shipments.tracking_code is declared NOT NULL
+select count(*)
+  into pending
+  from shipments
+ where tracking_code is null;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into pending
+  from shipments
+ where delivered_on is null;
+</pre>

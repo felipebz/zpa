@@ -7,7 +7,9 @@ package com.felipebz.zpa.checks.verifier
 
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlFile
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
+import com.felipebz.zpa.api.project.ProjectExternalContext
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.parser.PlSqlParser
 import com.felipebz.zpa.project.*
@@ -127,6 +129,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
          * issues against the fixture's expectations. The check runs whatever its rule scope. A fixture that does not
          * parse fails.
          */
+        @OptIn(ZpaExperimentalApi::class)
         @JvmStatic
         @JvmOverloads
         fun verify(
@@ -136,6 +139,26 @@ class PlSqlCheckVerifier : PlSqlCheck() {
             conditionalCompilation: ConditionalCompilationSettings = ConditionalCompilationSettings.NONE,
             errorRecovery: Boolean = false,
             prepared: Boolean = true
+        ) = verifyFixture(path, check, metadata, conditionalCompilation, errorRecovery, prepared, ProjectExternalContext.none())
+
+        /**
+         * As [verify] with a prepared project, with [externalContext] supplying the database metadata and the
+         * compilation schema, as an analysis that reads them does.
+         */
+        @ZpaExperimentalApi
+        @JvmStatic
+        fun verifyWithExternalContext(path: String, check: PlSqlCheck, externalContext: ProjectExternalContext) =
+            verifyFixture(path, check, null, ConditionalCompilationSettings.NONE, false, true, externalContext)
+
+        @OptIn(ZpaExperimentalApi::class)
+        private fun verifyFixture(
+            path: String,
+            check: PlSqlCheck,
+            metadata: FormsMetadata?,
+            conditionalCompilation: ConditionalCompilationSettings,
+            errorRecovery: Boolean,
+            prepared: Boolean,
+            externalContext: ProjectExternalContext
         ) {
             val file = File(path)
             val text = file.readText()
@@ -145,7 +168,7 @@ class PlSqlCheckVerifier : PlSqlCheck() {
 
             val fileId = FileId(path)
             val project = if (!prepared) ProjectAnalysisContext.NOT_PREPARED else ProjectAnalysisContext.prepared(
-                ProjectIndexPreparation(ProjectDeclarationExtractor(configuration))
+                ProjectIndexPreparation.withSchemas(ProjectDeclarationExtractor(configuration), externalContext)
                     .prepare(listOf(ProjectSource(fileId) { text }), concurrent = false)
             )
             val scanner = AstScanner(emptyList(), metadata, errorRecovery, StandardCharsets.UTF_8, project, conditionalCompilation)

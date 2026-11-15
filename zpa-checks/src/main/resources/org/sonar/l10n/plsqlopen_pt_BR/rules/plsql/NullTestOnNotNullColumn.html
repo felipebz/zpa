@@ -1,0 +1,33 @@
+<p>
+Uma coluna com uma restrição <code>NOT NULL</code> habilitada, ou que faz parte de uma chave primária, nunca contém
+null. Uma condição <code>IS NULL</code> sobre ela é sempre falsa, então um <code>WHERE</code> que a exige não seleciona
+nenhuma linha, e uma condição <code>IS NOT NULL</code> sobre ela é sempre verdadeira e não filtra nada. Ou a condição é
+inútil, ou ela testa uma coluna diferente da pretendida.
+</p>
+
+<p>
+Esta regra usa os metadados de tabelas e views lidos do banco de dados, e não reporta nada sem eles. Uma coluna só é
+reportada quando o banco garante que nenhuma linha contém null: uma restrição <code>NOT NULL</code> desabilitada,
+<code>NOVALIDATE</code> ou adiável não conta, e uma restrição <code>CHECK</code> também não. Uma coluna lida do lado de
+um outer join que não tem linha correspondente é nula mesmo quando a tabela não permite, então ela nunca é reportada.
+</p>
+
+<!-- section: fix -->
+<h2>Código em desconformidade</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- shipments.tracking_code é declarada NOT NULL
+select count(*)
+  into pending
+  from shipments
+ where tracking_code is null;
+</pre>
+
+<h2>Código correto</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into pending
+  from shipments
+ where delivered_on is null;
+</pre>
