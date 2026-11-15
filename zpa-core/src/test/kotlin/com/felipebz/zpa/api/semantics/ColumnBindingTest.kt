@@ -618,6 +618,69 @@ class ColumnBindingTest {
     }
 
     @Test
+    fun aFunctionNamedWithoutParenthesesInEverySqlValuePositionIsACall() {
+        // Wherever SQL reads a value, Oracle calls a function named without parentheses that no source of the statement
+        // takes: the `VALUES` of a single-table INSERT, both branches of a MERGE, a multi-table INSERT, RETURNING, an
+        // UPDATE, a DELETE, the clauses of a query. A package variable stays a value.
+        val packages = "create package pk_ses as\n  g number;\n  function sid_atual return number;\nend;\n/\n" +
+            "create function fn_seq return number is begin return 1; end;\n/\n"
+        val call: (PlSqlVisitorContext, AstNode) -> String = { context, name -> context.callBinding(name).toString() }
+        val names = setOf("pk_ses.sid_atual", "fn_seq", "pk_ses.g")
+        assertThat(answers(packages + procedure(
+            "insert into log_acesso (nr_sid) values (pk_ses.sid_atual);",
+            "insert into order_line (qty) values (fn_seq);",
+            "insert into order_line (qty) values (pk_ses.g);",
+            "merge into order_line t using order_head s on (t.order_id = s.id) when matched then update set t.qty = pk_ses.sid_atual " +
+                "when not matched then insert (order_id, qty) values (s.id, pk_ses.sid_atual);",
+            "merge into order_line t using order_head s on (t.order_id = s.id) when not matched then insert (order_id, qty) values (s.id, fn_seq);",
+            "merge into order_line t using order_head s on (t.order_id = pk_ses.sid_atual) when matched then update set t.qty = 1 " +
+                "where t.amount = pk_ses.sid_atual delete where t.qty = pk_ses.sid_atual;",
+            "insert all into order_line (qty) values (pk_ses.sid_atual) select 1 from dual;",
+            "insert all when pk_ses.sid_atual > 0 then into order_line (qty) values (1) select 1 from dual;",
+            "insert into order_line (qty) values (1) returning pk_ses.sid_atual into v;",
+            "update order_line set qty = pk_ses.sid_atual where amount = pk_ses.sid_atual;",
+            "update order_line set (qty) = (select pk_ses.sid_atual from dual);",
+            "delete from order_line where qty = pk_ses.sid_atual;",
+            "select count(*) into v from order_line group by qty having count(*) > pk_ses.sid_atual;",
+            "select qty into v from order_line order by pk_ses.sid_atual fetch first 1 rows only;",
+            "select case when pk_ses.sid_atual > 0 then 1 end into v from dual;",
+            "select nvl(pk_ses.sid_atual, 0) into v from dual;"
+        ), answer = call).filter { it.substringBefore('=').substringAfter(':').lowercase() in names }).containsExactly(
+            "15:pk_ses.sid_atual=Project(RESOLVED)",
+            "16:fn_seq=Project(RESOLVED)",
+            "17:pk_ses.g=Unavailable(NOT_A_COVERED_NAME)",
+            "18:pk_ses.sid_atual=Project(RESOLVED)",
+            "18:pk_ses.sid_atual=Project(RESOLVED)",
+            "19:fn_seq=Project(RESOLVED)",
+            "20:pk_ses.sid_atual=Project(RESOLVED)",
+            "20:pk_ses.sid_atual=Project(RESOLVED)",
+            "20:pk_ses.sid_atual=Project(RESOLVED)",
+            "21:pk_ses.sid_atual=Project(RESOLVED)",
+            "22:pk_ses.sid_atual=Project(RESOLVED)",
+            "23:pk_ses.sid_atual=Project(RESOLVED)",
+            "24:pk_ses.sid_atual=Project(RESOLVED)",
+            "24:pk_ses.sid_atual=Project(RESOLVED)",
+            "25:pk_ses.sid_atual=Project(RESOLVED)",
+            "26:pk_ses.sid_atual=Project(RESOLVED)",
+            "27:pk_ses.sid_atual=Project(RESOLVED)",
+            "28:pk_ses.sid_atual=Project(RESOLVED)",
+            "29:pk_ses.sid_atual=Project(RESOLVED)",
+            "30:pk_ses.sid_atual=Project(RESOLVED)"
+        )
+        // An INSERT text sees no PL/SQL declaration, and calls a function of a package or of the schema.
+        assertThat(dynamicAnswers(packages + procedure(
+            "execute immediate 'insert into log_acesso (nr_sid) values (pk_ses.sid_atual)';",
+            "execute immediate 'insert into order_line (qty) values (fn_seq)';",
+            "execute immediate 'merge into order_line t using order_head s on (t.order_id = s.id) " +
+                "when not matched then insert (order_id, qty) values (s.id, pk_ses.sid_atual)';"
+        ), call).map { it.substringAfter(':') }.filter { it.substringBefore('=').lowercase() in names }).containsExactly(
+            "pk_ses.sid_atual=Project(RESOLVED)",
+            "fn_seq=Project(RESOLVED)",
+            "pk_ses.sid_atual=Project(RESOLVED)"
+        )
+    }
+
+    @Test
     fun aMemberAfterAnElementOrACallResultIsNotAColumn() {
         // `campo(1).qty` and `f_x(1).qty` are a field of the element or of the result: Oracle never reads a column there,
         // and nameBinding agrees. The leading name keeps its answer.

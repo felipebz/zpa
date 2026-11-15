@@ -145,7 +145,8 @@ internal class LocalForwardCalls(
             Ctx.VALUE -> if (localCallee(reference) != null || reference.segments.isNotEmpty() &&
                 LocalReferenceOutcomes.isAbsent(outcomes.first(reference)) && isProjectFunction(target(reference), reference.region)
             ) ProjectCallKind.FUNCTION else null
-            Ctx.SQL_VALUE -> if (sqlFunctionWithoutParentheses(reference)) ProjectCallKind.FUNCTION else null
+            // Every SQL value position, the `VALUES` of a single-table `INSERT` included.
+            Ctx.SQL_VALUE, Ctx.INSERT_VALUE -> if (sqlFunctionWithoutParentheses(reference)) ProjectCallKind.FUNCTION else null
             else -> null
         }
     }
@@ -247,7 +248,7 @@ internal class LocalForwardCalls(
         val first = outcomes.first(reference)
         val call = callsByPosition[reference.range.startLine to reference.range.startColumn]
         val (outcome, viaSpecification) =
-            if (reference.lastSegmentContext == Ctx.SQL_CALL || reference.lastSegmentContext == Ctx.SQL_VALUE) sqlDecision(reference, first, call)
+            if (reference.lastSegmentContext in SQL_CONTEXTS) sqlDecision(reference, first, call)
             else plsqlDecision(reference, first, call)
         val target = (if (viaSpecification) memberTarget(reference) else null) ?: target(reference)
         val actuals = call?.actuals?.map { LocalActualEvidence(it, evidence(it, reference.region, reference.lastSegmentContext == Ctx.SQL_CALL)) }.orEmpty()
@@ -546,6 +547,9 @@ internal class LocalForwardCalls(
     private fun builtIn(typeName: String) = LocalTypeEvidence(ProjectArgumentType.builtIn(typeName), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
 
     private companion object {
+        /** The positions of a call written in SQL, with arguments or without parentheses. */
+        val SQL_CONTEXTS = setOf(Ctx.SQL_CALL, Ctx.SQL_VALUE, Ctx.INSERT_VALUE)
+
         /** The type of each built-in. */
         val BUILT_IN_VALUES = mapOf(
             "SYSDATE" to "DATE", "CURRENT_DATE" to "DATE", "SYSTIMESTAMP" to "TIMESTAMP WITH TIME ZONE",
