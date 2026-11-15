@@ -95,10 +95,11 @@ class PlSqlAstScanner(private val context: SensorContext,
         val inputFile = plSqlFile.inputFile
         val highlighter = PlSqlHighlighterVisitor(context, inputFile)
         val cpd = CpdVisitor(context, inputFile)
+        val resolutions = IssueResolutionVisitor(context, inputFile)
         val result = try {
             astScanner.scanFile(
                 plSqlFile,
-                listOf(ObjectLocationVisitor(plSqlFile, mappedObjects), highlighter, cpd),
+                listOf(ObjectLocationVisitor(plSqlFile, mappedObjects), highlighter, cpd, resolutions),
                 FileId(inputFile.uri().toString())
             )
         } catch (e: Exception) {
@@ -112,6 +113,7 @@ class PlSqlAstScanner(private val context: SensorContext,
             highlighter.save()
             cpd.save()
             saveIssues(inputFile, result.issues)
+            resolutions.save()
 
             val symbolSaver = SonarQubeSymbolTable(context, inputFile)
             symbolSaver.save(result.highlightingPairs)
@@ -137,9 +139,10 @@ class PlSqlAstScanner(private val context: SensorContext,
     private fun scanTestFile(plSqlFile: SonarQubePlSqlFile) {
         val inputFile = plSqlFile.inputFile
         val highlighter = PlSqlHighlighterVisitor(context, inputFile)
+        val resolutions = IssueResolutionVisitor(context, inputFile)
         val result = astScanner.scanFile(
             plSqlFile,
-            listOf(ObjectLocationVisitor(plSqlFile, mappedObjects), highlighter),
+            listOf(ObjectLocationVisitor(plSqlFile, mappedObjects), highlighter, resolutions),
             FileId(inputFile.uri().toString())
         )
 
@@ -148,6 +151,7 @@ class PlSqlAstScanner(private val context: SensorContext,
         lock.withLock { // needed because SonarQube 7.6 save this data in a non thread-safe way
             highlighter.save()
             saveIssues(inputFile, result.issues)
+            resolutions.save()
 
             val symbolTable = SonarQubeSymbolTable(context, inputFile)
             symbolTable.save(result.highlightingPairs)
