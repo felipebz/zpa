@@ -92,7 +92,7 @@ class ValueCategoryReceiverTest {
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
                 for (assignment in node.getDescendants(PlSqlGrammar.ASSIGNMENT_STATEMENT)) {
-                    val value = assignment.children[2].let { if (it.type == PlSqlGrammar.EXPRESSION || it.firstChild?.type == PlSqlGrammar.OBJECT_REFERENCE) it.firstChild else it }
+                    val value = assignment.children[2].let { if (it.type == PlSqlGrammar.EXPRESSION || it.firstChild.type == PlSqlGrammar.OBJECT_REFERENCE) it.firstChild else it }
                     if (value.tokens.first().originalValue == "x") continue
                     rows += "${assignment.token.line}:${value.tokens.joinToString("") { it.originalValue }}=${this.context.valueCategory(value)}"
                     if (value.type == PlSqlGrammar.OBJECT_REFERENCE) {

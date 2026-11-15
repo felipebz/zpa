@@ -13,10 +13,12 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlVisitorContext
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
-import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import com.felipebz.zpa.metadata.FormsMetadata
 import com.felipebz.zpa.parser.PlSqlParser
-import com.felipebz.zpa.project.*
+import com.felipebz.zpa.project.FileId
+import com.felipebz.zpa.project.ProjectAnalysisContext
+import com.felipebz.zpa.project.ProjectIndexPreparation
+import com.felipebz.zpa.project.ProjectSource
 import com.felipebz.zpa.squid.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -57,7 +59,7 @@ class FormsHostVariableTest {
 
     /** `line:host variable=category` for each host variable `:qualifier.name` of [text]. */
     private fun categories(text: String, forms: FormsMetadata?) = analyze(text, forms) { root ->
-        root.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).filter { it.firstChild.firstChild?.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE }
+        root.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).filter { it.firstChild.firstChild.type === PlSqlGrammar.HOST_AND_INDICATOR_VARIABLE }
             .map { "${it.token.line}:${text(it)}=${valueCategory(it)}" }
     }
 

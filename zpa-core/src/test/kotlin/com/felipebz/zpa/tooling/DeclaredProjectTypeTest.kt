@@ -51,7 +51,7 @@ class DeclaredProjectTypeTest {
         val (result, _) = analyze()
         fun find(node: ProjectOverviewNode): ProjectOverviewNode? =
             if (node.label.startsWith("Variables typed by project types")) node else node.children.firstNotNullOfOrNull(::find)
-        assertThat(find(result.projectOverview)!!.children.map { "${it.sourceRange!!.startLine}:${it.sourceRange!!.startColumn} ${it.label}" })
+        assertThat(find(result.projectOverview)!!.children.map { "${it.sourceRange!!.startLine}:${it.sourceRange.startColumn} ${it.label}" })
             .containsExactlyInAnyOrder(
                 "1:16 function f: pk.r (PACKAGE_TYPE)",
                 "1:18 parameter o: t (STANDALONE_TYPE)",

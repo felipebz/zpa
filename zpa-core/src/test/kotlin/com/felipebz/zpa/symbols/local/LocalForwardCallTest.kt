@@ -141,7 +141,7 @@ class LocalForwardCallTest {
         assertThat(call.actuals.last().actual.label!!.lookupName).isEqualTo("P")
         assertThat(call.typed!!.structural.arguments.arguments.map { it.isNamed }.last()).isTrue()
         // No such overload: structurally nothing applies, whatever the evidence.
-        assertThat(call.typed!!.status).isNotEqualTo(ProjectTypedCallResolution.Status.RESOLVED)
+        assertThat(call.typed.status).isNotEqualTo(ProjectTypedCallResolution.Status.RESOLVED)
     }
 
     /** The calls to `pkg.processar` of a comparison source, the package prepared from that same source. */
@@ -200,7 +200,7 @@ class LocalForwardCallTest {
             val text = File("src/test/resources/local-semantic/sources/$name.sql").readText()
             val snapshot = ProjectSnapshots.prepare(listOf(ProjectSourceInput.ofText("$name.sql", text)), false)
             return analyze(text, snapshot, "$name.sql").calls.filter { it.outcome == LocalCallOutcome.PROJECT && it.target.segments.size > 1 }
-                .map { call -> "${call.target} -> ${call.typed!!.status}" + call.typed!!.selected.map { " " + formal(it) }.orElse("") }
+                .map { call -> "${call.target} -> ${call.typed!!.status}" + call.typed.selected.map { " " + formal(it) }.orElse("") }
         }
         // Package members called from a standalone procedure: the members Oracle ran.
         assertThat(projectCalls("local_and_package_subprograms").map { it.substringBefore(" -> ") + " -> " + it.substringAfter(" -> ").substringBefore(' ') })

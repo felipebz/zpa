@@ -59,7 +59,7 @@ class LocalPassFailuresTest {
         val bindings = ArrayList<NameBinding>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
-                bindings += context.nameBinding(node.getFirstDescendant(PlSqlGrammar.ASSIGNMENT_STATEMENT)!!.firstChild)
+                bindings += context.nameBinding(node.getFirstDescendant(PlSqlGrammar.ASSIGNMENT_STATEMENT).firstChild)
             }
         }
         val scanner = AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, ProjectAnalysisContext.NOT_PREPARED)

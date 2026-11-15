@@ -23,7 +23,7 @@ class TreatAsExpressionTest : RuleTest() {
     }
 
     private fun typeOf(text: String): AstNode {
-        val treat = p.parse(text).getFirstDescendant(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)!!
+        val treat = p.parse(text).getFirstDescendant(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)
         val children = treat.children
         val type = children[children.indexOfFirst { it.tokenValue.equals("AS", ignoreCase = true) } + 1]
         assertThatValue(type.type).isEqualTo(PlSqlGrammar.DATATYPE)
@@ -32,7 +32,7 @@ class TreatAsExpressionTest : RuleTest() {
 
     private fun assertType(text: String, expected: AstNodeType) {
         assertThatValue(typeOf(text).type).describedAs(text).isEqualTo(expected)
-        val children = p.parse(text).getFirstDescendant(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)!!.children
+        val children = p.parse(text).getFirstDescendant(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION).children
         val afterAs = children.drop(children.indexOfFirst { it.tokenValue.equals("AS", ignoreCase = true) } + 1).map { it.type }
         assertThatValue(afterAs).describedAs(text).doesNotContain(PlSqlGrammar.OBJECT_REFERENCE, PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)
     }

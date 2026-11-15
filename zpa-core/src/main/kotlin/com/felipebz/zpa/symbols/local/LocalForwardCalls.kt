@@ -425,7 +425,7 @@ internal class LocalForwardCalls(
         val decided = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
         val local = decided is LocalResolution.SqlColumnOrLocal && reference.segments.isEmpty() &&
             (noColumn || reference.sql?.excludesColumn(reference.name) == true)
-        return if (local) LocalResolution.Bound((decided as LocalResolution.SqlColumnOrLocal).declaration) else decided
+        return if (local) LocalResolution.Bound(decided.declaration) else decided
     }
 
     /** Evidence of a name or call whose first segment no local declaration takes. */

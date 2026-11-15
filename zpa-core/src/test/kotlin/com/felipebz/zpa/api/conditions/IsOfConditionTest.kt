@@ -21,7 +21,7 @@ class IsOfConditionTest : RuleTest() {
     }
 
     private fun typesOf(text: String): List<com.felipebz.flr.api.AstNodeType> {
-        val condition = p.parse(text).getFirstDescendant(ConditionsGrammar.IS_OF_CONDITION)!!
+        val condition = p.parse(text).getFirstDescendant(ConditionsGrammar.IS_OF_CONDITION)
         val children = condition.children
         val inside = children.drop(children.indexOfFirst { it.tokenValue == "(" } + 1).map { it.type }
         assertThatValue(inside).doesNotContain(PlSqlGrammar.OBJECT_REFERENCE, PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION)

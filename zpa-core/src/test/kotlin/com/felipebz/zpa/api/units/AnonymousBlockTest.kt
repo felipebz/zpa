@@ -50,7 +50,7 @@ class AnonymousBlockTest : RuleTest() {
         assertThat(p).matches(block)
         val tree = p.parse(block)
         for (node in tree.getDescendants(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)) {
-            assertThatValue(node.getFirstChild(PlSqlGrammar.DATATYPE)?.firstChild?.type).isEqualTo(PlSqlGrammar.CUSTOM_DATATYPE)
+            assertThatValue(node.getFirstChild(PlSqlGrammar.DATATYPE).firstChild.type).isEqualTo(PlSqlGrammar.CUSTOM_DATATYPE)
         }
         assertThatValue(tree.getDescendants(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)).hasSize(2)
         val isOf = tree.getDescendants(ConditionsGrammar.IS_OF_CONDITION)

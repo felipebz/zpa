@@ -758,14 +758,14 @@ class UsageEvidenceTest {
     @Test
     fun noEvidenceWithoutTheLocalAnalysisOrForAnotherNode() {
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse("declare\n  v number;\nbegin\n  null;\nend;\n/\n")
-        val declaration = root.getFirstDescendant(PlSqlGrammar.VARIABLE_DECLARATION)!!
+        val declaration = root.getFirstDescendant(PlSqlGrammar.VARIABLE_DECLARATION)
         val context = PlSqlVisitorContext(root, Source("u.sql", ""), null)
         assertThat(context.usageEvidence(declaration)).isEqualTo(UsageEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED))
 
         val rows = ArrayList<UsageEvidence>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
-                rows += this.context.usageEvidence(node.getFirstDescendant(PlSqlGrammar.STATEMENTS_SECTION)!!)
+                rows += this.context.usageEvidence(node.getFirstDescendant(PlSqlGrammar.STATEMENTS_SECTION))
             }
         }
         val project = ProjectAnalysisContext.NOT_PREPARED

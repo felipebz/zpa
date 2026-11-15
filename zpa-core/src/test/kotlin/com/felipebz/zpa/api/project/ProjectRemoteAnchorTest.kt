@@ -118,7 +118,7 @@ class ProjectRemoteAnchorTest {
         val s = prepare("s.sql" to "CREATE PACKAGE p AS PROCEDURE q(i t.c@a%TYPE); PROCEDURE q(i t.c@b%TYPE); PROCEDURE q(i t.c%TYPE); END p;")
         val overloads = s.findPackageSubprograms(n("p"), ProjectIdentifier.fromSource("q")).declarations
         assertThat(overloads).hasSize(3)
-        assertThat(overloads.map { (it as ProjectPackageSubprogramView).parameters.single().typeRef.link.map(Any::toString).orElse("") })
+        assertThat(overloads.map { it.parameters.single().typeRef.link.map(Any::toString).orElse("") })
             .containsExactly("a", "b", "")
     }
 }

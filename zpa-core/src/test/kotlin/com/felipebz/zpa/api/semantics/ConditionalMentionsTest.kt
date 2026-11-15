@@ -175,7 +175,7 @@ class ConditionalMentionsTest {
             var result: Any? = null
             walk(text.replace("CONDITIONAL", conditional), object : PlSqlCheck() {
                 override fun leaveFile(node: AstNode) {
-                    val binding = context.exceptionBinding(node.getFirstDescendant(PlSqlGrammar.RAISE_STATEMENT)!!.getFirstChild(PlSqlGrammar.VARIABLE_NAME))
+                    val binding = context.exceptionBinding(node.getFirstDescendant(PlSqlGrammar.RAISE_STATEMENT).getFirstChild(PlSqlGrammar.VARIABLE_NAME))
                     result = (binding as? ExceptionBinding.Declared)?.exception?.errorCode ?: binding
                 }
             })

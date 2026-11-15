@@ -102,7 +102,7 @@ class CreateTypeBodyTest : RuleTest() {
             "end;"
         assertThat(p).matches(body)
         val types = p.parse(body).getDescendants(SingleRowSqlFunctionsGrammar.TREAT_AS_EXPRESSION)
-            .map { it.getFirstChild(PlSqlGrammar.DATATYPE)?.firstChild?.type }
+            .map { it.getFirstChild(PlSqlGrammar.DATATYPE).firstChild.type }
         assertThatValue(types).containsExactly(PlSqlGrammar.CUSTOM_DATATYPE, PlSqlGrammar.CUSTOM_DATATYPE)
     }
 
