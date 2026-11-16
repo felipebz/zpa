@@ -16,7 +16,7 @@ DECLARE
   my_exception EXCEPTION;
 BEGIN
   ...
-  RAISE my_exception; -- this will cause an "user-defined exception"
+  RAISE my_exception; -- this will cause a "user-defined exception"
 END;
 </pre>
 
@@ -35,7 +35,7 @@ END;
 </pre>
 
 <p>
-This check will also trigger a violation if the exception is handled by a OTHERS handler and it has a reference to SQLERRM.
+This check will also trigger a violation if the exception is handled by an OTHERS handler and it has a reference to SQLERRM.
 In this case, the SQLERRM will return "User-defined exception", which is not very useful.
 </p>
 

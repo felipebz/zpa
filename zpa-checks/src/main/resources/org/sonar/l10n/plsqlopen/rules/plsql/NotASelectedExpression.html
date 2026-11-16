@@ -1,5 +1,5 @@
 <p>
-In a SELECT DISTINCT with an ORDER BY clause, if you specify a value in the ORDER BY that does not exists 
+In a SELECT DISTINCT with an ORDER BY clause, if you specify a value in the ORDER BY that does not exist 
 in the SELECT clause, Oracle will raise the exception <code>ORA-01791: not a SELECTed expression</code>. 
 </p>
 
@@ -12,7 +12,7 @@ SELECT DISTINCT item.name
 </pre>
 
 <p>
-The <code>item.id</code> column is not in the SELECT clause, so Oracle will raise an ORA-01791. The corrected version can be: 
+The <code>item.group_id</code> column is not in the SELECT clause, so Oracle will raise an ORA-01791. The corrected version can be:
 </p>
 
 <pre>

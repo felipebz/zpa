@@ -2,7 +2,7 @@ begin
   select name
     into var
     from user
-   where rownum <= 1 -- Noncompliant {{Move this ROWNUM comparation to a more external level to guarantee the ordering.}}
+   where rownum <= 1 -- Noncompliant {{Move this ROWNUM comparison to a more external level to guarantee the ordering.}}
    order by date;
    
   select name

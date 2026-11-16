@@ -2,7 +2,7 @@ declare
   ex exception;
   ex_handled exception;
 begin
-  raise ex; -- Noncompliant {{There is no exception handler for "EX" here. This will cause an "user-defined exception" error.}}
+  raise ex; -- Noncompliant {{There is no exception handler for "EX" here. This will cause a "user-defined exception" error.}}
   
   raise ex_handled; -- ok
   raise ex_unknown; -- ok, we don't have any information about the excepton
@@ -93,7 +93,7 @@ declare
     declare
       e exception;
     begin
-      raise shadowed.e; -- Noncompliant {{There is no exception handler for "SHADOWED.E" here. This will cause an "user-defined exception" error.}}
+      raise shadowed.e; -- Noncompliant {{There is no exception handler for "SHADOWED.E" here. This will cause a "user-defined exception" error.}}
     exception
       when e then
         null;

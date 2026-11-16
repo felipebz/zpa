@@ -1,6 +1,6 @@
 select distinct emp.name
   from emp
- order by emp.id; -- Noncompliant {{This value does not exists in the SELECT clause. Fix this expression or add this value in the SELECT.}}
+ order by emp.id; -- Noncompliant {{This value does not exist in the SELECT clause. Fix this expression or add this value in the SELECT.}}
 --        ^^^^^^
 
 select distinct substr(emp.name, 0, 10) emp_name

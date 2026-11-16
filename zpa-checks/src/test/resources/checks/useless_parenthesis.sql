@@ -1,5 +1,5 @@
 begin
-  var := ((x = 1)); -- Noncompliant {{Remove those useless parenthesis.}}
+  var := ((x = 1)); -- Noncompliant {{Remove these useless parentheses.}}
 --        ^^^^^^^
   
   -- valid
