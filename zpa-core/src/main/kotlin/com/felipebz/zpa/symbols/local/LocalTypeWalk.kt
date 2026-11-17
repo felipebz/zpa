@@ -755,7 +755,9 @@ internal class LocalTypeWalk(
     fun relationColumn(description: ProjectExternalTypeDescription?, column: OracleIdentifier): Pair<Boolean?, ProjectExternalColumn?> {
         val relation = description?.takeIf { it.status == ProjectExternalTypeDescription.Status.RESOLVED }?.lookup?.orElse(null)?.relation?.orElse(null)
             ?: return null to null
-        val lookup = metadata.findColumn(relation.schema, relation.name, ProjectIdentifier.wrap(column))
+        val objects = snapshot?.takeIf { prepared }?.objects(metadata)
+        val lookup = objects?.findColumn(relation.schema, relation.name, ProjectIdentifier.wrap(column))
+            ?: metadata.findColumn(relation.schema, relation.name, ProjectIdentifier.wrap(column))
         return when (lookup.status) {
             ProjectExternalLookup.Status.FOUND -> true to lookup.column.orElse(null)
             ProjectExternalLookup.Status.COLUMN_NOT_FOUND -> false to null

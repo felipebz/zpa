@@ -45,7 +45,7 @@ private class Composition(
 ) {
     private val index = snapshot.projectIndex
     private val metadata = objects.metadata
-    private val available = metadata.origin.isPresent
+    private val available = objects.available
 
     /** Holder of the start reference, located once: the search scans the retained references of its file. */
     private val startHolder = startReference?.let { ReferenceHolders.find(index, it) }
@@ -374,10 +374,10 @@ private class Composition(
     private fun qualified(schema: ProjectIdentifier, name: ProjectIdentifier) = ProjectQualifiedName.ofIdentifiers(listOf(schema, name))
 
     private fun lookup(schema: ProjectIdentifier, name: ProjectIdentifier, column: ProjectIdentifier?): ProjectExternalLookup =
-        if (column == null) metadata.findRelation(schema, name) else metadata.findColumn(schema, name, column)
+        if (column == null) objects.findRelation(schema, name) else objects.findColumn(schema, name, column)
 
     private fun notCovered(schema: ProjectIdentifier, name: ProjectIdentifier, column: ProjectIdentifier?) =
-        ProjectExternalLookup.of(ProjectExternalLookup.Status.NOT_COVERED, schema, name, column, null, null, metadata.origin.get())
+        ProjectExternalLookup.of(ProjectExternalLookup.Status.NOT_COVERED, schema, name, column, null, null, objects.origin)
 
     /**
      * A definitive answer (`RESOLVED`, `NOT_EXTERNAL`, `CONFLICT`) that rests on a conditionally compiled declaration
@@ -433,8 +433,8 @@ private class Composition(
         val segments = name.segments
         if (segments.size < 2) return emptyList()
         val found = ArrayList<ProjectExternalLookup>()
-        if (currentSchema != null) found += metadata.findRelation(currentSchema, segments[0])
-        if (segments.size >= 3) found += metadata.findRelation(segments[0], segments[1])
+        if (currentSchema != null) found += objects.findRelation(currentSchema, segments[0])
+        if (segments.size >= 3) found += objects.findRelation(segments[0], segments[1])
         return found.filter { it.status == ProjectExternalLookup.Status.FOUND }
     }
 
@@ -476,8 +476,8 @@ private class Composition(
 
     private fun lookup(reading: Reading): ProjectExternalLookup {
         val schema = reading.schema!!
-        return if (reading.column == null) metadata.findRelation(schema, reading.relation)
-        else metadata.findColumn(schema, reading.relation, reading.column)
+        return if (reading.column == null) objects.findRelation(schema, reading.relation)
+        else objects.findColumn(schema, reading.relation, reading.column)
     }
 
     /**

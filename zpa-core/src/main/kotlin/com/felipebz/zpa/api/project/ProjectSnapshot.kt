@@ -63,7 +63,10 @@ class ProjectSnapshot private constructor(
         return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(objects, schema), jsonTypeName)
     }
 
-    private fun objects(metadata: ProjectExternalMetadata) = SchemaObjects(metadata, preparationResult.index.synonymsByOwnerAndName)
+    /** The schema objects, synonyms and relations of [metadata] and of the project's sources ([SchemaObjects]). */
+    @JvmSynthetic
+    internal fun objects(metadata: ProjectExternalMetadata) =
+        SchemaObjects(metadata, preparationResult.index.synonymsByOwnerAndName, preparationResult.index.sourceRelations.byName)
 
     @JvmSynthetic
     internal fun forDatabaseVersion(version: DatabaseVersion?): ProjectSnapshot {

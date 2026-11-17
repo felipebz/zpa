@@ -54,5 +54,9 @@ class ProjectExternalColumn private constructor(
             require(position == null || position >= 1) { "The column position must be at least 1: $position" }
             return ProjectExternalColumn(dictionaryIdentifier(dictionaryName, "column"), position, datatype, nullable)
         }
+
+        @JvmSynthetic
+        internal fun fromSource(name: ProjectIdentifier, position: Int?, datatype: ProjectExternalDatatype?, nullable: Boolean?) =
+            ProjectExternalColumn(name, position, datatype, nullable)
     }
 }

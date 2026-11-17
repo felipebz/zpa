@@ -45,7 +45,8 @@ internal class ProjectFileExtraction(
     omittedStandaloneCallables: Set<QualifiedName>,
     val alteredTypes: AlteredTypes = AlteredTypes.NONE,
     val packageBodies: List<PackageBodyMemberNames> = emptyList(),
-    val synonyms: List<SourceSynonym> = emptyList()
+    val synonyms: List<SourceSynonym> = emptyList(),
+    val tables: SourceTables = SourceTables.EMPTY
 ) {
     val omittedStandaloneCallables: Set<QualifiedName> = Collections.unmodifiableSet(HashSet(omittedStandaloneCallables))
 }

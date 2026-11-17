@@ -57,7 +57,7 @@ class ProjectIndexPreparation private constructor(
                     ?: ProjectFileExtraction(extractor.extract(source.fileId, source.contents()), emptySet())
                 builder.add(
                     source.fileId, extraction.declarations, extraction.omittedStandaloneCallables, extraction.alteredTypes, extraction.packageBodies,
-                    extraction.synonyms
+                    extraction.synonyms, extraction.tables
                 )
             } catch (e: Exception) {
                 // Pass 2 remains independent, while the result records that this file did

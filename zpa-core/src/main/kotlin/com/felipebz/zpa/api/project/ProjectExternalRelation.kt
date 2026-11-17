@@ -92,6 +92,11 @@ class ProjectExternalRelation private constructor(
             columns: List<ProjectExternalColumn>
         ): ProjectExternalRelation = create(dictionarySchema, dictionaryName, columnsComplete, columns, rowType, view = true)
 
+        /** A table created in a project source; the names are as the source writes them, read as Oracle reads them. */
+        @JvmSynthetic
+        internal fun fromSource(schema: ProjectIdentifier, name: ProjectIdentifier, columnsComplete: Boolean, columns: List<ProjectExternalColumn>) =
+            ProjectExternalRelation(schema, name, columnsComplete, columns, null, false)
+
         private fun create(
             schema: String,
             name: String,

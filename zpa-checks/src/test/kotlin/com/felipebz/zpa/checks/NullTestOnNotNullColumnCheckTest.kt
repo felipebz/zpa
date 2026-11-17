@@ -59,4 +59,12 @@ class NullTestOnNotNullColumnCheckTest : BaseCheckTest() {
         )
     }
 
+    @Test
+    fun theTablesCreatedInTheSourcesWithoutMetadata() {
+        PlSqlCheckVerifier.verifyWithExternalContext(
+            getPath("null_test_on_not_null_column_source_tables.sql"), NullTestOnNotNullColumnCheck(),
+            ProjectExternalContext.of(ProjectExternalMetadata.none(), ProjectIdentifier.fromSource("APP"))
+        )
+    }
+
 }

@@ -399,6 +399,47 @@ class CallBindingTest {
         )).containsExactly(put("number"), put("varchar2"), put("clob"), put("clob"))
     }
 
+    private val shipments = "create table shipment (\n  id number(10) primary key,\n  label varchar2(30) not null,\n  sent date,\n  weight number(8, 2)\n);\n" +
+        "create package pk_ship as\n  procedure put(e varchar2);\n  procedure put(e number);\n  procedure put(e date);\n" +
+        "  function f(e varchar2) return number;\n  function f(e number) return number;\n  function f(e date) return number;\nend;\n/\n"
+
+    private val shipmentCalls = "create procedure ship_it is\n  r shipment%rowtype;\n  w shipment.weight%type;\n  n number;\nbegin\n" +
+        "  pk_ship.put(r.sent);\n  pk_ship.put(w);\n  select pk_ship.f(label) into n from shipment where id = 1;\nend;\n/\n"
+
+    private fun shipped(project: String, metadata: ProjectExternalMetadata = ProjectExternalMetadata.none()) =
+        answers(project, shipmentCalls, fromLine = 6, metadata = metadata).filter { it.contains("pk_ship.") }.map { it.substringAfter('=') }
+
+    @Test
+    fun theColumnsOfATableCreatedInTheSourcesTypeTheActuals() {
+        // A field of the table's %ROWTYPE, a column's %TYPE, and a column read in SQL.
+        assertThat(shipped(shipments)).containsExactly(
+            "Project(RESOLVED (e date) of 3)", "Project(RESOLVED (e number) of 3)", "Project(RESOLVED (e varchar2) of 3)"
+        )
+    }
+
+    @Test
+    fun theMetadataRelationComesBeforeTheTableOfTheSources() {
+        // The database holds the table as altered after its script: the metadata's columns are the ones read.
+        val metadata = ProjectExternalMetadata.builder("fixture").completeSchema("APP").completePublicSynonyms()
+            .relation(ProjectExternalRelation.of("APP", "SHIPMENT", true, listOf(
+                ProjectExternalColumn.of("ID", 1, ProjectExternalDatatype.of("NUMBER", null, null, null, 10, 0), false),
+                ProjectExternalColumn.of("LABEL", 2, ProjectExternalDatatype.of("NUMBER", null, null, null, null, null), false),
+                ProjectExternalColumn.of("SENT", 3, ProjectExternalDatatype.of("VARCHAR2", null, 20, null, null, null), true),
+                ProjectExternalColumn.of("WEIGHT", 4, ProjectExternalDatatype.of("DATE", null, null, null, null, null), true)
+            )))
+            .build()
+        assertThat(shipped(shipments, metadata)).containsExactly(
+            "Project(RESOLVED (e varchar2) of 3)", "Project(RESOLVED (e date) of 3)", "Project(RESOLVED (e number) of 3)"
+        )
+    }
+
+    @Test
+    fun aDroppedConstraintKeepsTheColumnsADroppedColumnDoesNot() {
+        // `w shipment.weight%TYPE`, the second call: the column's type, kept when only a constraint goes.
+        assertThat(shipped(shipments + "alter table shipment drop primary key;\n")[1]).isEqualTo("Project(RESOLVED (e number) of 3)")
+        assertThat(shipped(shipments + "alter table shipment drop column sent;\n")[1]).isEqualTo("Project(AMBIGUOUS of 3)")
+    }
+
     @Test
     fun aLocalFunctionNamedLikeOneOfStandardKeepsItsResult() {
         // The enclosing scope comes before STANDARD.

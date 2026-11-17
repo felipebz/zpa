@@ -31,6 +31,7 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, private val d
     private val standaloneCallables = StandaloneCallableExtractor(
         stream, bounds, datatypeShape, typeReferences, callableProperties, callSpecifications, bodyBoundaries
     )
+    private val tables = TableExtractor(stream, bounds, discardedText)
 
     fun extract(): ProjectFileExtraction {
         val result = mutableListOf<ProjectDeclaration>()
@@ -47,7 +48,10 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, private val d
                 cursor = create + 1
             }
         }
-        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, alteredTypes(), immutableList(bodies), synonyms())
+        return ProjectFileExtraction(
+            immutableList(result), standaloneCallables.omittedNames, alteredTypes(), immutableList(bodies), synonyms(),
+            SourceTables(tables.tables(), tables.alteredTables())
+        )
     }
 
     private fun synonyms(): List<SourceSynonym> {

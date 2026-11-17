@@ -8,6 +8,7 @@ package com.felipebz.zpa.project
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalSynonym
 import com.felipebz.zpa.api.project.ProjectIdentifier
+import com.felipebz.zpa.api.project.SourceRelations
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -18,6 +19,8 @@ class ProjectSymbolIndexBuilder {
     private val alteredTypesByFile = ConcurrentHashMap<FileId, AlteredTypes>()
     private val packageBodiesByFile = ConcurrentHashMap<FileId, List<PackageBodyMemberNames>>()
     private val synonymsByFile = ConcurrentHashMap<FileId, List<SourceSynonym>>()
+    private val tablesByFile = ConcurrentHashMap<FileId, List<SourceTable>>()
+    private val alteredTablesByFile = ConcurrentHashMap<FileId, List<AlteredTable>>()
     private val schemasByFile = ConcurrentHashMap<FileId, OracleIdentifier>()
     private val configuredSchemas = HashSet<OracleIdentifier>()
 
@@ -35,8 +38,8 @@ class ProjectSymbolIndexBuilder {
 
     /**
      * [omittedStandaloneCallables]: names of standalone callable headings of this file that produced no fact;
-     * [packageBodies]: the names each package body of this file declares at its own level; [synonyms]: its
-     * `CREATE SYNONYM` statements.
+     * [packageBodies]: the names each package body of this file declares at its own level; [synonyms] and [tables]: its
+     * `CREATE SYNONYM`, `CREATE TABLE` and column-changing `ALTER TABLE` statements.
      */
     internal fun add(
         fileId: FileId,
@@ -44,7 +47,8 @@ class ProjectSymbolIndexBuilder {
         omittedStandaloneCallables: Set<QualifiedName>,
         alteredTypes: AlteredTypes = AlteredTypes.NONE,
         packageBodies: List<PackageBodyMemberNames> = emptyList(),
-        synonyms: List<SourceSynonym> = emptyList()
+        synonyms: List<SourceSynonym> = emptyList(),
+        tables: SourceTables = SourceTables.EMPTY
     ) {
         require(declarations.all { it.fileId == fileId }) {
             "All declarations added for a file must have the same FileId"
@@ -60,6 +64,8 @@ class ProjectSymbolIndexBuilder {
         if (!alteredTypes.isEmpty()) alteredTypesByFile[fileId] = alteredTypes
         if (packageBodies.isNotEmpty()) packageBodiesByFile[fileId] = immutableList(packageBodies)
         if (synonyms.isNotEmpty()) synonymsByFile[fileId] = immutableList(synonyms)
+        if (tables.created.isNotEmpty()) tablesByFile[fileId] = immutableList(tables.created)
+        if (tables.altered.isNotEmpty()) alteredTablesByFile[fileId] = immutableList(tables.altered)
     }
 
     fun build(): ProjectSymbolIndex {
@@ -75,7 +81,8 @@ class ProjectSymbolIndexBuilder {
         val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
         return ProjectSymbolIndex(
             occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, AlteredTypes.merge(alteredTypesByFile.values),
-            HashMap(schemasByFile), HashSet(configuredSchemas), HashMap(packageBodiesByFile), HashMap(synonymsByFile)
+            HashMap(schemasByFile), HashSet(configuredSchemas), HashMap(packageBodiesByFile), HashMap(synonymsByFile),
+            SourceRelations.of(tablesByFile, alteredTablesByFile, schemasByFile)
         )
     }
 }
@@ -116,9 +123,10 @@ class ProjectSymbolIndex private constructor(
         schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
         configuredSchemas: Set<OracleIdentifier> = emptySet(),
         packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>> = emptyMap(),
-        synonymsByFile: Map<FileId, List<SourceSynonym>> = emptyMap()
+        synonymsByFile: Map<FileId, List<SourceSynonym>> = emptyMap(),
+        relations: SourceRelations = SourceRelations.NONE
     ) : this(
-        Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas, packageBodiesByFile, synonymsByFile),
+        Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas, packageBodiesByFile, synonymsByFile, relations),
         null, null
     )
 
@@ -131,7 +139,8 @@ class ProjectSymbolIndex private constructor(
         schemasByFile: Map<FileId, OracleIdentifier>,
         configuredSchemas: Set<OracleIdentifier>,
         packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>>,
-        synonymsByFile: Map<FileId, List<SourceSynonym>>
+        synonymsByFile: Map<FileId, List<SourceSynonym>>,
+        val relations: SourceRelations
     ) {
         val fileIds: List<FileId> = immutableList(fileIds)
         val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
@@ -266,6 +275,9 @@ class ProjectSymbolIndex private constructor(
     @OptIn(ZpaExperimentalApi::class)
     internal val synonymsByOwnerAndName: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym>
         get() = tables.synonymsByOwnerAndName
+
+    /** The tables created in the sources ([SourceRelations]). */
+    internal val sourceRelations: SourceRelations get() = tables.relations
 
     internal fun packageBodyOf(declaration: ProjectDeclaration, owner: QualifiedName): PackageBodyMemberNames? =
         tables.packageBodiesByFile[declaration.fileId].orEmpty().singleOrNull {

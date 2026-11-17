@@ -324,6 +324,56 @@ class ColumnBindingTest {
         )
     }
 
+    private val tableScripts = "create table crate (id number primary key, tag varchar2(10));\n" +
+        "create table crate_copy as select * from crate;\n" +
+        "create global temporary table crate_grown (id number) on commit delete rows;\n" +
+        "alter table crate_grown add (tag varchar2(10));\n"
+
+    @Test
+    fun theTablesCreatedInTheSourcesGiveTheirColumns() {
+        assertThat(answers(tableScripts + procedure(
+            "select tag into status from crate;",
+            "select zz into v from crate;",
+            "select zz into v from crate_copy;",
+            "select tag into status from crate_grown;"
+        ), withMetadata = false).filter { !it.contains("INTO_TARGET") }).containsExactly(
+            "12:tag=column SHOP.CRATE.TAG",
+            // The table lists every column: zz is the procedure's variable.
+            "13:zz=plsql NO_SOURCE_HAS_IT",
+            // A table created from a query, or changed by ALTER TABLE, does not prove a column absent.
+            "14:zz=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.CRATE_COPY.ZZ unverified",
+            "15:tag=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.CRATE_GROWN.TAG unverified"
+        )
+    }
+
+    @Test
+    fun aLobStorageClauseIsNoQuery() {
+        val scripts = "create table doc_store (id number primary key, body clob) lob (body) store as (tablespace users);\n"
+        assertThat(answers(scripts + procedure(
+            "select body into v from doc_store;",
+            "select zz into v from doc_store;"
+        ), withMetadata = false).filter { !it.contains("INTO_TARGET") }).containsExactly(
+            "9:body=column SHOP.DOC_STORE.BODY",
+            // Its column list is complete: zz is the procedure's variable.
+            "10:zz=plsql NO_SOURCE_HAS_IT"
+        )
+    }
+
+    @Test
+    fun aFileWithoutASchemaCreatesNoTable() {
+        val text = tableScripts + procedure("select tag into status from crate;")
+        val context = ProjectAnalysisContext.prepared(ProjectIndexPreparation().prepare(listOf(ProjectSource(FileId("u.sql")) { text }), concurrent = false))
+        val rows = ArrayList<String>()
+        val check = object : PlSqlCheck() {
+            override fun leaveFile(node: AstNode) {
+                node.getDescendants(PlSqlGrammar.VARIABLE_NAME).filter { it.tokenValue.equals("tag", true) }
+                    .forEach { rows += render(this.context, it) }
+            }
+        }
+        AstScanner(emptyList(), null, false, StandardCharsets.UTF_8, context).scanFile(Source("u.sql", text), listOf(check), FileId("u.sql"))
+        assertThat(rows).noneMatch { it.startsWith("column") }
+    }
+
     @Test
     fun synonymsWrittenInTheSourcesLeadToTheirTables() {
         val synonyms = "create synonym heads for order_head;\n" +
