@@ -640,6 +640,29 @@ class ColumnBindingTest {
     }
 
     @Test
+    fun aColumnAnIncompleteTableListsIsThatColumn() {
+        // bin_note gains a column the CREATE TABLE does not list. Oracle reads a name in SQL as a column of the statement's
+        // tables first, so the listed body and note_id are its columns; p_id may still be a column it has.
+        val table = "create table bin_note (note_id integer, body varchar2(40));\nalter table bin_note add (extra varchar2(10));\n"
+        val text = table + "create procedure read_note(p_id integer) is\n  l varchar2(40);\nbegin\n" +
+            "  select body into l from bin_note where note_id = p_id;\n" +
+            "  select n.body into l from bin_note n where n.note_id = p_id;\n" +
+            "  select bin_note.body into l from bin_note where bin_note.note_id = p_id;\n" +
+            "end;\n/\n"
+        assertThat(answers(text, withMetadata = false).filter { !it.contains("INTO_TARGET") }).containsExactly(
+            "6:body=column SHOP.BIN_NOTE.BODY",
+            "6:note_id=column SHOP.BIN_NOTE.NOTE_ID",
+            "6:p_id=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.BIN_NOTE.P_ID unverified",
+            "7:n.body=column SHOP.BIN_NOTE.BODY",
+            "7:n.note_id=column SHOP.BIN_NOTE.NOTE_ID",
+            "7:p_id=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.BIN_NOTE.P_ID unverified",
+            "8:bin_note.body=column SHOP.BIN_NOTE.BODY",
+            "8:bin_note.note_id=column SHOP.BIN_NOTE.NOTE_ID",
+            "8:p_id=Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.BIN_NOTE.P_ID unverified"
+        )
+    }
+
+    @Test
     fun aFunctionNamedWithoutParenthesesInSqlIsACall() {
         // Oracle calls a function named without parentheses in SQL when no source of the statement takes the name, as in
         // PL/SQL; a column of a source whose columns are not known may take it, and a SQL built-in takes SYSDATE.

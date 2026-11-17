@@ -12,8 +12,9 @@ import java.util.*
 /**
  * The tables created in the project's sources, by schema and name. A table written without an owner is in its file's
  * schema; a file without one contributes no such table. Of two tables with the same schema and name, the first in file
- * order is kept. A table the sources change with `ALTER TABLE` is not complete: it keeps the columns of its CREATE
- * TABLE unless a column changes, and their nullability is unknown once a constraint changes ([TableChange]).
+ * order is kept. A table the sources change with `ALTER TABLE` keeps its columns when the change only adds constraints;
+ * otherwise it is not complete: it keeps the columns of its CREATE TABLE unless a column changes, and their nullability
+ * is unknown once a constraint changes ([TableChange]).
  */
 @OptIn(ZpaExperimentalApi::class)
 internal class SourceRelations private constructor(val byName: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalRelation>) {
@@ -57,7 +58,8 @@ internal class SourceRelations private constructor(val byName: Map<Pair<ProjectI
                     if (nullabilityKnown) !column.notNull else null
                 )
             }
-            return ProjectExternalRelation.fromSource(key.first, key.second, table.columnsComplete && changes.isEmpty(), columns)
+            val complete = table.columnsComplete && changes.all { it == TableChange.ADDS_CONSTRAINTS }
+            return ProjectExternalRelation.fromSource(key.first, key.second, complete, columns)
         }
 
         /** [name] as Oracle stores it: an unquoted name in upper case, a quoted one as written. */

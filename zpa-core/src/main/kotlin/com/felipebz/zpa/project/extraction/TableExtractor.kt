@@ -31,16 +31,16 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
 
     private fun tableAt(create: Int): SourceTable? {
         var index = create + 1
-        if (stream.valueAt(index) == "GLOBAL" && stream.valueAt(index + 1) == "TEMPORARY") index += 2
-        if (stream.valueAt(index) != "TABLE") return null
+        if (word(index) == "GLOBAL" && word(index + 1) == "TEMPORARY") index += 2
+        if (word(index) != "TABLE") return null
         index++
-        if (stream.valueAt(index) == "IF" && stream.valueAt(index + 1) == "NOT" && stream.valueAt(index + 2) == "EXISTS") index += 3
+        if (word(index) == "IF" && word(index + 1) == "NOT" && word(index + 2) == "EXISTS") index += 3
         val (name, afterName) = stream.qualifiedName(index) ?: return null
         if (name.segments.size > 2) return null
         val end = minOf(bounds.statementEnd(afterName), stream.tokens.size - 1)
         if (discardedText.scan(stream.tokens, create, end).kinds.isNotEmpty()) return null
         val owner = name.segments.takeIf { it.size == 2 }?.first()
-        return when (stream.valueAt(afterName)) {
+        return when (word(afterName)) {
             // An object table: its columns are the attributes of its type.
             "OF" -> SourceTable(stream.fileId, owner, name.last, emptyList(), columnsComplete = false)
             // Created from a query: the columns are the query's.
@@ -75,7 +75,7 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
         var depth = 0
         var start = open + 1
         for (index in open + 1 until close) {
-            when (stream.valueAt(index)) {
+            when (word(index)) {
                 "(" -> depth++
                 ")" -> depth--
                 "," -> if (depth == 0) {
@@ -88,15 +88,22 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
         return parts
     }
 
-    private fun isConstraint(index: Int) = stream.valueAt(index) in OUT_OF_LINE
+    private fun isConstraint(index: Int) = word(index) in OUT_OF_LINE
+
+    /**
+     * The upper-cased text of the token at [index] when it can be a keyword or punctuation; empty for a quoted
+     * identifier, which is always a name (`"CHECK"` is a column, not the start of a constraint).
+     */
+    private fun word(index: Int): String =
+        if (stream.tokens.getOrNull(index)?.originalValue?.startsWith('"') == true) "" else stream.valueAt(index)
 
     /** The columns an enforced out-of-line `PRIMARY KEY (…)` lists. */
     private fun primaryKeyColumns(item: IntRange): List<OracleIdentifier> {
         if (!isConstraint(item.first)) return emptyList()
-        val key = (item.first until item.last).firstOrNull { stream.valueAt(it) == "PRIMARY" && stream.valueAt(it + 1) == "KEY" } ?: return emptyList()
-        if (item.any { stream.valueAt(it) in NOT_ENFORCED }) return emptyList()
+        val key = (item.first until item.last).firstOrNull { word(it) == "PRIMARY" && word(it + 1) == "KEY" } ?: return emptyList()
+        if (item.any { word(it) in NOT_ENFORCED }) return emptyList()
         val open = key + 2
-        if (stream.valueAt(open) != "(") return emptyList()
+        if (word(open) != "(") return emptyList()
         val close = stream.matching(open)
         return items(open, close).mapNotNull { part -> stream.identifierAt(part.first)?.first?.takeIf { part.first == part.last } }
     }
@@ -104,29 +111,29 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
     /** A column definition: its name, the datatype written up to its first clause, and its inline constraints. */
     private fun column(item: IntRange): SourceColumn? {
         val name = stream.identifierAt(item.first)?.first ?: return null
-        val typeEnd = (item.first + 1..item.last).firstOrNull { stream.valueAt(it) in COLUMN_CLAUSES && depthAt(item.first + 1, it) == 0 } ?: (item.last + 1)
+        val typeEnd = (item.first + 1..item.last).firstOrNull { word(it) in COLUMN_CLAUSES && depthAt(item.first + 1, it) == 0 } ?: (item.last + 1)
         val datatype = (item.first + 1 until typeEnd).takeIf { !it.isEmpty() }?.let(::datatypeText)
         val clauses = (typeEnd..item.last).filter { depthAt(typeEnd, it) == 0 }
         // An identity column has an implicit NOT NULL constraint.
-        val identity = clauses.any { stream.valueAt(it) == "IDENTITY" }
-        return SourceColumn(name, datatype, clauses.any { stream.valueAt(it) == "INVISIBLE" }, identity || enforced(clauses))
+        val identity = clauses.any { word(it) == "IDENTITY" }
+        return SourceColumn(name, datatype, clauses.any { word(it) == "INVISIBLE" }, identity || enforced(clauses))
     }
 
     /** Whether the inline constraints of [clauses] hold an enforced `NOT NULL` or `PRIMARY KEY`. */
     private fun enforced(clauses: List<Int>): Boolean {
-        val starts = clauses.filter { stream.valueAt(it) in INLINE_STARTS && !(stream.valueAt(it) == "NULL" && stream.valueAt(it - 1) == "NOT") }
+        val starts = clauses.filter { word(it) in INLINE_STARTS && !(word(it) == "NULL" && word(it - 1) == "NOT") }
         return starts.indices.any { i ->
             val start = starts[i]
-            val strong = (stream.valueAt(start) == "NOT" && stream.valueAt(start + 1) == "NULL") ||
-                (stream.valueAt(start) == "PRIMARY" && stream.valueAt(start + 1) == "KEY")
+            val strong = (word(start) == "NOT" && word(start + 1) == "NULL") ||
+                (word(start) == "PRIMARY" && word(start + 1) == "KEY")
             val until = starts.getOrNull(i + 1) ?: (clauses.last() + 1)
-            strong && clauses.none { it in start until until && stream.valueAt(it) in NOT_ENFORCED }
+            strong && clauses.none { it in start until until && word(it) in NOT_ENFORCED }
         }
     }
 
     private fun depthAt(from: Int, index: Int): Int {
         var depth = 0
-        for (i in from until index) when (stream.valueAt(i)) {
+        for (i in from until index) when (word(i)) {
             "(" -> depth++
             ")" -> depth--
         }
@@ -149,12 +156,12 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
     private fun isQuery(start: Int, end: Int): Boolean {
         var depth = 0
         for (index in start..end) {
-            when (stream.valueAt(index)) {
+            when (word(index)) {
                 "(" -> depth++
                 ")" -> depth--
                 "AS" -> if (depth == 0) {
-                    val next = stream.valueAt(index + 1)
-                    if (next in QUERY_STARTS || next == "(" && stream.valueAt(index + 2) in QUERY_STARTS) return true
+                    val next = word(index + 1)
+                    if (next in QUERY_STARTS || next == "(" && word(index + 2) in QUERY_STARTS) return true
                 }
             }
         }
@@ -162,7 +169,7 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
     }
 
     private fun alteredAt(alter: Int): AlteredTable? {
-        if (stream.valueAt(alter + 1) != "TABLE") return null
+        if (word(alter + 1) != "TABLE") return null
         val (name, afterName) = stream.qualifiedName(alter + 2) ?: return null
         if (name.segments.size > 2) return null
         val end = minOf(bounds.statementEnd(afterName), stream.tokens.size - 1)
@@ -174,9 +181,11 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
 
     /** The change the action word at [index] of an `ALTER TABLE` makes, null for a word that starts none. */
     private fun change(index: Int): TableChange? {
-        val next = stream.valueAt(index + 1)
-        return when (stream.valueAt(index)) {
-            "ADD" -> TableChange.ADDS
+        val next = word(index + 1)
+        return when (word(index)) {
+            // A partition or a supplemental log group adds no column.
+            "ADD" -> if (next in PARTITIONS || next == "SUPPLEMENTAL") null
+                else if (addsOnlyConstraints(index)) TableChange.ADDS_CONSTRAINTS else TableChange.ADDS
             "MODIFY", "DROP" -> when (next) {
                 in CONSTRAINT_TARGETS -> TableChange.CONSTRAINTS
                 in PARTITIONS -> null
@@ -193,6 +202,18 @@ internal class TableExtractor(private val stream: TokenStream, private val bound
             "ENABLE" -> TableChange.CONSTRAINTS.takeIf { next == "NOVALIDATE" }
             else -> null
         }
+    }
+
+    /**
+     * Whether the `ADD` at [index] adds only out-of-line constraints (`ADD CONSTRAINT …`, `ADD PRIMARY KEY (…)`, or such
+     * items alone inside `ADD ( … )`): a constraint adds no column.
+     */
+    private fun addsOnlyConstraints(index: Int): Boolean {
+        val next = index + 1
+        if (word(next) in CONSTRAINT_TARGETS) return true
+        if (word(next) != "(") return false
+        val items = items(next, stream.matching(next))
+        return items.isNotEmpty() && items.all { word(it.first) in CONSTRAINT_TARGETS }
     }
 
     private companion object {

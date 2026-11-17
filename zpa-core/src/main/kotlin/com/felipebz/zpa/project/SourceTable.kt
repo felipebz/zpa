@@ -30,7 +30,10 @@ internal class SourceTable(
 
 /** What an `ALTER TABLE` statement does to a table's columns, by how much of the CREATE TABLE it leaves true. */
 internal enum class TableChange {
-    /** Columns or constraints are added: the columns written in the CREATE TABLE are still there, unchanged. */
+    /** Only constraints are added: a constraint adds no column, so the table keeps exactly its written columns. */
+    ADDS_CONSTRAINTS,
+
+    /** At least one column is added: the columns written in the CREATE TABLE are still there, unchanged. */
     ADDS,
 
     /** A constraint is dropped, disabled, modified or renamed: a `NOT NULL` or primary key may no longer hold. */

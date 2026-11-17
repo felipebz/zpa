@@ -749,12 +749,12 @@ internal class LocalTypeWalk(
     )
 
     /**
-     * Whether the relation [description] found has [column], and that column: true or false when the metadata covers the
-     * relation's columns, null otherwise.
+     * Whether the relation [description] found has [column], and that column: true for a column the metadata lists,
+     * even when it does not supply all of the relation's columns; false only when it covers them all; null otherwise.
      */
     fun relationColumn(description: ProjectExternalTypeDescription?, column: OracleIdentifier): Pair<Boolean?, ProjectExternalColumn?> {
-        val relation = description?.takeIf { it.status == ProjectExternalTypeDescription.Status.RESOLVED }?.lookup?.orElse(null)?.relation?.orElse(null)
-            ?: return null to null
+        val relation = description?.takeIf { it.status == ProjectExternalTypeDescription.Status.RESOLVED || foundPartially(it) }
+            ?.lookup?.orElse(null)?.relation?.orElse(null) ?: return null to null
         val objects = snapshot?.takeIf { prepared }?.objects(metadata)
         val lookup = objects?.findColumn(relation.schema, relation.name, ProjectIdentifier.wrap(column))
             ?: metadata.findColumn(relation.schema, relation.name, ProjectIdentifier.wrap(column))
@@ -764,6 +764,11 @@ internal class LocalTypeWalk(
             else -> null to null
         }
     }
+
+    /** A relation found whose columns the metadata supplies only in part: the columns it lists are still its columns. */
+    private fun foundPartially(description: ProjectExternalTypeDescription) =
+        description.status == ProjectExternalTypeDescription.Status.INCOMPLETE &&
+            description.lookup.orElse(null)?.status == ProjectExternalLookup.Status.FOUND
 
     /** The relation [description] found, when the metadata covers all of its columns. */
     fun coveredRelation(description: ProjectExternalTypeDescription?): ProjectExternalRelation? =
