@@ -325,6 +325,25 @@ class ColumnBindingTest {
     }
 
     @Test
+    fun synonymsWrittenInTheSourcesLeadToTheirTables() {
+        val synonyms = "create synonym heads for order_head;\n" +
+            // A source synonym hides the metadata's synonym of the same owner and name.
+            "create or replace synonym lines for shop.order_tail;\n" +
+            // A private synonym comes before a public one of the same name.
+            "create public synonym marks for order_line;\ncreate synonym marks for order_mark;\n"
+        assertThat(answers(synonyms + procedure(
+            "select status into v from heads where id = 1;",
+            "select note into v from lines;",
+            "select l into v from marks;"
+        )).filter { !it.contains("INTO_TARGET") && !it.contains("Unavailable") }).containsExactly(
+            "12:status=column SHOP.ORDER_HEAD.STATUS",
+            "12:id=column SHOP.ORDER_HEAD.ID",
+            "13:note=column SHOP.ORDER_TAIL.NOTE",
+            "14:l=column SHOP.ORDER_MARK.L"
+        )
+    }
+
+    @Test
     fun dmlStatements() {
         assertThat(answers(procedure(
             "insert into order_line (qty, amount) values (qty, 0) returning qty into v;",

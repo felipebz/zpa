@@ -52,14 +52,18 @@ class ProjectSnapshot private constructor(
      * project or in [metadata]) first, then a private synonym of [schema], then a public synonym when [schema] is
      * complete in [metadata]. A synonym of a synonym is followed; the name is then looked up as the target followed by
      * the rest of the written name, and each result lists the synonyms in its `synonyms`. A synonym over a database
-     * link, or one that resolves to itself, leads to no project declaration. Without a [schema] or without metadata
-     * (an empty [ProjectExternalMetadata.origin]) this is [preferring].
+     * link, or one that resolves to itself, leads to no project declaration. The `CREATE SYNONYM` statements of the
+     * project's sources are read with those of [metadata], and come before them for the same owner and name. Without a
+     * [schema], or with neither metadata (an empty [ProjectExternalMetadata.origin]) nor a synonym, this is [preferring].
      */
     fun preferring(schema: ProjectIdentifier?, metadata: ProjectExternalMetadata): ProjectSnapshot {
-        if (schema == null || !metadata.origin.isPresent) return preferring(schema)
+        val objects = objects(metadata)
+        if (schema == null || !metadata.origin.isPresent && !objects.hasWrittenSynonyms) return preferring(schema)
         val index = preparationResult.index.preferring(schema.identifier)
-        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(metadata, schema), jsonTypeName)
+        return ProjectSnapshot(preparationResult.withIndex(index), preparationState, failures, fileIds, scope, ProjectSynonymScope(objects, schema), jsonTypeName)
     }
+
+    private fun objects(metadata: ProjectExternalMetadata) = SchemaObjects(metadata, preparationResult.index.synonymsByOwnerAndName)
 
     @JvmSynthetic
     internal fun forDatabaseVersion(version: DatabaseVersion?): ProjectSnapshot {
@@ -237,7 +241,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), name, null, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), name, null, packageOwner, null, objects(metadata), currentSchema)
 
     // Every external description is made from the unit compiling in [currentSchema]: its unqualified names prefer the
     // declarations of that schema ([preferring]).
@@ -249,7 +253,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), reference.name, reference, packageOwner, null, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), reference.name, reference, packageOwner, null, objects(metadata), currentSchema)
 
     /**
      * As the name overload, for a caller-written [anchor], with the same lexical precondition as the written
@@ -261,7 +265,7 @@ class ProjectSnapshot private constructor(
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription =
-        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), anchor.name, null, packageOwner, anchor, metadata, currentSchema)
+        ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), anchor.name, null, packageOwner, anchor, objects(metadata), currentSchema)
 
     /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
@@ -490,8 +494,9 @@ class ProjectSnapshot private constructor(
         if (schema == null || preparationState == ProjectPreparationState.NOT_PREPARED || preparationState == ProjectPreparationState.PREPARED_WITH_FAILURES) return false
         if (preparationResult.index.hasUnitPossiblyIn(schema.identifier, name)) return false
         val id = ProjectIdentifier.wrap(name)
-        return metadata.isSchemaComplete(schema) && metadata.isPublicSynonymsComplete &&
-            metadata.findObject(schema, id).isEmpty && metadata.findObject(ProjectExternalSynonym.PUBLIC, id).isEmpty
+        val known = objects(metadata)
+        return known.isSchemaComplete(schema) && known.isPublicSynonymsComplete &&
+            known.findObject(schema, id) == null && known.findObject(ProjectExternalSynonym.PUBLIC, id) == null
     }
 
     /**

@@ -55,7 +55,10 @@ class ProjectIndexPreparation private constructor(
                 // A custom extractor supplies facts only, so it contributes no standalone coverage evidence.
                 val extraction = (extractor as? ProjectDeclarationExtractor)?.extractFile(source.fileId, source.contents())
                     ?: ProjectFileExtraction(extractor.extract(source.fileId, source.contents()), emptySet())
-                builder.add(source.fileId, extraction.declarations, extraction.omittedStandaloneCallables, extraction.alteredTypes, extraction.packageBodies)
+                builder.add(
+                    source.fileId, extraction.declarations, extraction.omittedStandaloneCallables, extraction.alteredTypes, extraction.packageBodies,
+                    extraction.synonyms
+                )
             } catch (e: Exception) {
                 // Pass 2 remains independent, while the result records that this file did
                 // not contribute trustworthy project declarations.

@@ -10,7 +10,7 @@ import com.felipebz.zpa.project.ProjectSymbolIndex
 import com.felipebz.zpa.project.QualifiedName
 
 @OptIn(ZpaExperimentalApi::class)
-internal class ProjectSynonymScope(val metadata: ProjectExternalMetadata, val schema: ProjectIdentifier)
+internal class ProjectSynonymScope(val objects: SchemaObjects, val schema: ProjectIdentifier)
 
 /**
  * A written name read through synonyms: [name] is the name to look up in the project (the target followed by the rest
@@ -28,17 +28,17 @@ internal class SynonymReading(val name: QualifiedName, val synonyms: List<Projec
 internal object ProjectSynonymNames {
     /** The reading of [written] through the synonyms of [scope]; null when no synonym takes its first segment. */
     fun read(index: ProjectSymbolIndex, scope: ProjectSynonymScope, written: QualifiedName): SynonymReading? {
-        val metadata = scope.metadata
+        val objects = scope.objects
         val schema = scope.schema
         val first = written.segments.first()
         if (index.hasUnitPossiblyIn(schema.identifier, first)) return null
         val firstId = ProjectIdentifier.wrap(first)
-        val own = metadata.findObject(schema, firstId).orElse(null)
+        val own = objects.findObject(schema, firstId)
         var synonym = when {
             own != null && own.kind != ProjectExternalObject.Kind.SYNONYM -> return null
-            own != null -> metadata.findSynonym(schema, firstId).orElse(null) ?: return null
+            own != null -> objects.findSynonym(schema, firstId) ?: return null
             // An object of the compilation schema the metadata does not hold would come before a public synonym.
-            metadata.isSchemaComplete(schema) -> metadata.findSynonym(ProjectExternalSynonym.PUBLIC, firstId).orElse(null) ?: return null
+            objects.isSchemaComplete(schema) -> objects.findSynonym(ProjectExternalSynonym.PUBLIC, firstId) ?: return null
             else -> return null
         }
         val rest = written.segments.drop(1)
@@ -51,7 +51,7 @@ internal object ProjectSynonymNames {
             val owner = synonym.targetOwner.get()
             val name = synonym.targetName
             val held = owner != ProjectExternalSynonym.PUBLIC && index.hasUnitPossiblyIn(owner.identifier, name.identifier)
-            synonym = (if (held) null else metadata.findSynonym(owner, name).orElse(null))
+            synonym = (if (held) null else objects.findSynonym(owner, name))
                 ?: return SynonymReading(QualifiedName(listOf(owner.identifier, name.identifier) + rest), synonyms, ProjectQualifiedName.ofIdentifiers(listOf(owner, name)))
         }
     }

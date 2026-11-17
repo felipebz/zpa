@@ -244,6 +244,30 @@ class CallBindingTest {
         assertThat(keeps(project, ProjectExternalMetadata.none(), DatabaseVersion(19, 0))).isEqualTo(thrice("Project(NO_COMPATIBLE_CANDIDATE of 2)"))
     }
 
+    private val keepOverloads = "create package pk_doc as\n  procedure keep(p doc_t);\n  procedure keep(p varchar2);\nend;\n/\n"
+
+    @Test
+    fun aSynonymJsonWrittenInTheSourcesIsReadAsTheMetadataOne() {
+        val project = docType + "create synonym json for doc_t;\n" + keepOverloads
+        assertThat(keeps(project, ProjectExternalMetadata.none(), DatabaseVersion(11, 2))).isEqualTo(thrice("Project(RESOLVED (p doc_t) of 2)"))
+        assertThat(keeps(project, ProjectExternalMetadata.none(), DatabaseVersion(21, 0))).isEqualTo(thrice("Project(NO_COMPATIBLE_CANDIDATE of 2)"))
+        assertThat(keeps(project, ProjectExternalMetadata.none(), null)).isEqualTo(thrice("Project(RESOLVED (p doc_t) of 2)"))
+    }
+
+    @Test
+    fun callsAndTypesFollowTheSynonymsOfTheSources() {
+        // A synonym of a package, and a chain of two synonyms that ends at a type: its value goes to that type's
+        // overload, not to another object type's.
+        val project = docType + keepOverloads + "create type memo_t as object (body varchar2(4000));\n/\n" +
+            "create package pk_pick as\n  procedure pick(p doc_t);\n  procedure pick(p memo_t);\nend;\n/\n" +
+            "create synonym pk_alias for pk_doc;\ncreate synonym doc_a1 for doc_a2;\ncreate synonym doc_a2 for doc_t;\n"
+        val user = "create procedure doc_it is\n  c doc_a1;\nbegin\n  pk_alias.keep('x');\n  pk_pick.pick(c);\nend;\n/\n"
+        assertThat(answers(project, user, fromLine = 4).filter { it.contains(".keep=") || it.contains(".pick=") }).containsExactly(
+            "4:pk_alias.keep=Project(RESOLVED (p varchar2) of 2)",
+            "5:pk_pick.pick=Project(RESOLVED (p doc_t) of 2)"
+        )
+    }
+
     @Test
     fun aWrittenJsonNamesTheProjectTypeJsonBeforeThePredefinedType() {
         val project = "create type json as object (body varchar2(4000));\n/\n" +

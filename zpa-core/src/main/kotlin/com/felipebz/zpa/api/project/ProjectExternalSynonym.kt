@@ -6,6 +6,7 @@
 package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.project.SourceSynonym
 import java.util.*
 
 /**
@@ -57,5 +58,11 @@ class ProjectExternalSynonym private constructor(
                 targetOwner?.let { dictionaryIdentifier(it, "schema") }, dictionaryIdentifier(targetName, "object"), dbLink
             )
         }
+
+        @JvmSynthetic
+        internal fun fromSource(synonym: SourceSynonym): ProjectExternalSynonym = ProjectExternalSynonym(
+            synonym.owner?.let(ProjectIdentifier::wrap) ?: PUBLIC, ProjectIdentifier.wrap(synonym.name),
+            synonym.targetOwner?.let(ProjectIdentifier::wrap), ProjectIdentifier.wrap(synonym.targetName), synonym.dbLink
+        )
     }
 }

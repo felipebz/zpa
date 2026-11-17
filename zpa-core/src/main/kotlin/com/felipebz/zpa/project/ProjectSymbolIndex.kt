@@ -5,6 +5,9 @@
 
 package com.felipebz.zpa.project
 
+import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectExternalSynonym
+import com.felipebz.zpa.api.project.ProjectIdentifier
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -14,6 +17,7 @@ class ProjectSymbolIndexBuilder {
     private val omittedStandaloneCallablesByFile = ConcurrentHashMap<FileId, Set<QualifiedName>>()
     private val alteredTypesByFile = ConcurrentHashMap<FileId, AlteredTypes>()
     private val packageBodiesByFile = ConcurrentHashMap<FileId, List<PackageBodyMemberNames>>()
+    private val synonymsByFile = ConcurrentHashMap<FileId, List<SourceSynonym>>()
     private val schemasByFile = ConcurrentHashMap<FileId, OracleIdentifier>()
     private val configuredSchemas = HashSet<OracleIdentifier>()
 
@@ -31,14 +35,16 @@ class ProjectSymbolIndexBuilder {
 
     /**
      * [omittedStandaloneCallables]: names of standalone callable headings of this file that produced no fact;
-     * [packageBodies]: the names each package body of this file declares at its own level.
+     * [packageBodies]: the names each package body of this file declares at its own level; [synonyms]: its
+     * `CREATE SYNONYM` statements.
      */
     internal fun add(
         fileId: FileId,
         declarations: Collection<ProjectDeclaration>,
         omittedStandaloneCallables: Set<QualifiedName>,
         alteredTypes: AlteredTypes = AlteredTypes.NONE,
-        packageBodies: List<PackageBodyMemberNames> = emptyList()
+        packageBodies: List<PackageBodyMemberNames> = emptyList(),
+        synonyms: List<SourceSynonym> = emptyList()
     ) {
         require(declarations.all { it.fileId == fileId }) {
             "All declarations added for a file must have the same FileId"
@@ -53,6 +59,7 @@ class ProjectSymbolIndexBuilder {
         if (omittedStandaloneCallables.isNotEmpty()) omittedStandaloneCallablesByFile[fileId] = omittedStandaloneCallables
         if (!alteredTypes.isEmpty()) alteredTypesByFile[fileId] = alteredTypes
         if (packageBodies.isNotEmpty()) packageBodiesByFile[fileId] = immutableList(packageBodies)
+        if (synonyms.isNotEmpty()) synonymsByFile[fileId] = immutableList(synonyms)
     }
 
     fun build(): ProjectSymbolIndex {
@@ -68,7 +75,7 @@ class ProjectSymbolIndexBuilder {
         val omittedStandaloneCallables = omittedStandaloneCallablesByFile.values.flatMapTo(HashSet()) { it }
         return ProjectSymbolIndex(
             occurrencesByFile.keys.toList(), occurrencesByFile, omittedStandaloneCallables, AlteredTypes.merge(alteredTypesByFile.values),
-            HashMap(schemasByFile), HashSet(configuredSchemas), HashMap(packageBodiesByFile)
+            HashMap(schemasByFile), HashSet(configuredSchemas), HashMap(packageBodiesByFile), HashMap(synonymsByFile)
         )
     }
 }
@@ -108,8 +115,12 @@ class ProjectSymbolIndex private constructor(
         alteredTypes: AlteredTypes = AlteredTypes.NONE,
         schemasByFile: Map<FileId, OracleIdentifier> = emptyMap(),
         configuredSchemas: Set<OracleIdentifier> = emptySet(),
-        packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>> = emptyMap()
-    ) : this(Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas, packageBodiesByFile), null, null)
+        packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>> = emptyMap(),
+        synonymsByFile: Map<FileId, List<SourceSynonym>> = emptyMap()
+    ) : this(
+        Tables(fileIds, fileOccurrences, omittedStandaloneCallables, alteredTypes, schemasByFile, configuredSchemas, packageBodiesByFile, synonymsByFile),
+        null, null
+    )
 
     /** The frozen declarations and every map derived from them; independent of the preferred schema. */
     private class Tables(
@@ -119,7 +130,8 @@ class ProjectSymbolIndex private constructor(
         alteredTypes: AlteredTypes,
         schemasByFile: Map<FileId, OracleIdentifier>,
         configuredSchemas: Set<OracleIdentifier>,
-        packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>>
+        packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>>,
+        synonymsByFile: Map<FileId, List<SourceSynonym>>
     ) {
         val fileIds: List<FileId> = immutableList(fileIds)
         val occurrencesByFile: Map<FileId, List<IndexedDeclaration>> = fileOccurrences.toMap()
@@ -131,6 +143,30 @@ class ProjectSymbolIndex private constructor(
         val alteredTypes: AlteredTypes = alteredTypes
 
         val packageBodiesByFile: Map<FileId, List<PackageBodyMemberNames>> = packageBodiesByFile.toMap()
+
+        /**
+         * The synonyms of the sources with their owner decided: a private synonym written without one is owned by its
+         * file's schema, and a target written without a schema is in the synonym owner's schema (the file's for a
+         * public synonym). One the file's schema cannot place is left out; of two with the same owner and name, the
+         * first in file order is kept.
+         */
+        val synonyms: List<SourceSynonym> = immutableList(buildList {
+            val seen = HashSet<Pair<OracleIdentifier?, OracleIdentifier>>()
+            for ((fileId, written) in synonymsByFile.entries.sortedBy { it.key.value }) {
+                val fileSchema = schemasByFile[fileId]
+                for (synonym in written) {
+                    val owner = if (synonym.isPublic) null else synonym.owner ?: fileSchema ?: continue
+                    val targetOwner = synonym.targetOwner ?: owner ?: fileSchema
+                    if (targetOwner == null && synonym.dbLink == null) continue
+                    if (!seen.add(owner to synonym.name)) continue
+                    add(SourceSynonym(fileId, synonym.isPublic, owner, synonym.name, targetOwner, synonym.targetName, synonym.dbLink))
+                }
+            }
+        })
+
+        @OptIn(ZpaExperimentalApi::class)
+        val synonymsByOwnerAndName: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym> =
+            Collections.unmodifiableMap(LinkedHashMap(synonyms.map(ProjectExternalSynonym::fromSource).associateBy { it.owner to it.name }))
 
         /** All canonical occurrences in deterministic file, then per-file order. */
         val occurrences: List<IndexedDeclaration> = immutableList(this.fileIds.flatMap { occurrencesByFile.getValue(it) })
@@ -225,6 +261,11 @@ class ProjectSymbolIndex private constructor(
     val fileIds: List<FileId> get() = tables.fileIds
     internal val omittedStandaloneCallables: Set<QualifiedName> get() = tables.omittedStandaloneCallables
     internal val alteredTypes: AlteredTypes get() = tables.alteredTypes
+
+    /** The `CREATE SYNONYM` statements of the sources by owner (`PUBLIC` for a public one) and name. */
+    @OptIn(ZpaExperimentalApi::class)
+    internal val synonymsByOwnerAndName: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym>
+        get() = tables.synonymsByOwnerAndName
 
     internal fun packageBodyOf(declaration: ProjectDeclaration, owner: QualifiedName): PackageBodyMemberNames? =
         tables.packageBodiesByFile[declaration.fileId].orEmpty().singleOrNull {

@@ -23,12 +23,12 @@ internal object ProjectExternalTypeDescriber {
         startReference: ProjectTypeReference?,
         packageOwner: ProjectQualifiedName?,
         written: ProjectWrittenAnchor?,
-        metadata: ProjectExternalMetadata,
+        objects: SchemaObjects,
         currentSchema: ProjectIdentifier?
     ): ProjectExternalTypeDescription {
         val trace = AnchorTrace()
         val source = ProjectTypeDescriber.describe(snapshot, startName, startReference, packageOwner, written, trace)
-        return Composition(snapshot, source, startReference, written, packageOwner, metadata, currentSchema, trace).compose()
+        return Composition(snapshot, source, startReference, written, packageOwner, objects, currentSchema, trace).compose()
     }
 }
 
@@ -39,11 +39,12 @@ private class Composition(
     private val startReference: ProjectTypeReference?,
     private val written: ProjectWrittenAnchor?,
     private val packageOwner: ProjectQualifiedName?,
-    private val metadata: ProjectExternalMetadata,
+    private val objects: SchemaObjects,
     private val currentSchema: ProjectIdentifier?,
     private val trace: AnchorTrace
 ) {
     private val index = snapshot.projectIndex
+    private val metadata = objects.metadata
     private val available = metadata.origin.isPresent
 
     /** Holder of the start reference, located once: the search scans the retained references of its file. */
@@ -279,8 +280,8 @@ private class Composition(
         dependencies: List<ProjectDeclaration>
     ): Outcome {
         val compiling = currentSchema
-        val captor = compiling?.let { metadata.findObject(it, first).orElse(null) }
-            ?: metadata.findObject(ProjectExternalSynonym.PUBLIC, first).orElse(null)
+        val captor = compiling?.let { objects.findObject(it, first) }
+            ?: objects.findObject(ProjectExternalSynonym.PUBLIC, first)
         if (captor != null) return Outcome(Status.NOT_EXTERNAL, anchor, capturingObject = captor)
         if (compiling == null || !metadata.isSchemaComplete(compiling) || !metadata.isPublicSynonymsComplete) {
             return inconclusive(Status.CAPTURE_NOT_EXCLUDED, anchor, reading, captors)
@@ -310,15 +311,15 @@ private class Composition(
         var current = name
         var public = unqualified
         while (true) {
-            val found = metadata.findObject(owner, current).orElse(null)
+            val found = objects.findObject(owner, current)
             val synonym = when {
                 found == null && public && metadata.isSchemaComplete(owner) ->
-                    metadata.findSynonym(ProjectExternalSynonym.PUBLIC, current).orElse(null)
+                    objects.findSynonym(ProjectExternalSynonym.PUBLIC, current)
                         ?: return Resolution(Target.Absent(owner, current, metadata.isPublicSynonymsComplete), synonyms)
                 found == null ->
                     return Resolution(Target.Absent(owner, current, !unqualified && synonyms.isEmpty() && metadata.isSchemaComplete(owner)), synonyms)
                 found.kind == ProjectExternalObject.Kind.SYNONYM ->
-                    metadata.findSynonym(owner, current).orElse(null) ?: return Resolution(Target.Absent(owner, current, false), synonyms)
+                    objects.findSynonym(owner, current) ?: return Resolution(Target.Absent(owner, current, false), synonyms)
                 found.kind == ProjectExternalObject.Kind.TABLE || found.kind == ProjectExternalObject.Kind.VIEW ->
                     return Resolution(Target.Relation(owner, current), synonyms)
                 else -> return Resolution(Target.Other(found), synonyms)

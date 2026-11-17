@@ -5,6 +5,7 @@
 
 package com.felipebz.zpa.project.extraction
 
+import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.project.*
 
@@ -12,7 +13,7 @@ import com.felipebz.zpa.project.*
  * Per-extraction unit discovery and dispatch: finds candidate `CREATE` units by value, selects the extractor, and
  * advances through the token list. It owns the (eagerly built, thread-confined) component graph of one extraction.
  */
-internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText: DiscardedSourceText) {
+internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, private val discardedText: DiscardedSourceText) {
     private val stream = TokenStream(fileId, tokens)
     private val bounds = UnitBounds(stream)
     private val datatypeShape = DatatypeShape(stream)
@@ -46,7 +47,50 @@ internal class UnitDispatcher(fileId: FileId, tokens: List<Token>, discardedText
                 cursor = create + 1
             }
         }
-        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, alteredTypes(), immutableList(bodies))
+        return ProjectFileExtraction(immutableList(result), standaloneCallables.omittedNames, alteredTypes(), immutableList(bodies), synonyms())
+    }
+
+    private fun synonyms(): List<SourceSynonym> {
+        val found = ArrayList<SourceSynonym>()
+        var cursor = 0
+        while (cursor < stream.tokens.size) {
+            val create = stream.nextValue(cursor, "CREATE") ?: break
+            cursor = create + 1
+            if (!stream.isKeyword(create, "CREATE")) continue
+            synonymAt(create)?.let(found::add)
+        }
+        return immutableList(found)
+    }
+
+    private fun synonymAt(create: Int): SourceSynonym? {
+        var index = create + 1
+        if (stream.valueAt(index) == "OR" && stream.valueAt(index + 1) == "REPLACE") index += 2
+        if (stream.valueAt(index) == "EDITIONABLE" || stream.valueAt(index) == "NONEDITIONABLE") index++
+        val public = stream.valueAt(index) == "PUBLIC"
+        if (public) index++
+        if (stream.valueAt(index) != "SYNONYM") return null
+        val (name, afterName) = stream.qualifiedName(index + 1) ?: return null
+        if (name.segments.size > 2 || public && name.segments.size == 2 || stream.valueAt(afterName) != "FOR") return null
+        val (target, afterTarget) = stream.qualifiedName(afterName + 1) ?: return null
+        if (target.segments.size > 2) return null
+        val end = minOf(bounds.statementEnd(afterTarget), stream.tokens.size - 1)
+        val link = linkAfter(afterTarget, end) ?: return null
+        if (discardedText.scan(stream.tokens, create, end).kinds.isNotEmpty()) return null
+        return SourceSynonym(
+            stream.fileId, public, name.segments.takeIf { it.size == 2 }?.first(), name.last,
+            target.segments.takeIf { it.size == 2 }?.first(), target.last, link.ifEmpty { null }
+        )
+    }
+
+    /**
+     * What follows a synonym's target up to the statement [end]: the database link after `@`, empty when the statement
+     * ends there, null for anything else, which is not this syntax.
+     */
+    private fun linkAfter(afterTarget: Int, end: Int): String? {
+        val tail = (afterTarget..end).takeWhile { stream.valueAt(it) != ";" && stream.tokens[it].type !== GenericTokenType.EOF }
+        if (tail.isEmpty()) return ""
+        if (stream.valueAt(tail.first()) != "@" || tail.size == 1) return null
+        return tail.drop(1).joinToString("") { stream.tokens[it].value }
     }
 
     private fun alteredTypes(): AlteredTypes {
