@@ -24,6 +24,9 @@ internal class SchemaObjects(
 ) {
     val hasWrittenSynonyms: Boolean get() = written.isNotEmpty()
 
+    /** The synonyms written in the project's sources, each once. */
+    val writtenSynonyms: Collection<ProjectExternalSynonym> get() = written.values
+
     /** Whether some relation may be found: the metadata was supplied, or the sources create tables. */
     val available: Boolean get() = metadata.origin.isPresent || tables.isNotEmpty()
 

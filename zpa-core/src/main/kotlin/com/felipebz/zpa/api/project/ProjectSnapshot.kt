@@ -297,6 +297,23 @@ class ProjectSnapshot private constructor(
         get() = immutableList(preparationResult.index.sourceRelations.byName.values)
 
     /**
+     * The synonym [owner].[name] (owner `PUBLIC` for a public synonym) as the analysis reads it: the synonym created
+     * with that owner and name in the project's sources (`CREATE [PUBLIC] SYNONYM`), else the one [metadata] supplies;
+     * empty when neither has it. Unlike a table, a synonym written in the sources comes before the metadata: it hides the
+     * object, relation or synonym the metadata has under the same owner and name, as Oracle reads the object the
+     * project creates.
+     */
+    fun findSynonym(owner: ProjectIdentifier, name: ProjectIdentifier, metadata: ProjectExternalMetadata): Optional<ProjectExternalSynonym> =
+        Optional.ofNullable(objects(metadata).findSynonym(owner, name))
+
+    /**
+     * The synonyms created in the project's sources, each once: the same values [findSynonym] returns for their owner
+     * and name, whatever the metadata. Runtime-unmodifiable.
+     */
+    val sourceSynonyms: List<ProjectExternalSynonym>
+        get() = immutableList(objects(ProjectExternalMetadata.none()).writtenSynonyms)
+
+    /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
      * explicit [packageOwner] (with a null owner there is no value namespace to search: nothing is inferred and no
      * package is scanned); a qualified name uses its own prefix and ignores [packageOwner] for candidate selection
