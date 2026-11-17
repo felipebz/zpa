@@ -271,6 +271,32 @@ class ProjectSnapshot private constructor(
         ProjectExternalTypeDescriber.describe(preferring(currentSchema, metadata), anchor.name, null, packageOwner, anchor, objects(metadata), currentSchema)
 
     /**
+     * The relation [schema].[name] as the analysis reads it: the answer of [metadata] when it has that relation;
+     * otherwise the table of that schema and name created in the project's sources (`CREATE TABLE`), found with the
+     * origin of [metadata], or a fixed label for the sources when no metadata was supplied. A relation neither has is
+     * the answer of [metadata], except that with no metadata and some table created in the sources it is
+     * [ProjectExternalLookup.Status.NOT_COVERED]: the sources never prove a relation absent.
+     */
+    fun findRelation(schema: ProjectIdentifier, name: ProjectIdentifier, metadata: ProjectExternalMetadata): ProjectExternalLookup =
+        objects(metadata).findRelation(schema, name)
+
+    /**
+     * The column [column] of the relation [schema].[name], with the precedence of [findRelation]. A column a source
+     * table does not list is [ProjectExternalLookup.Status.COLUMN_NOT_FOUND] only when the table's columns are
+     * complete ([ProjectExternalRelation.isColumnsComplete]: a column list, no `AS SELECT`, no object table, no
+     * `ALTER TABLE` of the table in the sources), and [ProjectExternalLookup.Status.NOT_COVERED] otherwise.
+     */
+    fun findColumn(schema: ProjectIdentifier, name: ProjectIdentifier, column: ProjectIdentifier, metadata: ProjectExternalMetadata): ProjectExternalLookup =
+        objects(metadata).findColumn(schema, name, column)
+
+    /**
+     * The relations created in the project's sources, each once, in file order: the same values [findRelation] and
+     * [findColumn] return for them when the metadata does not have their schema and name. Runtime-unmodifiable.
+     */
+    val sourceRelations: List<ProjectExternalRelation>
+        get() = immutableList(preparationResult.index.sourceRelations.byName.values)
+
+    /**
      * Classified lookup of one package variable or constant by its written [name]. A one-segment name uses the
      * explicit [packageOwner] (with a null owner there is no value namespace to search: nothing is inferred and no
      * package is scanned); a qualified name uses its own prefix and ignores [packageOwner] for candidate selection
