@@ -190,7 +190,7 @@ class LocalForwardCallTest {
             "43: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // a local function's result
             "46: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date",     // an element c(1) of a local collection
             "49: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS",                   // v's anchor is captured by a local (PLS-00487)
-            "52: PROJECT pkg.processar(UNKNOWN) -> AMBIGUOUS"                    // NVL(...): Oracle DATE, no evidence
+            "52: PROJECT pkg.processar(BUILT_IN DATETIME) -> RESOLVED date"      // NVL(v, sysdate): Oracle DATE
         )
     }
 

@@ -372,9 +372,16 @@ internal class LocalForwardCalls(
 
     /**
      * Evidence of one actual: a literal as Oracle types it; a name, an element or a call's result through the resolver,
-     * the type walk and, for a project callee, the call's own resolution.
+     * the type walk and, for a project callee, the call's own resolution. In SQL a PLS_INTEGER value, or a function or
+     * operator result STANDARD gives as one, is a NUMBER: SQL has no PLS_INTEGER, and Oracle binds it to a NUMBER formal.
      */
     private fun evidence(actual: LocalActual, region: LocalRegionId, sql: Boolean = false): LocalTypeEvidence {
+        val written = writtenEvidence(actual, region, sql)
+        if (!sql || written.argumentType.familyOrNull != ProjectDatatypeFamily.NUMERIC || written.argumentType.rank != OverloadRank.PLS_INTEGER) return written
+        return builtIn("NUMBER")
+    }
+
+    private fun writtenEvidence(actual: LocalActual, region: LocalRegionId, sql: Boolean): LocalTypeEvidence {
         actual.form?.let { return form(it, region, sql) }
         if (!actual.isName) return LocalTypeEvidence.literal(actual.literal?.let { if (sql) inSql(it) else it }).takeIf { actual.literal != null }
             ?: LocalTypeEvidence.unknown("expression not modeled")
@@ -431,7 +438,7 @@ internal class LocalForwardCalls(
     /** Evidence of a name or call whose first segment no local declaration takes. */
     private fun absentName(reference: LocalReference, actual: LocalActual, sql: Boolean): LocalTypeEvidence {
         builtInValue(reference, actual)?.let { return it }
-        substr(reference, actual, sql)?.let { return it }
+        standardFunction(reference, actual, sql)?.let { return it }
         callOf(reference)?.let { call ->
             val result = walk.projectResult(call.typed, reference.region)
             // An object type's constructor, user-defined or the default one: nothing local takes the name.
@@ -466,6 +473,13 @@ internal class LocalForwardCalls(
             ?: LocalTypeEvidence.unknown("a host variable the Forms metadata does not type")
         is LocalActualForm.Constructor -> walk.constructorResult(form.type, region) ?: LocalTypeEvidence.unknown("not an object type the project describes")
         LocalActualForm.JsonConstructor -> walk.jsonConstructorResult(region) ?: builtIn("JSON")
+        is LocalActualForm.Arithmetic -> typed(StandardFunctions.arithmetic(form.operands.map { evidence(it, region, sql).argumentType }, form.operators), "an operation")
+        is LocalActualForm.Case -> typed(StandardFunctions.common(form.results.map { evidence(it, region, sql).argumentType }, sql), "a CASE")
+        is LocalActualForm.Cast -> if (DatatypeFamilies.ofTypeName(form.type) != null) builtIn(form.type) else LocalTypeEvidence.unknown("a CAST to a type that is not predefined")
+        // The time zone's name and abbreviation are character values; every other field is a number.
+        is LocalActualForm.Extract -> builtIn(if (form.field == "TIMEZONE_REGION" || form.field == "TIMEZONE_ABBR") "VARCHAR2" else "NUMBER")
+        is LocalActualForm.Trim -> typed(StandardFunctions.result("TRIM", listOf(evidence(form.source, region, sql).argumentType)), "a TRIM")
+        is LocalActualForm.Conversion -> typed(StandardFunctions.result(form.function, listOf(evidence(form.source, region, sql).argumentType)), form.function)
     }
 
     /**
@@ -517,21 +531,18 @@ internal class LocalForwardCalls(
     }
 
     /**
-     * `SUBSTR(s, p [, n])` when no local declaration takes the name: STANDARD's, before any schema-level function of that
-     * name. Its result is a CLOB for a CLOB or NCLOB `s`, else a VARCHAR2 for a character, numeric or datetime `s`
-     * (in the character set of `s`: Oracle finds a call ambiguous between overloads that differ only by it, as it finds
-     * VARCHAR2 and NVARCHAR2 alike for overloads). Anything else (another argument count, an `s` of no type) is not typed.
+     * A call of a function of STANDARD when no local declaration takes the name: STANDARD's, before any schema-level
+     * function of that name. Its result type follows from the types of its positional actuals ([StandardFunctions]).
      */
-    private fun substr(reference: LocalReference, actual: LocalActual, sql: Boolean): LocalTypeEvidence? {
-        if (!actual.isCall || reference.segments.isNotEmpty() || reference.name.quoted || reference.name.lookupName != "SUBSTR") return null
-        val actuals = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.takeIf { it.size in 2..3 && it.all { a -> a.label == null } }
-            ?: return LocalTypeEvidence.unknown("a SUBSTR call of other actuals")
-        return when (evidence(actuals.first(), reference.region, sql).argumentType.familyOrNull) {
-            ProjectDatatypeFamily.CLOB -> builtIn("CLOB")
-            ProjectDatatypeFamily.CHARACTER, ProjectDatatypeFamily.NUMERIC, ProjectDatatypeFamily.DATETIME -> builtIn("VARCHAR2")
-            else -> LocalTypeEvidence.unknown("SUBSTR of a value of no character, numeric or datetime type")
-        }
+    private fun standardFunction(reference: LocalReference, actual: LocalActual, sql: Boolean): LocalTypeEvidence? {
+        if (!actual.isCall || reference.segments.isNotEmpty() || reference.name.quoted || !StandardFunctions.covers(reference.name.lookupName)) return null
+        val actuals = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.takeIf { it.all { a -> a.label == null } }
+            ?: return LocalTypeEvidence.unknown("a call of named actuals")
+        val result = StandardFunctions.result(reference.name.lookupName, actuals.map { evidence(it, reference.region, sql).argumentType }, sql)
+        return typed(result, "${reference.name.lookupName} of these actuals")
     }
+
+    private fun typed(typeName: String?, what: String) = typeName?.let(::builtIn) ?: LocalTypeEvidence.unknown("$what of no modeled type")
 
     /** In SQL an integer literal is a NUMBER, whatever its size: Oracle prefers a NUMBER formal for it there. */
     private fun inSql(literal: LocalLiteral) = if (literal == LocalLiteral.INTEGER || literal == LocalLiteral.LARGE_INTEGER) LocalLiteral.NUMBER else literal

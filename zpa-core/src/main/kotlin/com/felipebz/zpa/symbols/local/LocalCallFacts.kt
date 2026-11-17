@@ -87,6 +87,24 @@ internal sealed interface LocalActualForm {
 
     /** `JSON(…)` or `NEW JSON(…)`, which builds a value of the type a `json` written in the same file names. */
     data object JsonConstructor : LocalActualForm
+
+    /** `a + b`, `a - b`, `a * b`, `a / b`, `a MOD b`: the operands, and the operators between them, left to right. */
+    class Arithmetic(val operands: List<LocalActual>, val operators: List<String>) : LocalActualForm
+
+    /** `CAST(x AS t)`, with the text of the type written. */
+    class Cast(val type: String) : LocalActualForm
+
+    /** `CASE … END`, with the actual of each result (after each `THEN`, and after `ELSE`). */
+    class Case(val results: List<LocalActual>) : LocalActualForm
+
+    /** `EXTRACT(field FROM x)`, with the field. */
+    class Extract(val field: String) : LocalActualForm
+
+    /** `TRIM([… FROM] x)`, with the trimmed value. */
+    class Trim(val source: LocalActual) : LocalActualForm
+
+    /** `TO_NUMBER(x …)`, `TO_DATE(x …)`, `TO_TIMESTAMP(x …)` or `TO_TIMESTAMP_TZ(x …)`: the function and its first actual. */
+    class Conversion(val function: String, val source: LocalActual) : LocalActualForm
 }
 
 /** One written actual of a call: its notation and its form. */
@@ -160,6 +178,8 @@ internal object LocalCallCollector {
     }
 
     private fun expression(label: OracleIdentifier?, expression: AstNode): LocalActual {
+        // `(x)` is the value of `x`; with an interval qualifier after it, it is not.
+        if (expression.type === PlSqlGrammar.BRACKED_EXPRESSION && expression.children.size == 3) return expression(label, expression.children[1])
         if (expression.type === PlSqlGrammar.LITERAL) return LocalActual(label, literal(expression), 0, 0)
         if (expression.type in PREDICATES) return LocalActual(label, null, 0, 0, form = LocalActualForm.Predicate)
         if (expression.type === PlSqlGrammar.CONCATENATION_EXPRESSION) {
@@ -182,13 +202,49 @@ internal object LocalCallCollector {
             val call = LocalActual(null, null, called.token.line, called.token.column, isCall = true)
             return LocalActual(label, null, 0, 0, form = LocalActualForm.Element(call, lists.size - 1))
         }
-        if (expression.type === PlSqlGrammar.UNARY_EXPRESSION && expression.children.size == 2 &&
-            expression.firstChild.type.let { it === PlSqlPunctuator.MINUS || it === PlSqlPunctuator.PLUS }
-        ) return LocalActual(label, null, 0, 0, form = LocalActualForm.Signed(expression(null, expression.lastChild)))
+        operation(label, expression)?.let { return it }
         cursorAttribute(expression)?.let { return LocalActual(label, null, 0, 0, form = it) }
         LocalSyntax.hostVariable(expression)?.let { (qualifier, name) -> return LocalActual(label, null, 0, 0, form = LocalActualForm.HostVariable(qualifier, name)) }
         val name = name(expression) ?: return LocalActual(label, null, 0, 0)
         return LocalActual(label, null, name.token.line, name.token.column)
+    }
+
+    /** A signed value, an arithmetic expression, `CAST`, `CASE`, `EXTRACT` or `TRIM` as an actual; null for anything else. */
+    private fun operation(label: OracleIdentifier?, expression: AstNode): LocalActual? {
+        val form = when (expression.type) {
+            PlSqlGrammar.UNARY_EXPRESSION -> if (expression.children.size == 2 && expression.firstChild.type.let { it === PlSqlPunctuator.MINUS || it === PlSqlPunctuator.PLUS }) {
+                LocalActualForm.Signed(expression(null, expression.lastChild))
+            } else {
+                null
+            }
+            PlSqlGrammar.ADDITIVE_EXPRESSION, PlSqlGrammar.MULTIPLICATIVE_EXPRESSION -> {
+                val children = expression.children
+                LocalActualForm.Arithmetic(
+                    children.filterIndexed { i, _ -> i % 2 == 0 }.map { expression(null, it) },
+                    children.filterIndexed { i, _ -> i % 2 == 1 }.map { it.tokenValue.uppercase() }
+                )
+            }
+            PlSqlGrammar.CASE_EXPRESSION -> LocalActualForm.Case(
+                expression.children.zipWithNext().filter { (marker, _) -> marker.type === PlSqlKeyword.THEN || marker.type === PlSqlKeyword.ELSE }
+                    .map { (_, result) -> expression(null, result) }
+            )
+            SingleRowSqlFunctionsGrammar.SINGLE_ROW_SQL_FUNCTION -> {
+                val function = expression.firstChild
+                val children = function.children
+                when (function.type) {
+                    SingleRowSqlFunctionsGrammar.CAST_EXPRESSION -> function.getFirstChildOrNull(PlSqlGrammar.DATATYPE)
+                        ?.let { type -> LocalActualForm.Cast(type.tokens.joinToString(" ") { it.originalValue }) }
+                    SingleRowSqlFunctionsGrammar.EXTRACT_DATETIME_EXPRESSION -> LocalActualForm.Extract(children[2].tokenValue.uppercase())
+                    SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION -> LocalActualForm.Trim(expression(null, children[children.size - 2]))
+                    SingleRowSqlFunctionsGrammar.TO_NUMBER_EXPRESSION, SingleRowSqlFunctionsGrammar.TO_DATE_EXPRESSION,
+                    SingleRowSqlFunctionsGrammar.TO_TIMESTAMP_EXPRESSION, SingleRowSqlFunctionsGrammar.TO_TIMESTAMP_TZ_EXPRESSION ->
+                        function.getFirstChildOrNull(PlSqlGrammar.ARGUMENT)?.let { LocalActualForm.Conversion(function.tokenValue.uppercase(), actual(it)) }
+                    else -> null
+                }
+            }
+            else -> null
+        } ?: return null
+        return LocalActual(label, null, 0, 0, form = form)
     }
 
     /**

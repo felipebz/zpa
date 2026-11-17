@@ -72,9 +72,9 @@ class LocalMethodOverloadTest {
         // Oracle prefers PLS_INTEGER for an integer literal, NUMBER for a decimal one.
         assertThat(selected("v.w(1)")).isEqualTo("number")
         assertThat(selected("v.w(1.5)")).isEqualTo("varchar2")
-        // NULL fits both (PLS-00307), and an actual of no type tells nothing.
+        // NULL fits both (PLS-00307); a NUMBER plus an integer is a NUMBER.
         assertThat(selected("v.m(null)")).isEqualTo("AMBIGUOUS")
-        assertThat(selected("v.m(v_amount + 1)")).isEqualTo("AMBIGUOUS")
+        assertThat(selected("v.m(v_amount + 1)")).isEqualTo("number")
     }
 
     @Test

@@ -94,8 +94,8 @@ class CallBindingTest {
             "9:pk_audit.log_value=Project(RESOLVED (p_val number) of 2)",
             "9:pk_audit=Unavailable(NOT_A_COVERED_NAME)",
             "9:v_amount=Unavailable(NOT_A_COVERED_NAME)",
-            // An actual of no known type leaves both.
-            "10:pk_audit.log_value=Project(AMBIGUOUS of 2)",
+            // A number plus an integer is a number.
+            "10:pk_audit.log_value=Project(RESOLVED (p_val number) of 2)",
             "10:pk_audit=Unavailable(NOT_A_COVERED_NAME)",
             "10:v_amount=Unavailable(NOT_A_COVERED_NAME)",
             // A local overloaded procedure binds its declaration, among both of its set.
@@ -308,6 +308,122 @@ class CallBindingTest {
             assertThat(answers(project, user, fromLine = 4, metadata = jsonSynonym, version = version).filter { it.contains("pk_doc.keep=") })
                 .describedAs("$version").containsExactly("4:pk_doc.keep=Project(RESOLVED (p varchar2) of 2)")
         }
+    }
+
+    private val formatters = "create package pk_fmt as\n" +
+        "  procedure put(e varchar2);\n  procedure put(e number);\n  procedure put(e date);\n  procedure put(e clob);\n" +
+        "  procedure count_of(e number);\n  procedure count_of(e pls_integer);\nend;\n/\n"
+
+    /** The selected overload of each `pk_fmt` call of [calls], one per line from line 9 on. */
+    private fun formatted(vararg calls: String, declarations: String = ""): List<String> {
+        val user = "create procedure fmt_it is\n  s varchar2(10);\n  n number;\n  d date;\n  c clob;\n  i pls_integer;\n" + declarations +
+            "begin\n" + calls.joinToString("") { "  pk_fmt.$it;\n" } + "end;\n/\n"
+        val first = 8 + declarations.count { it == '\n' }
+        return answers(formatters, user, fromLine = first).filter { it.contains("pk_fmt.") }.map { it.substringAfter('=') }
+    }
+
+    private fun put(type: String) = "Project(RESOLVED (e $type) of 4)"
+
+    @Test
+    fun functionsOfStandardTypeTheirCalls() {
+        assertThat(formatted(
+            "put(to_char(n))", "put(to_number(s))", "put(to_clob(s))", "put(upper(s))", "put(substr(c, 1, 2))", "put(add_months(d, 1))",
+            "put(trunc(d))", "put(round(n))", "put(nvl(n, 0))", "put(nvl(s, n))", "put(length(s))", "put(months_between(d, d))"
+        )).containsExactly(
+            put("varchar2"), put("number"), put("clob"), put("varchar2"), put("clob"), put("date"),
+            // NVL takes the type of its first argument.
+            put("date"), put("number"), put("number"), put("varchar2"), put("number"), put("number")
+        )
+    }
+
+    @Test
+    fun operatorsCastAndCaseTypeTheirResults() {
+        assertThat(formatted(
+            "put(n + 1)", "put(n * 2)", "put(n / 2)", "put(d + 1)", "put(d - 1)", "put(1 + d)", "put(d - d)", "put(s || n)", "put(c || s)",
+            "put(cast(n as varchar2))", "put(case when n > 0 then 'a' else 'b' end)", "put(case when n > 0 then 'a' else n end)",
+            "put(extract(year from d))", "put(trim(s))"
+        )).containsExactly(
+            put("number"), put("number"), put("number"), put("date"), put("date"), put("date"), put("number"), put("varchar2"), put("clob"),
+            // A number before a character value among the results of a CASE.
+            put("varchar2"), put("varchar2"), put("number"),
+            put("number"), put("varchar2")
+        )
+    }
+
+    @Test
+    fun integerResultsPreferThePlsIntegerOverload() {
+        val number = "Project(RESOLVED (e number) of 2)"
+        val integer = "Project(RESOLVED (e pls_integer) of 2)"
+        // LENGTH and INSTR of a VARCHAR2 return a BINARY_INTEGER, of a CLOB an INTEGER; `/` and MOD give a NUMBER.
+        assertThat(formatted(
+            "count_of(length(s))", "count_of(instr(s, 'a'))", "count_of(length(c))", "count_of(n + 1)", "count_of(round(n))",
+            "count_of(i + 1)", "count_of(i / 2)", "count_of(abs(i))", "count_of(nvl(i, n))", "count_of(round(i))", "count_of(trunc(i))",
+            "count_of(mod(i, 2))", "count_of(sign(n))", "count_of(ascii(s))", "count_of(coalesce(s, n))", "count_of((i + 1) * 2)", "count_of((n + 1))"
+        )).containsExactly(
+            integer, integer, number, number, number, integer, number, integer, number, integer, integer,
+            number, integer, integer, number, integer, number
+        )
+    }
+
+    private val tallies = "create package pk_tally as\n  function f(e number) return number;\n  function f(e pls_integer) return number;\n" +
+        "  function g(e varchar2) return number;\n  function g(e number) return number;\nend;\n/\n"
+
+    /** The selected overload of each expression of [expressions], called as `x := pk_tally.<call>` and in a SELECT. */
+    private fun tallied(vararg expressions: String): List<Pair<String, String>> {
+        val user = "create procedure tally_it is\n  s varchar2(10);\n  n number;\n  i pls_integer;\n  c clob;\n  x number;\nbegin\n" +
+            expressions.joinToString("") { "  x := pk_tally.$it;\n  select pk_tally.$it into x from dual;\n" } + "end;\n/\n"
+        val rows = answers(tallies, user, fromLine = 8).filter { it.contains("pk_tally.") }.map { it.substringAfter('=').substringAfter("RESOLVED ").substringBefore(" of") }
+        return rows.chunked(2) { it[0] to it[1] }
+    }
+
+    @Test
+    fun sqlHasNoPlsIntegerAndRejectsMixedResults() {
+        // In SQL every number is a NUMBER, a PLS_INTEGER variable included.
+        assertThat(tallied("f(length(s))", "f(instr(s, 'a'))", "f(ascii(s))", "f(sign(n))", "f(abs(i))", "f(i)", "f(i + i)")).containsOnly(
+            "(e pls_integer)" to "(e number)"
+        )
+        assertThat(tallied("f(case when n > 0 then 1 else to_number(s) end)", "g(nvl(s, n))")).containsExactly(
+            "(e number)" to "(e number)", "(e varchar2)" to "(e varchar2)"
+        )
+        // SQL rejects a CASE or a COALESCE of a character value and a number (ORA-00932).
+        assertThat(tallied("g(case when n > 0 then 'a' else n end)", "g(coalesce(s, n))")).containsExactly(
+            "(e number)" to "Project(AMBIGUOUS", "(e number)" to "Project(AMBIGUOUS"
+        )
+    }
+
+    @Test
+    fun timeZoneFieldsAndClobResults() {
+        assertThat(formatted(
+            "put(extract(timezone_hour from systimestamp))", "put(extract(timezone_region from systimestamp))",
+            "put(case when n > 0 then c else c end)", "put(coalesce(c, c))"
+        )).containsExactly(put("number"), put("varchar2"), put("clob"), put("clob"))
+    }
+
+    @Test
+    fun aLocalFunctionNamedLikeOneOfStandardKeepsItsResult() {
+        // The enclosing scope comes before STANDARD.
+        val local = "  function upper(x varchar2) return date is begin return sysdate; end;\n"
+        assertThat(formatted("put(upper(s))", declarations = local)).containsExactly(put("date"))
+        // STANDARD comes before a schema-level function of the same name.
+        val schemaLevel = "create function to_char(x number) return date is begin return sysdate; end;\n/\n" + formatters
+        val user = "create procedure fmt_it is\n  n number;\nbegin\n  pk_fmt.put(to_char(n));\nend;\n/\n"
+        assertThat(answers(schemaLevel, user, fromLine = 4).filter { it.contains("pk_fmt.put=") }.map { it.substringAfter('=') })
+            .containsExactly(put("varchar2"))
+    }
+
+    @Test
+    fun anOperandOfNoTypeLeavesTheExpressionUntyped() {
+        assertThat(formatted("put(pk_unknown.v + 1)", "put(nvl(pk_unknown.v, n))", "put(upper(pk_unknown.v))"))
+            .containsOnly("Project(AMBIGUOUS of 4)")
+    }
+
+    @Test
+    fun aCharacterResultCannotChooseBetweenVarchar2AndRaw() {
+        // RAW is a subtype of VARCHAR2 in STANDARD: a VARCHAR2 or a RAW value binds neither of the two before the other.
+        val project = "create package pk_bytes as\n  procedure put(e varchar2);\n  procedure put(e raw);\n  procedure put(e number);\nend;\n/\n"
+        val user = "create procedure bytes_it is\n  n number;\nbegin\n  pk_bytes.put(to_char(n));\n  pk_bytes.put(sys_guid());\n  pk_bytes.put(n + 1);\nend;\n/\n"
+        assertThat(answers(project, user, fromLine = 4).filter { it.contains("pk_bytes.put=") }.map { it.substringAfter('=') })
+            .containsExactly("Project(AMBIGUOUS of 3)", "Project(AMBIGUOUS of 3)", "Project(RESOLVED (e number) of 3)")
     }
 
     @Test
