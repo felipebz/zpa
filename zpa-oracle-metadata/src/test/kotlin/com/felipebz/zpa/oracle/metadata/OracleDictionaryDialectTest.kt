@@ -80,6 +80,24 @@ class OracleDictionaryDialectTest {
     }
 
     @Test
+    fun argumentQueriesReadDefaultedOnlyWhenTheReleaseHasIt() {
+        val columns = "SELECT owner, package_name, object_name, subprogram_id, overload, argument_name, position, in_out, data_type, pls_type, " +
+            "type_owner, type_name, type_subname, "
+        val order = " ORDER BY owner, package_name, object_name, subprogram_id, position"
+        for (d in OracleDictionaryDialect.entries) {
+            assertThat(d.argumentsSql(OracleTypeScope.SCHEMA, defaulted = true))
+                .isEqualTo(columns + "defaulted FROM all_arguments WHERE data_level = 0 AND owner = ?" + order)
+            // Before 11g there is no DEFAULTED.
+            assertThat(d.argumentsSql(OracleTypeScope.SCHEMA, defaulted = false))
+                .isEqualTo(columns + "NULL FROM all_arguments WHERE data_level = 0 AND owner = ?" + order)
+            assertThat(d.argumentsSql(OracleTypeScope.PUBLIC_SYNONYMS, defaulted = true)).contains(
+                "(owner, NVL(package_name, object_name)) IN (SELECT table_owner, table_name FROM all_synonyms WHERE owner = 'PUBLIC' AND db_link IS NULL)"
+            )
+            assertThat(d.argumentsSql(OracleTypeScope.named(1), defaulted = true)).contains("(owner, NVL(package_name, object_name)) IN ((?, ?))")
+        }
+    }
+
+    @Test
     fun objectTypeQueriesReadEachScopeAndDoNotDiffer() {
         for (d in OracleDictionaryDialect.entries) {
             val schema = OracleTypeScope.SCHEMA

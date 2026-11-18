@@ -132,6 +132,24 @@ class OracleMetadataAcquisitionIT {
     }
 
     @Test
+    fun subprogramsOfTheSchemaAndBehindThePublicSynonyms() {
+        val md = full.metadata
+        val sizes = md.findSubprograms(id("SYS"), id("DBMS_LOB"), id("GETLENGTH"))
+        assertThat(sizes).hasSizeGreaterThanOrEqualTo(3).allSatisfy { assertThat(it.result.get().name).isEqualTo("INTEGER") }
+        val stack = md.findSubprograms(id("SYS"), id("DBMS_UTILITY"), id("FORMAT_ERROR_STACK")).single()
+        assertThat(listOf(stack.parameters.isEmpty(), stack.result.get().name)).containsExactly(true, "VARCHAR2")
+        val take = md.findSubprograms(schema, id("PKG_META"), id("TAKE"))
+        assertThat(take.map { it.result.get().name }).containsOnly("VARCHAR2")
+        assertThat(take.flatMap { it.parameters }.map { it.defaulted.orElse(null) }).containsOnly(false)
+        val none = OracleMetadataAcquisition.acquire(owner.dataSource, OracleMetadataRequest.builder().schema(owner.name).build())
+        println(
+            "MEASURE subprograms: every public synonym ${full.subprogramCount} subprograms, ${full.argumentRowCount} argument rows, " +
+                "read in ${full.subprogramReading.toMillis()} ms; no public synonym ${none.subprogramCount} subprograms, " +
+                "${none.argumentRowCount} argument rows, read in ${none.subprogramReading.toMillis()} ms"
+        )
+    }
+
+    @Test
     fun ordinaryTableColumnsAndDatatypes() {
         val t = relation("TEST_TABLE")
         assertThat(t.isColumnsComplete).isTrue()

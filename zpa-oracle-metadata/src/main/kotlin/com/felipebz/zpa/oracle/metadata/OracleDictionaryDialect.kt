@@ -23,30 +23,38 @@ private const val VIEW_LIST =
 
 private fun placeholders(pairs: Int) = List(pairs) { "(?, ?)" }.joinToString(", ")
 
-private const val SYNONYM_TARGETS = "(owner, type_name) IN (SELECT table_owner, table_name FROM all_synonyms WHERE "
+private const val NAME = "\u0000name\u0000"
+
+private const val SYNONYM_TARGETS = "(owner, $NAME) IN (SELECT table_owner, table_name FROM all_synonyms WHERE "
 
 /**
- * Which object types a type query reads, as a condition on the `OWNER` and `TYPE_NAME` every type view has, with
- * [parameters] bind values: the types of one schema, those its synonyms or the public synonyms stand for, or named ones.
+ * Which objects a type or subprogram query reads, as a condition on their owner and name, with [parameters] bind
+ * values: those of one schema, those its synonyms or the public synonyms stand for, or named ones.
  */
-internal class OracleTypeScope private constructor(val condition: String, val parameters: Int) {
+internal class OracleTypeScope private constructor(private val template: String, val parameters: Int) {
+    /** The condition over `OWNER` and `TYPE_NAME`, the columns every type view has. */
+    val condition: String get() = on("type_name")
+
+    /** The condition with [nameColumn] as the object's name. */
+    fun on(nameColumn: String): String = template.replace(NAME, nameColumn)
+
     companion object {
-        /** The types of one schema; the parameter is the schema. */
+        /** The objects of one schema; the parameter is the schema. */
         val SCHEMA = OracleTypeScope("owner = ?", 1)
 
-        /** The types the synonyms of one schema stand for; the parameter is the schema. */
+        /** The objects the synonyms of one schema stand for; the parameter is the schema. */
         val SCHEMA_SYNONYMS = OracleTypeScope(SYNONYM_TARGETS + "owner = ? AND db_link IS NULL)", 1)
 
-        /** The types every public synonym stands for. */
+        /** The objects every public synonym stands for. */
         val PUBLIC_SYNONYMS = OracleTypeScope(SYNONYM_TARGETS + "owner = 'PUBLIC' AND db_link IS NULL)", 0)
 
-        /** The types the public synonyms whose `TABLE_OWNER` is one of [targets] schemas stand for; the parameters are the schemas. */
+        /** The objects the public synonyms whose `TABLE_OWNER` is one of [targets] schemas stand for; the parameters are the schemas. */
         fun publicSynonymsOf(targets: Int) = OracleTypeScope(
             SYNONYM_TARGETS + "owner = 'PUBLIC' AND db_link IS NULL AND table_owner IN (${List(targets) { "?" }.joinToString(", ")}))", targets
         )
 
-        /** The types of [pairs] `(owner, type_name)` pairs; the parameters are the pairs. */
-        fun named(pairs: Int) = OracleTypeScope("(owner, type_name) IN (${placeholders(pairs)})", pairs * 2)
+        /** The objects of [pairs] `(owner, name)` pairs; the parameters are the pairs. */
+        fun named(pairs: Int) = OracleTypeScope("(owner, $NAME) IN (${placeholders(pairs)})", pairs * 2)
     }
 }
 
@@ -132,6 +140,16 @@ internal enum class OracleDictionaryDialect(
     fun methodResultsSql(scope: OracleTypeScope): String =
         "SELECT owner, type_name, method_name, method_no, result_type_mod, result_type_owner, result_type_name " +
             "FROM all_method_results WHERE ${scope.condition}"
+
+    /**
+     * The `ALL_ARGUMENTS` rows of the packages and standalone subprograms of [scope] (an object's name is its package's,
+     * else its own), the parts of composite parameters left out. `DEFAULTED` is read only when [defaulted]: releases
+     * before 11g have no such column.
+     */
+    fun argumentsSql(scope: OracleTypeScope, defaulted: Boolean): String =
+        "SELECT owner, package_name, object_name, subprogram_id, overload, argument_name, position, in_out, data_type, pls_type, " +
+            "type_owner, type_name, type_subname, ${if (defaulted) "defaulted" else "NULL"} FROM all_arguments " +
+            "WHERE data_level = 0 AND ${scope.on("NVL(package_name, object_name)")} ORDER BY owner, package_name, object_name, subprogram_id, position"
 
     companion object {
         fun forMajorVersion(major: Int): OracleDictionaryDialect = if (major < 12) LEGACY else CURRENT

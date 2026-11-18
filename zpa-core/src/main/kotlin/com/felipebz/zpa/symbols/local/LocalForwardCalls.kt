@@ -441,18 +441,33 @@ internal class LocalForwardCalls(
         standardFunction(reference, actual, sql)?.let { return it }
         callOf(reference)?.let { call ->
             val result = walk.projectResult(call.typed, reference.region)
-            // An object type's constructor, user-defined or the default one: nothing local takes the name.
-            if (result.terminal == LocalTypeEvidence.Terminal.UNKNOWN && actual.isCall) {
-                walk.constructorResult(target(reference), reference.region)?.let { return it }
-                walk.externalTypeCall(target(reference), reference.region)?.let { return it }
+            if (result.terminal == LocalTypeEvidence.Terminal.UNKNOWN) {
+                // An object type's constructor, user-defined or the default one: nothing local takes the name.
+                if (actual.isCall) {
+                    walk.constructorResult(target(reference), reference.region)?.let { return it }
+                    walk.externalTypeCall(target(reference), reference.region)?.let { return it }
+                }
+                externalSubprogram(reference, actual, sql)?.let { return it }
             }
             return result
         }
         // A constructor or a static method of an object type of the metadata.
         if (actual.isCall) walk.externalTypeCall(target(reference), reference.region)?.let { return it }
+        externalSubprogram(reference, actual, sql)?.let { return it }
         // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
         return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
         else walk.projectValue(target(reference), reference.region)
+    }
+
+    /**
+     * The result of a call of a subprogram only the external metadata has, written with or without parentheses (then
+     * with no actual); null when the metadata decides no result.
+     */
+    private fun externalSubprogram(reference: LocalReference, actual: LocalActual, sql: Boolean): LocalTypeEvidence? {
+        val actuals = if (actual.isCall) callsByPosition[actual.nameLine to actual.nameColumn]?.actuals ?: return null else emptyList()
+        return walk.externalSubprogramCall(
+            target(reference), actuals.map { evidence(it, reference.region, sql).argumentType }, arguments(actuals.map { it.label }), reference.region
+        )
     }
 
     /**

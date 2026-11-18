@@ -194,6 +194,20 @@ internal class LocalTypeWalk(
     fun castType(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence? =
         constructorResult(name, region) ?: reachedType(name.segments, region)?.let { objectValue(it) }
 
+    /** The calls to subprograms only the metadata has, from this walk's project; null without a prepared project. */
+    private val externalCalls: ExternalSubprogramCalls? by lazy(LazyThreadSafetyMode.NONE) {
+        snapshot?.takeIf { prepared }?.let { ExternalSubprogramCalls(it, metadata) }
+    }
+
+    /**
+     * Evidence of a call of [name], read from [region]'s unit, to a subprogram only the metadata has, with
+     * [argumentTypes] written as [arguments]: its result type, or null when the metadata decides none.
+     */
+    fun externalSubprogramCall(name: QualifiedName, argumentTypes: List<ProjectArgumentType>, arguments: InternalCallArguments, region: LocalRegionId): LocalTypeEvidence? {
+        val result = externalCalls?.result(name.segments, compilationSchema(region), argumentTypes, arguments) ?: return null
+        return externalValue(result, "the result of $name").takeIf { it.terminal != LocalTypeEvidence.Terminal.UNKNOWN }
+    }
+
     /** The project as seen from the unit holding [region]: its compilation schema first, and the run's synonyms. */
     fun projectView(region: LocalRegionId): ProjectSnapshot? = snapshot?.preferring(compilationSchema(region), metadata)
 

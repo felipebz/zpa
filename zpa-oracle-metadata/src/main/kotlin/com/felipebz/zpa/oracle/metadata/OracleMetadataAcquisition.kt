@@ -56,7 +56,8 @@ object OracleMetadataAcquisition {
                 "exclusive connection outside any external transaction"
         }
         // Decided once, from driver metadata, before any dictionary query.
-        val dialect = forced ?: OracleDictionaryDialect.forMajorVersion(connection.metaData.databaseMajorVersion)
+        val major = connection.metaData.databaseMajorVersion
+        val dialect = forced ?: OracleDictionaryDialect.forMajorVersion(major)
         val timeout = request.queryTimeout.seconds.toInt()
         var failure: Throwable? = null
         try {
@@ -94,13 +95,52 @@ object OracleMetadataAcquisition {
             val typesStarted = System.nanoTime()
             val types = objectTypes(connection, dialect, request, synonyms, timeout)
             val typesReadIn = Duration.ofNanos(System.nanoTime() - typesStarted)
-            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt, version, objects, synonyms, types, typesReadIn)
+            val argumentsStarted = System.nanoTime()
+            val arguments = arguments(connection, dialect, request, synonyms, timeout, defaulted = major >= 11)
+            val argumentsReadIn = Duration.ofNanos(System.nanoTime() - argumentsStarted)
+            return OracleDictionaryMapping.assemble(
+                request, session, relations, columns, acquiredAt, version, objects, synonyms, types, typesReadIn, arguments, argumentsReadIn
+            )
         } catch (e: Throwable) {
             failure = e
             throw e
         } finally {
             finish(connection, failure)
         }
+    }
+
+    /**
+     * The `ALL_ARGUMENTS` rows of the packages and standalone subprograms of the requested schemas, and of those their
+     * synonyms and the public synonyms stand for (a chain of the synonyms read followed to its end). `DEFAULTED` is read
+     * from 11g on.
+     */
+    private fun arguments(
+        connection: Connection,
+        dialect: OracleDictionaryDialect,
+        request: OracleMetadataRequest,
+        synonyms: List<SynonymRow>,
+        timeout: Int,
+        defaulted: Boolean
+    ): List<ArgumentRow> {
+        val rows = ArrayList<ArgumentRow>()
+        val seen = HashSet<List<String>>()
+        fun read(scope: OracleTypeScope, parameters: List<String>) = query(connection, dialect.argumentsSql(scope, defaulted), parameters, timeout) {
+            val row = ArgumentRow(
+                it.getString(1), it.getString(2), it.getString(3), it.getBigDecimal(4), it.getString(5), it.getString(6), it.getBigDecimal(7),
+                it.getString(8), it.getString(9), it.getString(10), it.getString(11), it.getString(12), it.getString(13), it.getString(14)
+            )
+            // An object several scopes reach is read once.
+            if (seen.add(listOf(row.owner, row.packageName ?: "", row.name, row.subprogramId.toPlainString(), row.position.toPlainString()))) rows += row
+        }
+        for (schema in request.schemas) {
+            read(OracleTypeScope.SCHEMA, listOf(schema))
+            read(OracleTypeScope.SCHEMA_SYNONYMS, listOf(schema))
+        }
+        if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) read(OracleTypeScope.PUBLIC_SYNONYMS, emptyList())
+        for (chunk in request.publicSynonymTargets.chunked(BATCH)) read(OracleTypeScope.publicSynonymsOf(chunk.size), chunk)
+        val ends = synonymChainEnds(synonyms)
+        for (chunk in ends.chunked(BATCH)) read(OracleTypeScope.named(chunk.size), chunk.flatMap { listOf(it.first, it.second) })
+        return rows
     }
 
     /**

@@ -106,6 +106,27 @@ internal class TypeRows(
     val results: List<MethodResultRow> = emptyList()
 )
 
+/**
+ * One `ALL_ARGUMENTS` row at `DATA_LEVEL` 0: a parameter, or the result of a function at position 0. A subprogram
+ * without parameters has only its result row, a function's; a procedure without parameters has no row.
+ */
+internal class ArgumentRow(
+    val owner: String,
+    val packageName: String?,
+    val name: String,
+    val subprogramId: BigDecimal,
+    val overload: String?,
+    val argumentName: String?,
+    val position: BigDecimal,
+    val mode: String?,
+    val dataType: String?,
+    val plsType: String?,
+    val typeOwner: String?,
+    val typeName: String?,
+    val typeSubname: String?,
+    val defaulted: String?
+)
+
 /** Pure mapping from dictionary rows to S8 descriptors; no JDBC. */
 @OptIn(ZpaExperimentalApi::class)
 internal object OracleDictionaryMapping {
@@ -226,6 +247,37 @@ internal object OracleDictionaryMapping {
         else -> ProjectExternalMethodParameter.Mode.IN
     }
 
+    /**
+     * The datatype of an argument: its `PLS_TYPE` when set (`PLS_INTEGER`, `INTEGER`, `BOOLEAN`), else its `DATA_TYPE`;
+     * a type a package declares is named by the package, with the type as the parameter's package type; an object type
+     * or a collection by its owner and name. A `%ROWTYPE` has none.
+     */
+    private fun argumentDatatype(row: ArgumentRow): ProjectExternalDatatype? {
+        if (row.plsType == "ROWTYPE") return null
+        if (row.typeOwner != null && row.typeName != null) return ProjectExternalDatatype.of(row.typeName, row.typeOwner, null, null, null, null)
+        val name = row.plsType ?: row.dataType ?: return null
+        return ProjectExternalDatatype.of(name, null, null, null, null, null)
+    }
+
+    /** The subprograms of [rows], each overload apart; the row at position 0 is a function's result. */
+    fun subprograms(rows: List<ArgumentRow>): List<ProjectExternalSubprogram> =
+        rows.groupBy { listOf(it.owner, it.packageName, it.name, it.subprogramId.toPlainString()) }.values.map { overload ->
+            val first = overload.first()
+            val result = overload.firstOrNull { it.position.signum() == 0 }
+            val parameters = overload.filter { it.position.signum() > 0 && it.argumentName != null }.map {
+                ProjectExternalSubprogramParameter.of(
+                    it.argumentName!!, parameterMode(it.mode), argumentDatatype(it), it.typeSubname,
+                    when (it.defaulted) { "Y" -> true; "N" -> false; else -> null }
+                )
+            }
+            val number = first.overload?.toIntOrNull()
+            if (result != null) {
+                ProjectExternalSubprogram.function(first.owner, first.packageName, first.name, number, parameters, argumentDatatype(result), result.typeSubname)
+            } else {
+                ProjectExternalSubprogram.procedure(first.owner, first.packageName, first.name, number, parameters)
+            }
+        }
+
     /** @throws IllegalArgumentException if the row cannot form a synonym descriptor */
     fun synonym(row: SynonymRow): ProjectExternalSynonym {
         val target = requireNotNull(row.targetName) { "The synonym has no target name" }
@@ -253,7 +305,9 @@ internal object OracleDictionaryMapping {
         objects: List<ObjectRow> = emptyList(),
         synonyms: List<SynonymRow> = emptyList(),
         types: TypeRows = TypeRows(),
-        typesReadIn: Duration = Duration.ZERO
+        typesReadIn: Duration = Duration.ZERO,
+        arguments: List<ArgumentRow> = emptyList(),
+        argumentsReadIn: Duration = Duration.ZERO
     ): OracleMetadataResult {
         val columnsByRelation = columns.groupBy { it.schema to it.relation }
         val origin = "oracle ${session.database}/${session.container} as ${session.sessionUser} at $acquiredAt"
@@ -314,13 +368,26 @@ internal object OracleDictionaryMapping {
                 throw OracleMetadataException("The dictionary returned object type ${type.owner}.${type.name} more than once", e)
             }
         }
+        val subprograms = try {
+            subprograms(arguments)
+        } catch (e: IllegalArgumentException) {
+            throw OracleMetadataException("Inconsistent dictionary metadata for a subprogram: ${e.message}", e)
+        }
+        for (subprogram in subprograms) {
+            try {
+                builder.subprogram(subprogram)
+            } catch (e: IllegalArgumentException) {
+                throw OracleMetadataException("The dictionary returned subprogram $subprogram more than once", e)
+            }
+        }
         if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) builder.completePublicSynonyms()
         val notVisible = request.relations.filter { it.schema !in request.schemas && (it.schema to it.name) !in seen }
         return OracleMetadataResult(
             builder.build(), session.sessionUser, session.currentSchema, session.database, session.container, acquiredAt,
             complete, notVisible, seen.size, columnCount, objectNames.size, synonyms.size,
             version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
-            objectTypes.size, objectTypes.sumOf { it.attributes.size }, objectTypes.sumOf { it.methods.size }, typesReadIn
+            objectTypes.size, objectTypes.sumOf { it.attributes.size }, objectTypes.sumOf { it.methods.size }, typesReadIn,
+            subprograms.size, arguments.size, argumentsReadIn
         )
     }
 }

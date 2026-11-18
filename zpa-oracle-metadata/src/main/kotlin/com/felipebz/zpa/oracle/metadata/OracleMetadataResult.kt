@@ -52,7 +52,13 @@ class OracleMetadataResult internal constructor(
     /** Methods the [objectTypeCount] types declare themselves, each overload apart. */
     val typeMethodCount: Int = 0,
     /** How long reading the object types took, every query of them included. */
-    val objectTypeReading: Duration = Duration.ZERO
+    val objectTypeReading: Duration = Duration.ZERO,
+    /** Subprogram overloads added to [metadata], read with the same scope as the object types. */
+    val subprogramCount: Int = 0,
+    /** `ALL_ARGUMENTS` rows read for them: parameters and results. */
+    val argumentRowCount: Int = 0,
+    /** How long reading `ALL_ARGUMENTS` took, every query of it included. */
+    val subprogramReading: Duration = Duration.ZERO
 ) {
     /** Requested schemas declared complete (so absent relations are reported as absent). Runtime-unmodifiable. */
     val completeSchemas: Set<String> = Collections.unmodifiableSet(LinkedHashSet(completeSchemas))
@@ -66,6 +72,7 @@ class OracleMetadataResult internal constructor(
     override fun toString(): String =
         "OracleMetadataResult($relationCount relations, $columnCount columns, $objectCount objects, $synonymCount synonyms, " +
             "$objectTypeCount object types ($typeAttributeCount attributes, $typeMethodCount methods, read in ${objectTypeReading.toMillis()} ms), " +
+            "$subprogramCount subprograms ($argumentRowCount argument rows, read in ${subprogramReading.toMillis()} ms), " +
             "complete=$completeSchemas, publicSynonymsComplete=${metadata.isPublicSynonymsComplete}, notVisible=$notVisible, " +
             "${metadata.origin.orElse("")})"
 }

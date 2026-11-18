@@ -179,6 +179,58 @@ class OracleDictionaryMappingTest {
     }
 
     @Test
+    fun aResultOfAPackageRecordKeepsItsType() {
+        val rows = listOf(
+            ArgumentRow("SYS", "BIN_UTIL", "NEXT_REC", n(7)!!, null, null, n(0)!!, "OUT", "PL/SQL RECORD", null, "SYS", "BIN_UTIL", "REC_T", "N")
+        )
+        val result = OracleDictionaryMapping.assemble(OracleMetadataRequest.builder().schema("APP").build(), session, emptyList(), emptyList(), at, arguments = rows)
+        val next = result.metadata.findSubprograms(id("SYS"), id("BIN_UTIL"), id("NEXT_REC")).single()
+        assertThat(next.result.get().name).isEqualTo("BIN_UTIL")
+        assertThat(next.resultPackageType.map { it.originalSpelling }).contains("\"REC_T\"")
+    }
+
+    @Test
+    fun argumentRowsFormSubprograms() {
+        fun row(pkg: String?, name: String, sub: Int, overload: String?, arg: String?, pos: Int, type: String?, pls: String? = type,
+                typeOwner: String? = null, typeName: String? = null, subname: String? = null, defaulted: String? = "N", mode: String = "IN") =
+            ArgumentRow("SYS", pkg, name, n(sub)!!, overload, arg, n(pos)!!, mode, type, pls, typeOwner, typeName, subname, defaulted)
+        val rows = listOf(
+            row("BIN_LOB", "SIZE_OF", 5, "1", null, 0, "NUMBER", "INTEGER", mode = "OUT"),
+            row("BIN_LOB", "SIZE_OF", 5, "1", "LOC", 1, "BLOB"),
+            row("BIN_LOB", "SIZE_OF", 6, "2", null, 0, "NUMBER", "INTEGER", mode = "OUT"),
+            row("BIN_LOB", "SIZE_OF", 6, "2", "LOC", 1, "CLOB"),
+            // A function without parameters has only its result row.
+            row("BIN_UTIL", "ERROR_TEXT", 3, null, null, 0, "VARCHAR2", mode = "OUT"),
+            row("BIN_UTIL", "PUT", 4, null, "P_DEF", 1, "VARCHAR2", defaulted = "Y"),
+            row("BIN_UTIL", "PUT", 4, null, "P_REC", 2, "PL/SQL RECORD", null, "SYS", "BIN_UTIL", "REC_T"),
+            row("BIN_UTIL", "PUT", 4, null, "P_ROW", 3, "PL/SQL RECORD", "ROWTYPE", "SYS", "BIN_T"),
+            // Read before 11g: no DEFAULTED.
+            row("BIN_UTIL", "PUT", 4, null, "P_OLD", 4, "NUMBER", defaulted = null),
+            row(null, "BIN_STANDALONE", 1, null, null, 0, "DATE", mode = "OUT")
+        )
+        val result = OracleDictionaryMapping.assemble(OracleMetadataRequest.builder().schema("APP").build(), session, emptyList(), emptyList(), at, arguments = rows)
+        assertThat(listOf(result.subprogramCount, result.argumentRowCount)).containsExactly(5, 10)
+        val md = result.metadata
+        val sizes = md.findSubprograms(id("SYS"), id("BIN_LOB"), id("SIZE_OF"))
+        assertThat(sizes.map { it.overload.asInt }).containsExactly(1, 2)
+        assertThat(sizes.map { it.result.get().name }).containsOnly("INTEGER")
+        assertThat(sizes[1].parameters.single().datatype.get().name).isEqualTo("CLOB")
+        val text = md.findSubprograms(id("SYS"), id("BIN_UTIL"), id("ERROR_TEXT")).single()
+        assertThat(listOf(text.isFunction, text.parameters.isEmpty(), text.overload.isPresent)).containsExactly(true, true, false)
+        val put = md.findSubprograms(id("SYS"), id("BIN_UTIL"), id("PUT")).single()
+        assertThat(put.isFunction).isFalse()
+        assertThat(put.parameters.map { it.defaulted.orElse(null) }).containsExactly(true, false, false, null)
+        val record = put.parameters[1]
+        assertThat(record.packageType.map { it.originalSpelling }).contains("\"REC_T\"")
+        assertThat(record.datatype.get().typeOwner.map { it.originalSpelling }).contains("\"SYS\"")
+        // A %ROWTYPE has no datatype.
+        assertThat(put.parameters[2].datatype).isEmpty()
+        assertThat(md.findSubprograms(id("SYS"), null, id("BIN_STANDALONE")).single().result.get().name).isEqualTo("DATE")
+        assertThat(md.findObject(id("SYS"), id("BIN_LOB")).map { it.kind }).contains(Kind.PACKAGE)
+        assertThat(md.findObject(id("SYS"), id("BIN_STANDALONE")).map { it.kind }).contains(Kind.FUNCTION)
+    }
+
+    @Test
     fun anAttributeReadWithoutCharUsedHasNoLengthSemantics() {
         val rows = TypeRows(
             types = listOf(TypeRow("APP", "BIN_NOTE", "OBJECT", null, null)),
@@ -562,6 +614,18 @@ class OracleDictionaryMappingTest {
     }
 
     @Test
+    fun defaultedIsReadFromElevenOn() {
+        fun argumentsSql(major: Int): String {
+            val scripted = Scripted(major) { emptyList() }
+            OracleMetadataAcquisition.acquire(scripted.dataSource, OracleMetadataRequest.builder().schema("APP").build())
+            return scripted.statements.keys.first { it.contains("FROM all_arguments") }
+        }
+        assertThat(argumentsSql(10)).contains("type_subname, NULL FROM")
+        assertThat(argumentsSql(11)).contains("type_subname, defaulted FROM")
+        assertThat(argumentsSql(23)).contains("type_subname, defaulted FROM")
+    }
+
+    @Test
     fun objectTypesAreReadWithTheirSupertypesEachOnce() {
         fun scope(sql: String) = sql.substringAfter("WHERE ")
         val scripted = Scripted { sql ->
@@ -612,9 +676,9 @@ class OracleDictionaryMappingTest {
     }
 
     /** A connection answering each prepared statement with the rows [rows] gives for its SQL; records the statements. */
-    private inner class Scripted(private val rows: (String) -> List<List<String?>>) {
+    private inner class Scripted(major: Int = 23, private val rows: (String) -> List<List<String?>>) {
         val statements = LinkedHashMap<String, PreparedStatement>()
-        private val serverMetaData = databaseMetaData(23)
+        private val serverMetaData = databaseMetaData(major)
         private val transactionStatement = mock<Statement>()
         val connection: Connection = mock {
             on { autoCommit } doReturn true

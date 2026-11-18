@@ -25,6 +25,7 @@ class ProjectExternalMetadata private constructor(
     objects: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObject>,
     synonyms: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym>,
     objectTypes: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObjectType>,
+    subprograms: Map<SubprogramKey, List<ProjectExternalSubprogram>>,
     /** Every public synonym is supplied. */
     val isPublicSynonymsComplete: Boolean
 ) {
@@ -38,6 +39,18 @@ class ProjectExternalMetadata private constructor(
     private val synonyms: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym> = Collections.unmodifiableMap(LinkedHashMap(synonyms))
     private val objectTypes: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObjectType> =
         Collections.unmodifiableMap(LinkedHashMap(objectTypes))
+    private val subprograms: Map<SubprogramKey, List<ProjectExternalSubprogram>> = Collections.unmodifiableMap(LinkedHashMap(subprograms))
+
+    /** The packages and standalone subprograms the subprograms belong to, as object names. */
+    private val subprogramObjects: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObject.Kind> = Collections.unmodifiableMap(
+        subprograms.entries.associate { (key, overloads) ->
+            (key.owner to (key.packageName ?: key.name)) to when {
+                key.packageName != null -> ProjectExternalObject.Kind.PACKAGE
+                overloads.first().isFunction -> ProjectExternalObject.Kind.FUNCTION
+                else -> ProjectExternalObject.Kind.PROCEDURE
+            }
+        }
+    )
 
     /** Exact relation lookup: the caller asserts that the identity names a relation. */
     fun findRelation(schema: ProjectIdentifier, relation: ProjectIdentifier): ProjectExternalLookup =
@@ -60,6 +73,7 @@ class ProjectExternalMetadata private constructor(
             ?: relations[key]?.let { ProjectExternalObject.of(schema, name, if (it.isView) ProjectExternalObject.Kind.VIEW else ProjectExternalObject.Kind.TABLE) }
             ?: synonyms[key]?.let { ProjectExternalObject.of(schema, name, ProjectExternalObject.Kind.SYNONYM) }
             ?: objectTypes[key]?.let { ProjectExternalObject.of(schema, name, ProjectExternalObject.Kind.TYPE) }
+            ?: subprogramObjects[key]?.let { ProjectExternalObject.of(schema, name, it) }
         return Optional.ofNullable(found)
     }
 
@@ -72,6 +86,15 @@ class ProjectExternalMetadata private constructor(
      */
     fun findObjectType(owner: ProjectIdentifier, name: ProjectIdentifier): Optional<ProjectExternalObjectType> =
         Optional.ofNullable(objectTypes[owner to name])
+
+    /**
+     * The overloads of the subprogram [name] of the package [packageName] of [owner] (a standalone subprogram when
+     * [packageName] is null), in `SUBPROGRAM_ID` order, when supplied; empty otherwise. The names are the objects' own,
+     * not synonyms of them: following a synonym is the reader's, from its own schema. Empty never proves absence.
+     * Runtime-unmodifiable.
+     */
+    fun findSubprograms(owner: ProjectIdentifier, packageName: ProjectIdentifier?, name: ProjectIdentifier): List<ProjectExternalSubprogram> =
+        subprograms[SubprogramKey(owner, packageName, name)]?.let { Collections.unmodifiableList(it) }.orEmpty()
 
     private fun lookup(schema: ProjectIdentifier, relationName: ProjectIdentifier, columnName: ProjectIdentifier?): ProjectExternalLookup {
         val label = origin.orElse(null)
@@ -94,10 +117,15 @@ class ProjectExternalMetadata private constructor(
     }
 
     override fun toString(): String =
-        origin.map { "external metadata $it (${relations.size} relations, ${synonyms.size} synonyms, ${objectTypes.size} object types)" }.orElse("no external metadata")
+        origin.map {
+            "external metadata $it (${relations.size} relations, ${synonyms.size} synonyms, ${objectTypes.size} object types, " +
+                "${subprograms.values.sumOf { s -> s.size }} subprograms)"
+        }.orElse("no external metadata")
+
+    internal data class SubprogramKey(val owner: ProjectIdentifier, val packageName: ProjectIdentifier?, val name: ProjectIdentifier)
 
     /**
-     * Collects coverage, relations, object names, synonyms and object types; not thread-safe. [build] copies its state,
+     * Collects coverage, relations, object names, synonyms, object types and subprograms; not thread-safe. [build] copies its state,
      * so later changes never affect a built snapshot. Obtained only through [ProjectExternalMetadata.builder].
      */
     sealed class Builder {
@@ -122,6 +150,12 @@ class ProjectExternalMetadata private constructor(
          */
         abstract fun objectType(objectType: ProjectExternalObjectType): Builder
 
+        /**
+         * Adds an overload of a subprogram of the dictionary; its package or standalone subprogram is also an object
+         * name. @throws IllegalArgumentException if the same overload was already added
+         */
+        abstract fun subprogram(subprogram: ProjectExternalSubprogram): Builder
+
         /** Declares that every public synonym is supplied. */
         abstract fun completePublicSynonyms(): Builder
 
@@ -134,6 +168,7 @@ class ProjectExternalMetadata private constructor(
         private val objects = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObject>()
         private val synonyms = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym>()
         private val objectTypes = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObjectType>()
+        private val subprograms = LinkedHashMap<SubprogramKey, MutableList<ProjectExternalSubprogram>>()
         private var publicSynonymsComplete = false
 
         override fun completeSchema(dictionarySchema: String): Builder {
@@ -169,18 +204,25 @@ class ProjectExternalMetadata private constructor(
             return this
         }
 
+        override fun subprogram(subprogram: ProjectExternalSubprogram): Builder {
+            val overloads = subprograms.getOrPut(SubprogramKey(subprogram.owner, subprogram.packageName.orElse(null), subprogram.name)) { ArrayList() }
+            require(overloads.none { it.overload == subprogram.overload }) { "Duplicate external subprogram: $subprogram" }
+            overloads += subprogram
+            return this
+        }
+
         override fun completePublicSynonyms(): Builder {
             publicSynonymsComplete = true
             return this
         }
 
         override fun build(): ProjectExternalMetadata =
-            ProjectExternalMetadata(origin, completeSchemas, relations, objects, synonyms, objectTypes, publicSynonymsComplete)
+            ProjectExternalMetadata(origin, completeSchemas, relations, objects, synonyms, objectTypes, subprograms.mapValues { it.value.toList() }, publicSynonymsComplete)
     }
 
     companion object {
         private const val SYSTEM_PREFIX = "SYS_"
-        private val NONE = ProjectExternalMetadata(null, emptySet(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), false)
+        private val NONE = ProjectExternalMetadata(null, emptySet(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), false)
 
         /** No external metadata: every lookup is UNAVAILABLE. */
         @JvmStatic
