@@ -8,7 +8,9 @@ package com.felipebz.zpa.oracle.metadata
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalDatatype.LengthSemantics
 import com.felipebz.zpa.api.project.ProjectExternalLookup
+import com.felipebz.zpa.api.project.ProjectExternalMethodParameter
 import com.felipebz.zpa.api.project.ProjectExternalObject.Kind
+import com.felipebz.zpa.api.project.ProjectExternalObjectType
 import com.felipebz.zpa.api.project.ProjectIdentifier
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -103,6 +105,90 @@ class OracleDictionaryMappingTest {
 
     private val session = SessionInfo("APP", "APP", "FREEPDB1", "FREE")
     private val at = Instant.parse("2026-01-02T03:04:05Z")
+
+    @Test
+    fun objectTypesKeepWhatTheyDeclareAndTheirSupertype() {
+        val rows = TypeRows(
+            types = listOf(
+                TypeRow("APP", "BIN_BASE", "OBJECT", null, null),
+                TypeRow("APP", "BIN_ITEM", "OBJECT", "APP", "BIN_BASE"),
+                TypeRow("APP", "BIN_LIST", "COLLECTION", null, null),
+                TypeRow("SYS", "BLOB_ANY", "ANYDATA", null, null)
+            ),
+            attributes = listOf(
+                TypeAttributeRow("APP", "BIN_BASE", "QTY", null, null, "NUMBER", null, n(6), n(0), null),
+                TypeAttributeRow("APP", "BIN_ITEM", "TAG", null, null, "VARCHAR2", n(5), null, null, "C"),
+                TypeAttributeRow("APP", "BIN_ITEM", "PEER", "REF", "APP", "BIN_BASE", null, null, null, null)
+            ),
+            methods = listOf(
+                TypeMethodRow("APP", "BIN_ITEM", "LABEL", n(1)!!, n(1)),
+                TypeMethodRow("APP", "BIN_ITEM", "MAKE", n(2)!!, n(1)),
+                TypeMethodRow("APP", "BIN_ITEM", "RESET", n(3)!!, n(0)),
+                TypeMethodRow("SYS", "BLOB_ANY", "WRAP", n(7)!!, n(1))
+            ),
+            parameters = listOf(
+                MethodParameterRow("APP", "BIN_ITEM", "LABEL", n(1)!!, "SELF", "IN", null, "APP", "BIN_ITEM"),
+                MethodParameterRow("APP", "BIN_ITEM", "LABEL", n(1)!!, "P_WIDTH", "IN", null, null, "NUMBER"),
+                MethodParameterRow("APP", "BIN_ITEM", "MAKE", n(2)!!, "P_QTY", "IN", null, null, "NUMBER"),
+                MethodParameterRow("APP", "BIN_ITEM", "RESET", n(3)!!, "SELF", "IN/OUT", null, "APP", "BIN_ITEM"),
+                MethodParameterRow("SYS", "BLOB_ANY", "WRAP", n(7)!!, "OBJ", "IN", null, null, "PL/SQL LONG RAW")
+            ),
+            results = listOf(
+                MethodResultRow("APP", "BIN_ITEM", "LABEL", n(1)!!, null, null, "VARCHAR2"),
+                MethodResultRow("APP", "BIN_ITEM", "MAKE", n(2)!!, null, "APP", "BIN_ITEM"),
+                MethodResultRow("SYS", "BLOB_ANY", "WRAP", n(7)!!, null, "SYS", "BLOB_ANY")
+            )
+        )
+        val result = OracleDictionaryMapping.assemble(OracleMetadataRequest.builder().schema("APP").build(), session, emptyList(), emptyList(), at, types = rows)
+        assertThat(listOf(result.objectTypeCount, result.typeAttributeCount, result.typeMethodCount)).containsExactly(4, 3, 4)
+        val md = result.metadata
+        fun type(owner: String, name: String) = md.findObjectType(id(owner), id(name)).get()
+        assertThat(type("APP", "BIN_ITEM").kind).isEqualTo(ProjectExternalObjectType.Kind.OBJECT)
+        assertThat(type("APP", "BIN_ITEM").supertypeName.map { it.originalSpelling }).contains("\"BIN_BASE\"")
+        assertThat(type("APP", "BIN_BASE").supertypeOwner).isEmpty()
+        assertThat(type("APP", "BIN_LIST").kind).isEqualTo(ProjectExternalObjectType.Kind.COLLECTION)
+        assertThat(type("SYS", "BLOB_ANY").kind).isEqualTo(ProjectExternalObjectType.Kind.OPAQUE)
+        // A type is an object name too.
+        assertThat(md.findObject(id("SYS"), id("BLOB_ANY")).map { it.kind }).contains(Kind.TYPE)
+        val item = type("APP", "BIN_ITEM")
+        assertThat(item.attributes.map { it.name.originalSpelling }).containsExactly("\"TAG\"", "\"PEER\"")
+        val tag = item.findAttribute(id("TAG")).get().datatype.get()
+        assertThat(listOf(tag.name, tag.length.asInt, tag.lengthSemantics.get())).containsExactly("VARCHAR2", 5, LengthSemantics.CHAR)
+        // A REF is not a value of its target type.
+        assertThat(item.findAttribute(id("PEER")).get().datatype).isEmpty()
+        assertThat(type("APP", "BIN_BASE").findAttribute(id("QTY")).get().datatype.get().precision.asInt).isEqualTo(6)
+        val label = item.findMethods(id("LABEL")).single()
+        assertThat(listOf(label.isStatic, label.isFunction)).containsExactly(false, true)
+        assertThat(label.parameters.map { it.name.originalSpelling }).containsExactly("\"P_WIDTH\"")
+        assertThat(label.result.get().name).isEqualTo("VARCHAR2")
+        val make = item.findMethods(id("MAKE")).single()
+        assertThat(make.isStatic).isTrue()
+        assertThat(make.result.get().typeOwner.map { it.originalSpelling }).contains("\"APP\"")
+        val reset = item.findMethods(id("RESET")).single()
+        assertThat(listOf(reset.isStatic, reset.isFunction, reset.result.isPresent, reset.parameters.isEmpty())).containsExactly(false, false, false, true)
+        val wrap = type("SYS", "BLOB_ANY").findMethods(id("WRAP")).single()
+        assertThat(wrap.isStatic).isTrue()
+        assertThat(wrap.parameters.single().datatype.get().name).isEqualTo("PL/SQL LONG RAW")
+        assertThat(wrap.parameters.single().mode).isEqualTo(ProjectExternalMethodParameter.Mode.IN)
+        assertThatThrownBy {
+            OracleDictionaryMapping.assemble(
+                OracleMetadataRequest.builder().schema("APP").build(), session, emptyList(), emptyList(), at,
+                types = TypeRows(types = listOf(TypeRow("APP", "BIN_BASE", "OBJECT", null, null), TypeRow("APP", "BIN_BASE", "OBJECT", null, null)))
+            )
+        }.isInstanceOf(OracleMetadataException::class.java)
+    }
+
+    @Test
+    fun anAttributeReadWithoutCharUsedHasNoLengthSemantics() {
+        val rows = TypeRows(
+            types = listOf(TypeRow("APP", "BIN_NOTE", "OBJECT", null, null)),
+            attributes = listOf(TypeAttributeRow("APP", "BIN_NOTE", "TEXT", null, null, "VARCHAR2", n(40), null, null, null))
+        )
+        val result = OracleDictionaryMapping.assemble(OracleMetadataRequest.builder().schema("APP").build(), session, emptyList(), emptyList(), at, types = rows)
+        val text = result.metadata.findObjectType(id("APP"), id("BIN_NOTE")).get().findAttribute(id("TEXT")).get().datatype.get()
+        assertThat(text.name).isEqualTo("VARCHAR2")
+        assertThat(text.lengthSemantics).isEmpty()
+    }
 
     @Test
     fun ownSchemaIsCompleteAndOtherSchemasAreNot() {
@@ -431,8 +517,8 @@ class OracleDictionaryMappingTest {
         val scripted = Scripted { sql ->
             when {
                 sql.contains(OBJECTS) -> listOf(listOf("APP", "PKG_ORDERS", "PACKAGE"), listOf("APP", "SALES_MV", "MATERIALIZED VIEW"))
-                sql.contains("all_synonyms") && sql.contains("owner = ?") -> listOf(listOf("APP", "FAR_ORDERS", null, "ORDERS", "FAR_LINK.EXAMPLE.COM"))
-                sql.contains("all_synonyms") -> listOf(listOf("PUBLIC", "SHARED_CODES", "OTHER", "CODES", null))
+                sql.contains("synonym_name") && sql.contains("owner = ?") -> listOf(listOf("APP", "FAR_ORDERS", null, "ORDERS", "FAR_LINK.EXAMPLE.COM"))
+                sql.contains("synonym_name") -> listOf(listOf("PUBLIC", "SHARED_CODES", "OTHER", "CODES", null))
                 else -> emptyList()
             }
         }
@@ -440,7 +526,7 @@ class OracleDictionaryMappingTest {
             .queryTimeout(Duration.ofSeconds(30)).build()
         val result = OracleMetadataAcquisition.acquire(scripted.dataSource, request)
         assertThat(scripted.parameters(OBJECTS)).containsExactly(listOf("APP"))
-        assertThat(scripted.parameters("FROM all_synonyms WHERE owner = ?")).containsExactly(listOf("APP"))
+        assertThat(scripted.parameters("db_link FROM all_synonyms WHERE owner = ?")).containsExactly(listOf("APP"))
         assertThat(scripted.parameters("owner = 'PUBLIC' AND table_owner IN (?, ?)")).containsExactly(listOf("OTHER", "SHARED"))
         assertThat(scripted.statements.values).allSatisfy { verify(it).queryTimeout = 30 }
         inOrder(scripted.connection) {
@@ -466,13 +552,36 @@ class OracleDictionaryMappingTest {
         assertThat(withoutPublic.statements.keys).noneMatch { it.contains("PUBLIC") }
         assertThat(schemaOnly.metadata.isPublicSynonymsComplete).isFalse()
 
-        val all = Scripted { sql -> if (sql.contains("all_synonyms")) listOf(listOf("PUBLIC", "SHARED_CODES", "OTHER", "CODES", null)) else emptyList() }
+        val all = Scripted { sql -> if (sql.contains("synonym_name")) listOf(listOf("PUBLIC", "SHARED_CODES", "OTHER", "CODES", null)) else emptyList() }
         val publicOnly = OracleMetadataAcquisition.acquire(all.dataSource, OracleMetadataRequest.builder().publicSynonyms().build())
-        assertThat(all.statements.keys.filter { it.contains("all_synonyms") })
+        assertThat(all.statements.keys.filter { it.contains("synonym_name") })
             .containsExactly("SELECT owner, synonym_name, table_owner, table_name, db_link FROM all_synonyms WHERE owner = 'PUBLIC'")
-        assertThat(all.parameters("all_synonyms")).containsExactly(emptyList())
+        assertThat(all.parameters("synonym_name")).containsExactly(emptyList())
         assertThat(publicOnly.metadata.isPublicSynonymsComplete).isTrue()
         assertThat(publicOnly.metadata.findSynonym(id("PUBLIC"), id("SHARED_CODES"))).isPresent()
+    }
+
+    @Test
+    fun objectTypesAreReadWithTheirSupertypesEachOnce() {
+        fun scope(sql: String) = sql.substringAfter("WHERE ")
+        val scripted = Scripted { sql ->
+            when {
+                // The schema's own types; the types its synonyms stand for repeat one of them.
+                sql.contains("FROM all_types") && scope(sql) == "owner = ?" -> listOf(listOf("APP", "BIN_ITEM", "OBJECT", "BASE", "BIN_SHAPE"))
+                sql.contains("FROM all_types") && sql.contains("all_synonyms") -> listOf(listOf("APP", "BIN_ITEM", "OBJECT", "BASE", "BIN_SHAPE"))
+                sql.contains("FROM all_types") && sql.contains("(owner, type_name) IN ((?, ?))") -> listOf(listOf("BASE", "BIN_SHAPE", "OBJECT", null, null))
+                sql.contains("FROM all_type_methods") && scope(sql).contains("owner = ?") -> listOf(listOf("APP", "BIN_ITEM", "LABEL", "1", "1"))
+                else -> emptyList()
+            }
+        }
+        val result = OracleMetadataAcquisition.acquire(scripted.dataSource, OracleMetadataRequest.builder().schema("APP").build())
+        assertThat(scripted.parameters("FROM all_types WHERE (owner, type_name) IN ((?, ?))")).containsExactly(listOf("BASE", "BIN_SHAPE"))
+        // No type was new to the synonyms' query: what the types declare is not read again for it.
+        assertThat(scripted.statements.keys.filter { it.contains("all_type_attrs") && it.contains("all_synonyms") }).isEmpty()
+        assertThat(listOf(result.objectTypeCount, result.typeMethodCount)).containsExactly(2, 1)
+        assertThat(result.metadata.findObjectType(id("BASE"), id("BIN_SHAPE"))).isPresent()
+        assertThat(result.metadata.findObjectType(id("APP"), id("BIN_ITEM")).get().findMethods(id("LABEL")).single().isFunction).isTrue()
+        assertThat(result.toString()).contains("2 object types (0 attributes, 1 methods")
     }
 
     @Test
@@ -534,6 +643,7 @@ class OracleDictionaryMappingTest {
             return mock {
                 on { next() } doAnswer { ++index < answer.size }
                 on { getString(any<Int>()) } doAnswer { answer[index][it.getArgument<Int>(0) - 1] }
+                on { getBigDecimal(any<Int>()) } doAnswer { answer[index][it.getArgument<Int>(0) - 1]?.let(::BigDecimal) }
             }
         }
     }

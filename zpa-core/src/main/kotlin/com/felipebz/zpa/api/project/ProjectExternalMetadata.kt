@@ -9,10 +9,11 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import java.util.*
 
 /**
- * Immutable snapshot of external (Oracle data dictionary) relations, object names and synonyms supplied by the
- * consumer, with explicit coverage: a schema declared complete lists every relation and every object name (each
- * relation and synonym of the schema is one of its objects), a relation declared column-complete lists every
- * user-generated column, and public synonyms declared complete list every public synonym. It is independent of any
+ * Immutable snapshot of external (Oracle data dictionary) relations, object names, synonyms and object types supplied
+ * by the consumer, with explicit coverage: a schema declared complete lists every relation and every object name (each
+ * relation, synonym and object type of the schema is one of its objects), a relation declared column-complete lists
+ * every user-generated column, and public synonyms declared complete list every public synonym. Object types are not
+ * covered by a complete schema: a type absent here is not known to be absent. It is independent of any
  * [ProjectSnapshot], performs no I/O and is safe for concurrent reads. Acquisition, connections, caching and schema
  * aliases belong to the consumer.
  */
@@ -23,6 +24,7 @@ class ProjectExternalMetadata private constructor(
     relations: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalRelation>,
     objects: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObject>,
     synonyms: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym>,
+    objectTypes: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObjectType>,
     /** Every public synonym is supplied. */
     val isPublicSynonymsComplete: Boolean
 ) {
@@ -34,6 +36,8 @@ class ProjectExternalMetadata private constructor(
         Collections.unmodifiableMap(LinkedHashMap(relations))
     private val objects: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObject> = Collections.unmodifiableMap(LinkedHashMap(objects))
     private val synonyms: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym> = Collections.unmodifiableMap(LinkedHashMap(synonyms))
+    private val objectTypes: Map<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObjectType> =
+        Collections.unmodifiableMap(LinkedHashMap(objectTypes))
 
     /** Exact relation lookup: the caller asserts that the identity names a relation. */
     fun findRelation(schema: ProjectIdentifier, relation: ProjectIdentifier): ProjectExternalLookup =
@@ -55,11 +59,19 @@ class ProjectExternalMetadata private constructor(
         val found = objects[key]
             ?: relations[key]?.let { ProjectExternalObject.of(schema, name, if (it.isView) ProjectExternalObject.Kind.VIEW else ProjectExternalObject.Kind.TABLE) }
             ?: synonyms[key]?.let { ProjectExternalObject.of(schema, name, ProjectExternalObject.Kind.SYNONYM) }
+            ?: objectTypes[key]?.let { ProjectExternalObject.of(schema, name, ProjectExternalObject.Kind.TYPE) }
         return Optional.ofNullable(found)
     }
 
     /** The synonym [owner].[name] (owner `PUBLIC` for a public synonym), when supplied. */
     fun findSynonym(owner: ProjectIdentifier, name: ProjectIdentifier): Optional<ProjectExternalSynonym> = Optional.ofNullable(synonyms[owner to name])
+
+    /**
+     * The object type [owner].[name], with what it declares, when supplied. The name is the type's own, not a synonym of
+     * it: following a synonym is the reader's, from its own schema. Empty never proves absence.
+     */
+    fun findObjectType(owner: ProjectIdentifier, name: ProjectIdentifier): Optional<ProjectExternalObjectType> =
+        Optional.ofNullable(objectTypes[owner to name])
 
     private fun lookup(schema: ProjectIdentifier, relationName: ProjectIdentifier, columnName: ProjectIdentifier?): ProjectExternalLookup {
         val label = origin.orElse(null)
@@ -81,11 +93,12 @@ class ProjectExternalMetadata private constructor(
         return ProjectExternalLookup.of(status, schema, relationName, columnName, relation, column, label)
     }
 
-    override fun toString(): String = origin.map { "external metadata $it (${relations.size} relations, ${synonyms.size} synonyms)" }.orElse("no external metadata")
+    override fun toString(): String =
+        origin.map { "external metadata $it (${relations.size} relations, ${synonyms.size} synonyms, ${objectTypes.size} object types)" }.orElse("no external metadata")
 
     /**
-     * Collects coverage, relations, object names and synonyms; not thread-safe. [build] copies its state, so later
-     * changes never affect a built snapshot. Obtained only through [ProjectExternalMetadata.builder].
+     * Collects coverage, relations, object names, synonyms and object types; not thread-safe. [build] copies its state,
+     * so later changes never affect a built snapshot. Obtained only through [ProjectExternalMetadata.builder].
      */
     sealed class Builder {
         /** Declares that every relation and object name of [dictionarySchema] (an exact dictionary name) is supplied. */
@@ -103,6 +116,12 @@ class ProjectExternalMetadata private constructor(
         /** @throws IllegalArgumentException if a synonym with the same owner and name was already added */
         abstract fun synonym(synonym: ProjectExternalSynonym): Builder
 
+        /**
+         * Adds an object type with what it declares; it is also an object name of kind TYPE. @throws
+         * IllegalArgumentException if a type with the same owner and name was already added
+         */
+        abstract fun objectType(objectType: ProjectExternalObjectType): Builder
+
         /** Declares that every public synonym is supplied. */
         abstract fun completePublicSynonyms(): Builder
 
@@ -114,6 +133,7 @@ class ProjectExternalMetadata private constructor(
         private val relations = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalRelation>()
         private val objects = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObject>()
         private val synonyms = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalSynonym>()
+        private val objectTypes = LinkedHashMap<Pair<ProjectIdentifier, ProjectIdentifier>, ProjectExternalObjectType>()
         private var publicSynonymsComplete = false
 
         override fun completeSchema(dictionarySchema: String): Builder {
@@ -142,18 +162,25 @@ class ProjectExternalMetadata private constructor(
             return this
         }
 
+        override fun objectType(objectType: ProjectExternalObjectType): Builder {
+            val key = objectType.owner to objectType.name
+            require(key !in objectTypes) { "Duplicate external object type: $objectType" }
+            objectTypes[key] = objectType
+            return this
+        }
+
         override fun completePublicSynonyms(): Builder {
             publicSynonymsComplete = true
             return this
         }
 
         override fun build(): ProjectExternalMetadata =
-            ProjectExternalMetadata(origin, completeSchemas, relations, objects, synonyms, publicSynonymsComplete)
+            ProjectExternalMetadata(origin, completeSchemas, relations, objects, synonyms, objectTypes, publicSynonymsComplete)
     }
 
     companion object {
         private const val SYSTEM_PREFIX = "SYS_"
-        private val NONE = ProjectExternalMetadata(null, emptySet(), emptyMap(), emptyMap(), emptyMap(), false)
+        private val NONE = ProjectExternalMetadata(null, emptySet(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), false)
 
         /** No external metadata: every lookup is UNAVAILABLE. */
         @JvmStatic

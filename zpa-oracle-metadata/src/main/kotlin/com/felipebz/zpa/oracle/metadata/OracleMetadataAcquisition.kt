@@ -8,6 +8,7 @@ package com.felipebz.zpa.oracle.metadata
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.squid.DatabaseVersion
 import java.sql.*
+import java.time.Duration
 import java.time.Instant
 import javax.sql.DataSource
 
@@ -90,12 +91,120 @@ object OracleMetadataAcquisition {
             for (chunk in request.publicSynonymTargets.chunked(BATCH)) {
                 query(connection, dialect.targetedPublicSynonymsSql(chunk.size), chunk, timeout) { synonyms += synonymRow(it) }
             }
-            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt, version, objects, synonyms)
+            val typesStarted = System.nanoTime()
+            val types = objectTypes(connection, dialect, request, synonyms, timeout)
+            val typesReadIn = Duration.ofNanos(System.nanoTime() - typesStarted)
+            return OracleDictionaryMapping.assemble(request, session, relations, columns, acquiredAt, version, objects, synonyms, types, typesReadIn)
         } catch (e: Throwable) {
             failure = e
             throw e
         } finally {
             finish(connection, failure)
+        }
+    }
+
+    /**
+     * The object types the metadata needs: those of the requested schemas, those the synonyms of these schemas and the
+     * public synonyms stand for (a chain of the synonyms read followed to its end), and the supertypes of each, up to a
+     * type that is under none. Each type is read once, with the attributes and methods it declares.
+     */
+    private fun objectTypes(
+        connection: Connection,
+        dialect: OracleDictionaryDialect,
+        request: OracleMetadataRequest,
+        synonyms: List<SynonymRow>,
+        timeout: Int
+    ): TypeRows {
+        val reading = TypeReading(connection, dialect, timeout)
+        for (schema in request.schemas) {
+            reading.read(OracleTypeScope.SCHEMA, listOf(schema))
+            reading.read(OracleTypeScope.SCHEMA_SYNONYMS, listOf(schema))
+        }
+        if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) reading.read(OracleTypeScope.PUBLIC_SYNONYMS, emptyList())
+        for (chunk in request.publicSynonymTargets.chunked(BATCH)) reading.read(OracleTypeScope.publicSynonymsOf(chunk.size), chunk)
+        val tried = HashSet<Pair<String, String>>()
+        while (true) {
+            val missing = (reading.supertypes() + synonymChainEnds(synonyms)).filter { it !in reading.keys && tried.add(it) }
+            if (missing.isEmpty()) return reading.rows()
+            for (chunk in missing.chunked(BATCH)) reading.read(OracleTypeScope.named(chunk.size), chunk.flatMap { listOf(it.first, it.second) })
+        }
+    }
+
+    /** Where each local synonym read ends once followed through the other synonyms read, when it stands for another one. */
+    private fun synonymChainEnds(synonyms: List<SynonymRow>): List<Pair<String, String>> {
+        val byName = synonyms.filter { it.dbLink == null }.associateBy { it.owner to it.name }
+        return byName.values.mapNotNull { chainEnd(it, byName) }
+    }
+
+    private fun chainEnd(synonym: SynonymRow, byName: Map<Pair<String, String>, SynonymRow>): Pair<String, String>? {
+        val seen = hashSetOf(synonym.owner to synonym.name)
+        var target = targetOf(synonym) ?: return null
+        var hops = 0
+        while (true) {
+            val next = byName[target] ?: return target.takeIf { hops > 0 }
+            // Oracle rejects a synonym that resolves to itself (ORA-01775).
+            if (!seen.add(target)) return null
+            target = targetOf(next) ?: return null
+            hops++
+        }
+    }
+
+    private fun targetOf(synonym: SynonymRow): Pair<String, String>? =
+        synonym.targetOwner?.let { owner -> synonym.targetName?.let { owner to it } }
+
+    /** The rows of the object types read so far, each type from the first query that returned it. */
+    private class TypeReading(private val connection: Connection, private val dialect: OracleDictionaryDialect, private val timeout: Int) {
+        private val types = ArrayList<TypeRow>()
+        private val attributes = ArrayList<TypeAttributeRow>()
+        private val methods = ArrayList<TypeMethodRow>()
+        private val parameters = ArrayList<MethodParameterRow>()
+        private val results = ArrayList<MethodResultRow>()
+        val keys = HashSet<Pair<String, String>>()
+
+        fun supertypes(): List<Pair<String, String>> = types.mapNotNull { row ->
+            row.supertypeOwner?.let { owner -> row.supertypeName?.let { owner to it } }
+        }
+
+        fun rows() = TypeRows(types, attributes, methods, parameters, results)
+
+        fun read(scope: OracleTypeScope, parameters: List<String>) {
+            val found = ArrayList<TypeRow>()
+            query(connection, dialect.typesSql(scope), parameters, timeout) {
+                found += TypeRow(it.getString(1), it.getString(2), it.getString(3), it.getString(4), it.getString(5))
+            }
+            val fresh = found.filter { (it.owner to it.name) !in keys }
+            if (fresh.isEmpty()) return
+            val wanted = fresh.mapTo(HashSet()) { it.owner to it.name }
+            types += fresh
+            keys += wanted
+            val inScope = { owner: String, type: String -> (owner to type) in wanted }
+            query(connection, dialect.typeAttributesSql(scope), parameters, timeout) {
+                if (inScope(it.getString(1), it.getString(2))) attributes += TypeAttributeRow(
+                    it.getString(1), it.getString(2), it.getString(3), it.getString(4), it.getString(5), it.getString(6),
+                    it.getBigDecimal(7), it.getBigDecimal(8), it.getBigDecimal(9), it.getString(10)
+                )
+            }
+            val declared = HashSet<List<String>>()
+            query(connection, dialect.typeMethodsSql(scope), parameters, timeout) {
+                if (inScope(it.getString(1), it.getString(2))) {
+                    val row = TypeMethodRow(it.getString(1), it.getString(2), it.getString(3), it.getBigDecimal(4), it.getBigDecimal(5))
+                    methods += row
+                    declared += listOf(row.owner, row.type, row.number.toPlainString())
+                }
+            }
+            // A method's parameters and result are kept only for a method the type declares itself.
+            val method = { rs: ResultSet -> listOf(rs.getString(1), rs.getString(2), rs.getBigDecimal(4).toPlainString()) in declared }
+            query(connection, dialect.methodParametersSql(scope), parameters, timeout) {
+                if (method(it)) this.parameters += MethodParameterRow(
+                    it.getString(1), it.getString(2), it.getString(3), it.getBigDecimal(4), it.getString(5), it.getString(6), it.getString(7),
+                    it.getString(8), it.getString(9)
+                )
+            }
+            query(connection, dialect.methodResultsSql(scope), parameters, timeout) {
+                if (method(it)) results += MethodResultRow(
+                    it.getString(1), it.getString(2), it.getString(3), it.getBigDecimal(4), it.getString(5), it.getString(6), it.getString(7)
+                )
+            }
         }
     }
 

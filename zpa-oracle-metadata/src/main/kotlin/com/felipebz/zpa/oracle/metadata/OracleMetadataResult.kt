@@ -8,6 +8,7 @@ package com.felipebz.zpa.oracle.metadata
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectExternalMetadata
 import com.felipebz.zpa.squid.DatabaseVersion
+import java.time.Duration
 import java.time.Instant
 import java.util.*
 
@@ -43,7 +44,15 @@ class OracleMetadataResult internal constructor(
     /** `DBMS_DB_VERSION.VERSION` and `RELEASE`, as the database's package declares them; null when they could not be read. */
     val databaseVersion: DatabaseVersion? = null,
     /** Why [databaseVersion] could not be read (the driver's message, not sanitized); null when it was read. */
-    val databaseVersionFailure: String? = null
+    val databaseVersionFailure: String? = null,
+    /** Object types added to [metadata]: those of the requested schemas, those their synonyms and the public synonyms reach, and their supertypes. */
+    val objectTypeCount: Int = 0,
+    /** Attributes the [objectTypeCount] types declare themselves. */
+    val typeAttributeCount: Int = 0,
+    /** Methods the [objectTypeCount] types declare themselves, each overload apart. */
+    val typeMethodCount: Int = 0,
+    /** How long reading the object types took, every query of them included. */
+    val objectTypeReading: Duration = Duration.ZERO
 ) {
     /** Requested schemas declared complete (so absent relations are reported as absent). Runtime-unmodifiable. */
     val completeSchemas: Set<String> = Collections.unmodifiableSet(LinkedHashSet(completeSchemas))
@@ -56,6 +65,7 @@ class OracleMetadataResult internal constructor(
 
     override fun toString(): String =
         "OracleMetadataResult($relationCount relations, $columnCount columns, $objectCount objects, $synonymCount synonyms, " +
+            "$objectTypeCount object types ($typeAttributeCount attributes, $typeMethodCount methods, read in ${objectTypeReading.toMillis()} ms), " +
             "complete=$completeSchemas, publicSynonymsComplete=${metadata.isPublicSynonymsComplete}, notVisible=$notVisible, " +
             "${metadata.origin.orElse("")})"
 }

@@ -75,6 +75,8 @@ class OracleMetadataAcquisitionIT {
             "CREATE VIEW nl_stale_v AS SELECT code FROM nl_base",
             "ALTER TABLE nl_base MODIFY (code NULL)",
             "GRANT SELECT ON test_table TO ${reader.name}",
+            "CREATE TYPE crate_base AS OBJECT (qty NUMBER(6), MEMBER FUNCTION label(p_width NUMBER) RETURN VARCHAR2) NOT FINAL",
+            "CREATE TYPE crate_item UNDER crate_base (tag VARCHAR2(5 CHAR), STATIC FUNCTION make(p_qty NUMBER) RETURN crate_item)",
             pkg,
             """
             CREATE OR REPLACE PACKAGE BODY pkg_meta AS
@@ -98,6 +100,36 @@ class OracleMetadataAcquisitionIT {
     private val empty = ProjectSnapshots.prepare(emptyList(), false)
     private fun written(kind: Anchor, vararg name: String, metadata: ProjectExternalMetadata = full.metadata) =
         empty.describeExternalType(ProjectWrittenAnchor.of(ProjectQualifiedName.of(*name), kind), null, metadata, schema)
+
+    @Test
+    fun objectTypesOfTheSchemaThePublicSynonymsAndTheirSupertypes() {
+        val md = full.metadata
+        fun type(owner: String, name: String) = md.findObjectType(id(owner), id(name)).get()
+        val item = type(owner.name, "CRATE_ITEM")
+        assertThat(item.supertypeName.map { it.originalSpelling }).contains("\"CRATE_BASE\"")
+        // An attribute or a method is its declaring type's only.
+        assertThat(item.attributes.map { it.name.originalSpelling }).containsExactly("\"TAG\"")
+        assertThat(item.findAttribute(id("TAG")).get().datatype.get().lengthSemantics).contains(ProjectExternalDatatype.LengthSemantics.CHAR)
+        assertThat(item.findMethods(id("MAKE")).single().isStatic).isTrue()
+        val label = type(owner.name, "CRATE_BASE").findMethods(id("LABEL")).single()
+        assertThat(listOf(label.isStatic, label.isFunction, label.result.get().name)).containsExactly(false, true, "VARCHAR2")
+        assertThat(label.parameters.map { it.name.originalSpelling }).containsExactly("\"P_WIDTH\"")
+        // Behind public synonyms, with the supertype of a subtype.
+        val any = type("SYS", "ANYDATA")
+        assertThat(any.kind).isEqualTo(ProjectExternalObjectType.Kind.OPAQUE)
+        assertThat(any.findMethods(id("CONVERTOBJECT"))).allSatisfy {
+            assertThat(it.isStatic).isTrue()
+            assertThat(it.result.get().typeOwner.map { o -> o.originalSpelling }).contains("\"SYS\"")
+        }
+        assertThat(any.findMethods(id("GETTYPENAME")).map { it.isStatic to it.result.get().name }).containsExactly(false to "VARCHAR2")
+        assertThat(type("SYS", "JSON_OBJECT_T").supertypeName.map { it.originalSpelling }).contains("\"JSON_ELEMENT_T\"")
+        assertThat(type("SYS", "JSON_ELEMENT_T").supertypeName).isEmpty()
+        assertThat(full.typeMethodCount).isGreaterThanOrEqualTo(any.methods.size)
+        println(
+            "MEASURE object types: ${full.objectTypeCount} types, ${full.typeAttributeCount} attributes, ${full.typeMethodCount} methods, " +
+                "read in ${full.objectTypeReading.toMillis()} ms"
+        )
+    }
 
     @Test
     fun ordinaryTableColumnsAndDatatypes() {

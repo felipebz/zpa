@@ -8,12 +8,12 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ObjectTypeRef
 import com.felipebz.zpa.api.project.OverloadRank
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.Outcome
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.UnknownReason
 import com.felipebz.zpa.api.project.ProjectCallNarrower
 import com.felipebz.zpa.api.project.ProjectDatatypeFamily
-import com.felipebz.zpa.api.project.ProjectDeclarationId
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.ProjectCallCandidate.Applicability
 
@@ -33,8 +33,8 @@ internal class LocalBindingCompatibility(
     val reason: UnknownReason?,
     /** The formal's exact type, for Oracle's preference among compatible candidates; null when not known. */
     val formalRank: OverloadRank? = null,
-    /** The formal's object type, when the project declares it; its supertypes order the candidates. */
-    val formalObjectType: ProjectDeclarationId? = null
+    /** The formal's object type, the project's or the metadata's; its supertypes order the candidates. */
+    val formalObjectType: ObjectTypeRef? = null
 ) {
     override fun toString() = "$argumentOrdinal>$parameterOrdinal $outcome" + (reason?.let { " $it" } ?: "")
 }

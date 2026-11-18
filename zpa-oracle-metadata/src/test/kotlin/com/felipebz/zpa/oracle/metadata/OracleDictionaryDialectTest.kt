@@ -79,6 +79,40 @@ class OracleDictionaryDialectTest {
             .isEqualTo(listOf(d.schemaObjectsSql, d.schemaSynonymsSql, d.publicSynonymsSql, d.targetedPublicSynonymsSql(2)))
     }
 
+    @Test
+    fun objectTypeQueriesReadEachScopeAndDoNotDiffer() {
+        for (d in OracleDictionaryDialect.entries) {
+            val schema = OracleTypeScope.SCHEMA
+            assertThat(d.typesSql(schema)).isEqualTo("SELECT owner, type_name, typecode, supertype_owner, supertype_name FROM all_types WHERE owner = ?")
+            // The oldest releases have no CHAR_USED in ALL_TYPE_ATTRS.
+            val charUsed = if (d == OracleDictionaryDialect.LEGACY) "NULL" else "char_used"
+            assertThat(d.typeAttributesSql(schema)).isEqualTo(
+                "SELECT owner, type_name, attr_name, attr_type_mod, attr_type_owner, attr_type_name, length, precision, scale, $charUsed " +
+                    "FROM all_type_attrs WHERE inherited = 'NO' AND owner = ? ORDER BY owner, type_name, attr_no"
+            )
+            assertThat(d.typeMethodsSql(schema)).isEqualTo(
+                "SELECT owner, type_name, method_name, method_no, results FROM all_type_methods WHERE inherited = 'NO' AND owner = ? " +
+                    "ORDER BY owner, type_name, method_no"
+            )
+            assertThat(d.methodParametersSql(schema)).isEqualTo(
+                "SELECT owner, type_name, method_name, method_no, param_name, param_mode, param_type_mod, param_type_owner, param_type_name " +
+                    "FROM all_method_params WHERE owner = ? ORDER BY owner, type_name, method_no, param_no"
+            )
+            assertThat(d.methodResultsSql(schema)).isEqualTo(
+                "SELECT owner, type_name, method_name, method_no, result_type_mod, result_type_owner, result_type_name FROM all_method_results WHERE owner = ?"
+            )
+            val synonyms = "(owner, type_name) IN (SELECT table_owner, table_name FROM all_synonyms WHERE "
+            assertThat(d.typesSql(OracleTypeScope.SCHEMA_SYNONYMS)).endsWith("WHERE " + synonyms + "owner = ? AND db_link IS NULL)")
+            assertThat(d.typesSql(OracleTypeScope.PUBLIC_SYNONYMS)).endsWith("WHERE " + synonyms + "owner = 'PUBLIC' AND db_link IS NULL)")
+            assertThat(d.typesSql(OracleTypeScope.publicSynonymsOf(2)))
+                .endsWith("WHERE " + synonyms + "owner = 'PUBLIC' AND db_link IS NULL AND table_owner IN (?, ?))")
+            assertThat(d.typesSql(OracleTypeScope.named(2))).endsWith("WHERE (owner, type_name) IN ((?, ?), (?, ?))")
+            assertThat(d.methodResultsSql(OracleTypeScope.named(1))).endsWith("WHERE (owner, type_name) IN ((?, ?))")
+        }
+        assertThat(listOf(OracleTypeScope.SCHEMA, OracleTypeScope.SCHEMA_SYNONYMS, OracleTypeScope.PUBLIC_SYNONYMS, OracleTypeScope.publicSynonymsOf(3), OracleTypeScope.named(2))
+            .map { it.parameters }).containsExactly(1, 1, 0, 3, 4)
+    }
+
     private companion object {
         const val COLUMN_LIST =
             "SELECT owner, table_name, column_name, column_id, data_type, data_type_owner, data_length, char_length, " +

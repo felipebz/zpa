@@ -23,16 +23,51 @@ private const val VIEW_LIST =
 
 private fun placeholders(pairs: Int) = List(pairs) { "(?, ?)" }.joinToString(", ")
 
+private const val SYNONYM_TARGETS = "(owner, type_name) IN (SELECT table_owner, table_name FROM all_synonyms WHERE "
+
+/**
+ * Which object types a type query reads, as a condition on the `OWNER` and `TYPE_NAME` every type view has, with
+ * [parameters] bind values: the types of one schema, those its synonyms or the public synonyms stand for, or named ones.
+ */
+internal class OracleTypeScope private constructor(val condition: String, val parameters: Int) {
+    companion object {
+        /** The types of one schema; the parameter is the schema. */
+        val SCHEMA = OracleTypeScope("owner = ?", 1)
+
+        /** The types the synonyms of one schema stand for; the parameter is the schema. */
+        val SCHEMA_SYNONYMS = OracleTypeScope(SYNONYM_TARGETS + "owner = ? AND db_link IS NULL)", 1)
+
+        /** The types every public synonym stands for. */
+        val PUBLIC_SYNONYMS = OracleTypeScope(SYNONYM_TARGETS + "owner = 'PUBLIC' AND db_link IS NULL)", 0)
+
+        /** The types the public synonyms whose `TABLE_OWNER` is one of [targets] schemas stand for; the parameters are the schemas. */
+        fun publicSynonymsOf(targets: Int) = OracleTypeScope(
+            SYNONYM_TARGETS + "owner = 'PUBLIC' AND db_link IS NULL AND table_owner IN (${List(targets) { "?" }.joinToString(", ")}))", targets
+        )
+
+        /** The types of [pairs] `(owner, type_name)` pairs; the parameters are the pairs. */
+        fun named(pairs: Int) = OracleTypeScope("(owner, type_name) IN (${placeholders(pairs)})", pairs * 2)
+    }
+}
+
 /**
  * The dictionary SQL of an Oracle release family; every statement the acquisition runs comes from here. Chosen from
  * the server major version before any dictionary query runs, never by trying a query.
  */
-internal enum class OracleDictionaryDialect(private val containerExpression: String, private val columnFilter: String) {
-    /** Before 12c: no `CON_NAME` and no `USER_GENERATED`; there are no invisible columns, so every hidden column is system-generated. */
-    LEGACY("NULL", "hidden_column = 'NO'"),
+internal enum class OracleDictionaryDialect(
+    private val containerExpression: String,
+    private val columnFilter: String,
+    private val attributeCharUsed: String
+) {
+    /**
+     * Before 12c: no `CON_NAME` and no `USER_GENERATED`; there are no invisible columns, so every hidden column is
+     * system-generated. The oldest releases have no `CHAR_USED` in `ALL_TYPE_ATTRS`: an attribute's length semantics
+     * stay unknown.
+     */
+    LEGACY("NULL", "hidden_column = 'NO'", "NULL"),
 
     /** 12c and later. */
-    CURRENT("SYS_CONTEXT('USERENV', 'CON_NAME')", "user_generated = 'YES'");
+    CURRENT("SYS_CONTEXT('USERENV', 'CON_NAME')", "user_generated = 'YES'", "char_used");
 
     /** Session user, current schema, container (NULL for [LEGACY]) and database unique name, in this order. */
     val sessionSql: String =
@@ -73,6 +108,30 @@ internal enum class OracleDictionaryDialect(private val containerExpression: Str
     /** Public synonyms whose `TABLE_OWNER` is one of [targets] schemas, which are the parameters. */
     fun targetedPublicSynonymsSql(targets: Int): String =
         SYNONYM_LIST + "WHERE owner = 'PUBLIC' AND table_owner IN (${List(targets) { "?" }.joinToString(", ")})"
+
+    /** The object types of [scope]: what `TYPECODE` says each is, and its supertype. */
+    fun typesSql(scope: OracleTypeScope): String =
+        "SELECT owner, type_name, typecode, supertype_owner, supertype_name FROM all_types WHERE ${scope.condition}"
+
+    /** The attributes the types of [scope] declare themselves (not inherited ones), in order; `CHAR_USED` is NULL for [LEGACY]. */
+    fun typeAttributesSql(scope: OracleTypeScope): String =
+        "SELECT owner, type_name, attr_name, attr_type_mod, attr_type_owner, attr_type_name, length, precision, scale, $attributeCharUsed " +
+            "FROM all_type_attrs WHERE inherited = 'NO' AND ${scope.condition} ORDER BY owner, type_name, attr_no"
+
+    /** The methods the types of [scope] declare themselves (not inherited ones), overloads apart by `METHOD_NO`. */
+    fun typeMethodsSql(scope: OracleTypeScope): String =
+        "SELECT owner, type_name, method_name, method_no, results FROM all_type_methods " +
+            "WHERE inherited = 'NO' AND ${scope.condition} ORDER BY owner, type_name, method_no"
+
+    /** The parameters of the methods of [scope], `SELF` of a member method included, in order. */
+    fun methodParametersSql(scope: OracleTypeScope): String =
+        "SELECT owner, type_name, method_name, method_no, param_name, param_mode, param_type_mod, param_type_owner, param_type_name " +
+            "FROM all_method_params WHERE ${scope.condition} ORDER BY owner, type_name, method_no, param_no"
+
+    /** The results of the functions of [scope]. */
+    fun methodResultsSql(scope: OracleTypeScope): String =
+        "SELECT owner, type_name, method_name, method_no, result_type_mod, result_type_owner, result_type_name " +
+            "FROM all_method_results WHERE ${scope.condition}"
 
     companion object {
         fun forMajorVersion(major: Int): OracleDictionaryDialect = if (major < 12) LEGACY else CURRENT

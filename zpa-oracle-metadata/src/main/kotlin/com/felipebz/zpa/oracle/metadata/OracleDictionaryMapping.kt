@@ -9,6 +9,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.squid.DatabaseVersion
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.Instant
 
 /** Session context of the acquiring connection. */
@@ -51,6 +52,59 @@ internal class ObjectRow(val schema: String, val name: String, val type: String)
 
 /** One `ALL_SYNONYMS` row, values as read (SQL NULL stays null). */
 internal class SynonymRow(val owner: String, val name: String, val targetOwner: String?, val targetName: String?, val dbLink: String?)
+
+/** One `ALL_TYPES` row. */
+internal class TypeRow(val owner: String, val name: String, val typecode: String?, val supertypeOwner: String?, val supertypeName: String?)
+
+/** One `ALL_TYPE_ATTRS` row of an attribute the type declares itself, values as read. */
+internal class TypeAttributeRow(
+    val owner: String,
+    val type: String,
+    val name: String,
+    val typeMod: String?,
+    val typeOwner: String?,
+    val typeName: String?,
+    val length: BigDecimal?,
+    val precision: BigDecimal?,
+    val scale: BigDecimal?,
+    val charUsed: String?
+)
+
+/** One `ALL_TYPE_METHODS` row of a method the type declares itself; [results] is `RESULTS` (0 for a procedure). */
+internal class TypeMethodRow(val owner: String, val type: String, val name: String, val number: BigDecimal, val results: BigDecimal?)
+
+/** One `ALL_METHOD_PARAMS` row, `SELF` included. */
+internal class MethodParameterRow(
+    val owner: String,
+    val type: String,
+    val method: String,
+    val number: BigDecimal,
+    val name: String,
+    val mode: String?,
+    val typeMod: String?,
+    val typeOwner: String?,
+    val typeName: String?
+)
+
+/** One `ALL_METHOD_RESULTS` row. */
+internal class MethodResultRow(
+    val owner: String,
+    val type: String,
+    val method: String,
+    val number: BigDecimal,
+    val typeMod: String?,
+    val typeOwner: String?,
+    val typeName: String?
+)
+
+/** The rows of the object types read, each type once, with what it declares. */
+internal class TypeRows(
+    val types: List<TypeRow> = emptyList(),
+    val attributes: List<TypeAttributeRow> = emptyList(),
+    val methods: List<TypeMethodRow> = emptyList(),
+    val parameters: List<MethodParameterRow> = emptyList(),
+    val results: List<MethodResultRow> = emptyList()
+)
 
 /** Pure mapping from dictionary rows to S8 descriptors; no JDBC. */
 @OptIn(ZpaExperimentalApi::class)
@@ -108,6 +162,70 @@ internal object OracleDictionaryMapping {
         else -> null
     }
 
+    /** The kind of a `TYPECODE`: an object, a collection, or a type whose representation the dictionary does not show. */
+    fun objectTypeKind(typecode: String?): ProjectExternalObjectType.Kind = when (typecode) {
+        "OBJECT" -> ProjectExternalObjectType.Kind.OBJECT
+        "COLLECTION" -> ProjectExternalObjectType.Kind.COLLECTION
+        else -> ProjectExternalObjectType.Kind.OPAQUE
+    }
+
+    /**
+     * The datatype of an attribute, a parameter or a result, as [datatype] reads a column's: none for a `REF` or another
+     * modifier, whose target is not the value's own type.
+     */
+    private fun typeDatatype(
+        name: String?,
+        owner: String?,
+        mod: String?,
+        length: BigDecimal? = null,
+        charUsed: String? = null,
+        precision: BigDecimal? = null,
+        scale: BigDecimal? = null
+    ): ProjectExternalDatatype? {
+        if (name == null || mod != null) return null
+        return datatype(ColumnRow("", "", "", null, name, owner, length, length, charUsed, precision, scale))
+    }
+
+    /**
+     * The object types of [rows], each with the attributes and methods it declares itself. A method whose first
+     * parameter is `SELF` is a member method, any other a static one; one with results is a function.
+     *
+     * @throws IllegalArgumentException if the rows cannot form a type descriptor
+     */
+    fun objectTypes(rows: TypeRows): List<ProjectExternalObjectType> {
+        val attributes = rows.attributes.groupBy { it.owner to it.type }
+        val methods = rows.methods.groupBy { it.owner to it.type }
+        val parameters = rows.parameters.groupBy { listOf(it.owner, it.type, it.method, it.number.toPlainString()) }
+        val results = rows.results.associateBy { listOf(it.owner, it.type, it.method, it.number.toPlainString()) }
+        return rows.types.map { type ->
+            val key = type.owner to type.name
+            val declared = attributes[key].orEmpty().map {
+                ProjectExternalTypeAttribute.of(it.name, typeDatatype(it.typeName, it.typeOwner, it.typeMod, it.length, it.charUsed, it.precision, it.scale))
+            }
+            val declaredMethods = methods[key].orEmpty().map { method ->
+                val methodKey = listOf(method.owner, method.type, method.name, method.number.toPlainString())
+                val all = parameters[methodKey].orEmpty()
+                val static = all.firstOrNull()?.name != "SELF"
+                val formal = all.filter { it.name != "SELF" }.map {
+                    ProjectExternalMethodParameter.of(it.name, parameterMode(it.mode), typeDatatype(it.typeName, it.typeOwner, it.typeMod))
+                }
+                val result = results[methodKey]
+                if (result != null || (method.results?.signum() ?: 0) > 0) {
+                    ProjectExternalTypeMethod.function(method.name, static, formal, result?.let { typeDatatype(it.typeName, it.typeOwner, it.typeMod) })
+                } else {
+                    ProjectExternalTypeMethod.procedure(method.name, static, formal)
+                }
+            }
+            ProjectExternalObjectType.of(type.owner, type.name, objectTypeKind(type.typecode), type.supertypeOwner, type.supertypeName, declared, declaredMethods)
+        }
+    }
+
+    private fun parameterMode(mode: String?): ProjectExternalMethodParameter.Mode = when (mode) {
+        "OUT" -> ProjectExternalMethodParameter.Mode.OUT
+        "IN/OUT", "IN OUT" -> ProjectExternalMethodParameter.Mode.IN_OUT
+        else -> ProjectExternalMethodParameter.Mode.IN
+    }
+
     /** @throws IllegalArgumentException if the row cannot form a synonym descriptor */
     fun synonym(row: SynonymRow): ProjectExternalSynonym {
         val target = requireNotNull(row.targetName) { "The synonym has no target name" }
@@ -133,7 +251,9 @@ internal object OracleDictionaryMapping {
         acquiredAt: Instant,
         version: Result<DatabaseVersion> = Result.failure(IllegalStateException("not read")),
         objects: List<ObjectRow> = emptyList(),
-        synonyms: List<SynonymRow> = emptyList()
+        synonyms: List<SynonymRow> = emptyList(),
+        types: TypeRows = TypeRows(),
+        typesReadIn: Duration = Duration.ZERO
     ): OracleMetadataResult {
         val columnsByRelation = columns.groupBy { it.schema to it.relation }
         val origin = "oracle ${session.database}/${session.container} as ${session.sessionUser} at $acquiredAt"
@@ -180,12 +300,27 @@ internal object OracleDictionaryMapping {
                 throw OracleMetadataException("Inconsistent dictionary metadata for synonym ${row.owner}.${row.name}: ${e.message}", e)
             }
         }
+        val objectTypes = try {
+            objectTypes(types)
+        } catch (e: IllegalArgumentException) {
+            throw OracleMetadataException("Inconsistent dictionary metadata for an object type: ${e.message}", e)
+        } catch (e: ArithmeticException) {
+            throw OracleMetadataException("Out-of-range dictionary value for an object type", e)
+        }
+        for (type in objectTypes) {
+            try {
+                builder.objectType(type)
+            } catch (e: IllegalArgumentException) {
+                throw OracleMetadataException("The dictionary returned object type ${type.owner}.${type.name} more than once", e)
+            }
+        }
         if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) builder.completePublicSynonyms()
         val notVisible = request.relations.filter { it.schema !in request.schemas && (it.schema to it.name) !in seen }
         return OracleMetadataResult(
             builder.build(), session.sessionUser, session.currentSchema, session.database, session.container, acquiredAt,
             complete, notVisible, seen.size, columnCount, objectNames.size, synonyms.size,
-            version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName }
+            version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
+            objectTypes.size, objectTypes.sumOf { it.attributes.size }, objectTypes.sumOf { it.methods.size }, typesReadIn
         )
     }
 }

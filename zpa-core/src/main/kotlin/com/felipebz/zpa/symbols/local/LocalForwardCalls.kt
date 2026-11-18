@@ -442,9 +442,14 @@ internal class LocalForwardCalls(
         callOf(reference)?.let { call ->
             val result = walk.projectResult(call.typed, reference.region)
             // An object type's constructor, user-defined or the default one: nothing local takes the name.
-            if (result.terminal == LocalTypeEvidence.Terminal.UNKNOWN && actual.isCall) walk.constructorResult(target(reference), reference.region)?.let { return it }
+            if (result.terminal == LocalTypeEvidence.Terminal.UNKNOWN && actual.isCall) {
+                walk.constructorResult(target(reference), reference.region)?.let { return it }
+                walk.externalTypeCall(target(reference), reference.region)?.let { return it }
+            }
             return result
         }
+        // A constructor or a static method of an object type of the metadata.
+        if (actual.isCall) walk.externalTypeCall(target(reference), reference.region)?.let { return it }
         // A one-segment name could be a parameterless function or a built-in: only a qualified one names a value.
         return if (reference.segments.isEmpty() || actual.isCall) LocalTypeEvidence.unknown("not a local name")
         else walk.projectValue(target(reference), reference.region)
@@ -471,11 +476,16 @@ internal class LocalForwardCalls(
         is LocalActualForm.CursorAttribute -> builtIn(if (form.rowCount) "NUMBER" else "BOOLEAN")
         is LocalActualForm.HostVariable -> forms?.let { FormsHostVariables.type(it, form.qualifier.lookupName, form.name.lookupName) }?.let(::builtIn)
             ?: LocalTypeEvidence.unknown("a host variable the Forms metadata does not type")
-        is LocalActualForm.Constructor -> walk.constructorResult(form.type, region) ?: LocalTypeEvidence.unknown("not an object type the project describes")
+        is LocalActualForm.Constructor -> walk.constructorResult(form.type, region) ?: walk.externalTypeCall(form.type, region)
+            ?: LocalTypeEvidence.unknown("not an object type the project describes")
         LocalActualForm.JsonConstructor -> walk.jsonConstructorResult(region) ?: builtIn("JSON")
         is LocalActualForm.Arithmetic -> typed(StandardFunctions.arithmetic(form.operands.map { evidence(it, region, sql).argumentType }, form.operators), "an operation")
         is LocalActualForm.Case -> typed(StandardFunctions.common(form.results.map { evidence(it, region, sql).argumentType }, sql), "a CASE")
-        is LocalActualForm.Cast -> if (DatatypeFamilies.ofTypeName(form.type) != null) builtIn(form.type) else LocalTypeEvidence.unknown("a CAST to a type that is not predefined")
+        is LocalActualForm.Cast -> when {
+            DatatypeFamilies.ofTypeName(form.type) != null -> builtIn(form.type)
+            // A CAST to an object type, of the project or of the metadata, builds a value of that type.
+            else -> form.name?.let { walk.castType(it, region) } ?: LocalTypeEvidence.unknown("a CAST to a type that is not predefined")
+        }
         // The time zone's name and abbreviation are character values; every other field is a number.
         is LocalActualForm.Extract -> builtIn(if (form.field == "TIMEZONE_REGION" || form.field == "TIMEZONE_ABBR") "VARCHAR2" else "NUMBER")
         is LocalActualForm.Trim -> typed(StandardFunctions.result("TRIM", listOf(evidence(form.source, region, sql).argumentType)), "a TRIM")

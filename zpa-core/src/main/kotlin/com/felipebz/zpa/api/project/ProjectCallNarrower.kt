@@ -24,8 +24,8 @@ internal object ProjectCallNarrower {
         val rank: OverloadRank? = null,
         val compositeKind: CompositeKind? = null,
         val declaredType: DeclaredCompositeType? = null,
-        /** An object type the project declares, the side's own type. */
-        val objectType: ProjectDeclarationId? = null,
+        /** An object type, the project's or the metadata's: the side's own type. */
+        val objectType: ObjectTypeRef? = null,
         /** The side is of the schema's type `json`, or of the predefined JSON type: the database version decides. */
         val predefinedJsonAlternative: Boolean = false
     ) {
@@ -52,7 +52,7 @@ internal object ProjectCallNarrower {
         }
         val shadowed = shadowCheck(snapshot)
         val actuals = types.map { issued(snapshot, actual(it, shadowed)) }
-        val hierarchy = ObjectTypeHierarchy(snapshot)
+        val hierarchy = ObjectTypeHierarchy(snapshot, metadata)
         val formalEvidence = ArrayList<List<Evidence?>>()
         val evaluations = structural.candidates
             .filter { it.applicability == ProjectCallCandidate.Applicability.APPLICABLE }
@@ -62,9 +62,11 @@ internal object ProjectCallNarrower {
                 val inSpecification = declaration.role == ProjectDeclarationRole.SPECIFICATION
                 val formals = arrayOfNulls<Evidence>(actuals.size)
                 val undeclared: ((OracleIdentifier) -> Boolean)? = if (owner != null && inSpecification) { name -> !shadowed(owner.name, name) } else null
+                // A formal's type name is read from the schema of the unit that declares it.
+                val schema = snapshot.occurrenceOf(declaration.id)?.let(snapshot.projectIndex::effectiveSchema)?.let(ProjectIdentifier::wrap) ?: currentSchema
                 val bindings = candidate.bindings.map { binding ->
                     val actual = actuals[binding.argumentOrdinal - 1]
-                    val formal = formal(snapshot, binding.parameter.typeRef, owner, undeclared, metadata, currentSchema, shadowed)
+                    val formal = formal(snapshot, binding.parameter.typeRef, owner, undeclared, metadata, currentSchema, shadowed, hierarchy.names, schema)
                     formals[binding.argumentOrdinal - 1] = formal
                     compare(actual, formal, hierarchy) { outcome, reason ->
                         ProjectBindingCompatibility.of(binding, outcome, actual.family, formal.family, reason)
@@ -124,7 +126,7 @@ internal object ProjectCallNarrower {
             val actual = actuals[index]
             when (key) {
                 is OverloadRank -> actual.rank?.let { OverloadRank.tier(it, key) }
-                is ProjectDeclarationId -> actual.objectType?.let { hierarchy?.distance(it, key) }
+                is ObjectTypeRef -> actual.objectType?.let { hierarchy?.distance(it, key) }
                 else -> null
             }
         }
@@ -154,8 +156,8 @@ internal object ProjectCallNarrower {
     ): Int? {
         val shadowed = shadowCheck(snapshot)
         val actuals = argumentTypes.map { issued(snapshot, actual(it, shadowed)) }
-        val evidence = formals.map { types -> types.map { formal(snapshot, it, null, { true }, metadata, currentSchema, shadowed) } }
-        val hierarchy = ObjectTypeHierarchy(snapshot)
+        val hierarchy = ObjectTypeHierarchy(snapshot, metadata)
+        val evidence = formals.map { types -> types.map { formal(snapshot, it, null, { true }, metadata, currentSchema, shadowed, hierarchy.names, currentSchema) } }
         val outcomes = evidence.map { types -> actuals.indices.map { compare(actuals[it], types[it], hierarchy) { outcome, reason -> outcome to reason } } }
         val retained = outcomes.indices.filter { candidate -> outcomes[candidate].none { it.first == Outcome.INCOMPATIBLE } }
         if (retained.size == 1) return retained.single()
@@ -195,7 +197,8 @@ internal object ProjectCallNarrower {
      */
     private fun issued(snapshot: ProjectSnapshot, evidence: Evidence): Evidence {
         val declared = (evidence.declaredType as? DeclaredCompositeType.Project)?.id
-        val foreign = listOfNotNull(declared, evidence.objectType).any { snapshot.occurrenceOf(it) == null }
+        val objectType = (evidence.objectType as? ObjectTypeRef.Project)?.id
+        val foreign = listOfNotNull(declared, objectType).any { snapshot.occurrenceOf(it) == null }
         if (!foreign) return evidence
         return Evidence(evidence.family, evidence.reason, evidence.rank, evidence.compositeKind, predefinedJsonAlternative = evidence.predefinedJsonAlternative)
     }
@@ -204,6 +207,8 @@ internal object ProjectCallNarrower {
      * The evidence of a formal of type [reference], declared in the package [owner] (null at schema level).
      * [undeclared], when given, tells whether a one-segment name is declared by no member of the declaring scope: such a
      * name that the project does not describe names a schema object; null when the scope's declarations are not covered.
+     * A name the project does not describe that reaches an object type of the metadata from [declaringSchema] ([names])
+     * is a value of that type.
      */
     private fun formal(
         snapshot: ProjectSnapshot,
@@ -212,12 +217,17 @@ internal object ProjectCallNarrower {
         undeclared: ((OracleIdentifier) -> Boolean)?,
         metadata: ProjectExternalMetadata,
         currentSchema: ProjectIdentifier?,
-        shadowed: (QualifiedName, OracleIdentifier) -> Boolean
+        shadowed: (QualifiedName, OracleIdentifier) -> Boolean,
+        names: ObjectTypeNames,
+        declaringSchema: ProjectIdentifier?
     ): Evidence {
         if (DatatypeFamilies.isRowtypeReference(reference)) return Evidence(ProjectDatatypeFamily.COMPOSITE, null)
         val description = snapshot.describeExternalType(reference, owner, metadata, currentSchema)
         val family = DatatypeFamilies.ofDescription(description, null, reference)
         if (family == null) {
+            externalObjectType(reference, owner, undeclared, names, declaringSchema)?.let {
+                return Evidence(ProjectDatatypeFamily.COMPOSITE, null, null, CompositeKind.SCHEMA_OBJECT, objectType = it)
+            }
             if (undeclared != null && namesSchemaObject(reference, undeclared)) {
                 return Evidence(ProjectDatatypeFamily.COMPOSITE, null, null, DatatypeFamilies.undeclaredTypeKind(reference.name.name.last))
             }
@@ -232,8 +242,27 @@ internal object ProjectCallNarrower {
             ?: DatatypeFamilies.externalRank(description)
         return Evidence(
             family, null, rank, DatatypeFamilies.compositeKind(description), DatatypeFamilies.declaredCompositeType(description),
-            DatatypeFamilies.objectType(description), description.source.predefinedJsonAlternative
+            DatatypeFamilies.objectType(description)?.let(ObjectTypeRef::Project), description.source.predefinedJsonAlternative
         )
+    }
+
+    /**
+     * The object type of the metadata a formal's written type [reference] reaches, a name of one or two segments that
+     * the project does not describe: a one-segment name only when no member of the declaring package [owner] may take
+     * it ([undeclared]), and never a predefined scalar name.
+     */
+    private fun externalObjectType(
+        reference: ProjectTypeReference,
+        owner: ProjectQualifiedName?,
+        undeclared: ((OracleIdentifier) -> Boolean)?,
+        names: ObjectTypeNames,
+        declaringSchema: ProjectIdentifier?
+    ): ObjectTypeRef? {
+        // A qualified name keeps its spelling as its written identity: only a one-segment name is checked against the predefined ones.
+        if (reference.kind != ProjectTypeReference.Kind.NAMED) return null
+        val segments = reference.name.name.segments
+        if (segments.size == 1 && (owner != null && undeclared == null || !namesSchemaObject(reference, undeclared ?: { true }))) return null
+        return names.reach(segments, declaringSchema)
     }
 
     /**

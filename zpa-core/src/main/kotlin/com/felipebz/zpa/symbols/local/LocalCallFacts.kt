@@ -91,8 +91,8 @@ internal sealed interface LocalActualForm {
     /** `a + b`, `a - b`, `a * b`, `a / b`, `a MOD b`: the operands, and the operators between them, left to right. */
     class Arithmetic(val operands: List<LocalActual>, val operators: List<String>) : LocalActualForm
 
-    /** `CAST(x AS t)`, with the text of the type written. */
-    class Cast(val type: String) : LocalActualForm
+    /** `CAST(x AS t)`, with the text of the type written, and its name when it is a name (`t`, `owner.t`). */
+    class Cast(val type: String, val name: QualifiedName? = null) : LocalActualForm
 
     /** `CASE … END`, with the actual of each result (after each `THEN`, and after `ELSE`). */
     class Case(val results: List<LocalActual>) : LocalActualForm
@@ -177,6 +177,16 @@ internal object LocalCallCollector {
         return expression(label, argument.lastChild)
     }
 
+    /** The name a written datatype is, when it is only a name of one or two segments; null for anything else (`VARCHAR2(10)`). */
+    private fun typeName(type: AstNode): QualifiedName? {
+        val tokens = type.tokens
+        if (tokens.size != 1 && tokens.size != 3) return null
+        if (tokens.size == 3 && tokens[1].originalValue != ".") return null
+        val names = tokens.filterIndexed { index, _ -> index % 2 == 0 }
+        if (names.any { it.type is PlSqlPunctuator }) return null
+        return QualifiedName(names.map { OracleIdentifier.fromSource(it.originalValue) })
+    }
+
     private fun expression(label: OracleIdentifier?, expression: AstNode): LocalActual {
         // `(x)` is the value of `x`; with an interval qualifier after it, it is not.
         if (expression.type === PlSqlGrammar.BRACKED_EXPRESSION && expression.children.size == 3) return expression(label, expression.children[1])
@@ -233,7 +243,7 @@ internal object LocalCallCollector {
                 val children = function.children
                 when (function.type) {
                     SingleRowSqlFunctionsGrammar.CAST_EXPRESSION -> function.getFirstChildOrNull(PlSqlGrammar.DATATYPE)
-                        ?.let { type -> LocalActualForm.Cast(type.tokens.joinToString(" ") { it.originalValue }) }
+                        ?.let { type -> LocalActualForm.Cast(type.tokens.joinToString(" ") { it.originalValue }, typeName(type)) }
                     SingleRowSqlFunctionsGrammar.EXTRACT_DATETIME_EXPRESSION -> LocalActualForm.Extract(children[2].tokenValue.uppercase())
                     SingleRowSqlFunctionsGrammar.TRIM_EXPRESSION -> LocalActualForm.Trim(expression(null, children[children.size - 2]))
                     SingleRowSqlFunctionsGrammar.TO_NUMBER_EXPRESSION, SingleRowSqlFunctionsGrammar.TO_DATE_EXPRESSION,

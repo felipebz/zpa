@@ -45,8 +45,8 @@ class ProjectArgumentType private constructor(
     /** For a composite, what it is where Oracle's compatibility between composites depends on it; null when not known. */
     @get:JvmSynthetic internal val compositeKind: CompositeKind? = null,
     @get:JvmSynthetic internal val declaredType: DeclaredCompositeType? = null,
-    /** For a value of an object type the project declares, that type: it orders the overloads its supertypes take. */
-    @get:JvmSynthetic internal val objectType: ProjectDeclarationId? = null,
+    /** For a value of an object type, the project's or the metadata's, that type: it orders the overloads its supertypes take. */
+    @get:JvmSynthetic internal val objectType: ObjectTypeRef? = null,
     /** True when the value is of the schema's type `json` or of the predefined JSON type, as the database version decides. */
     @get:JvmSynthetic internal val predefinedJsonAlternative: Boolean = false
 ) {
@@ -107,6 +107,11 @@ class ProjectArgumentType private constructor(
         @JvmSynthetic
         internal fun composite(kind: CompositeKind): ProjectArgumentType = ProjectArgumentType(Kind.COMPOSITE, ProjectDatatypeFamily.COMPOSITE, false, null, null, null, kind)
 
+        /** A value of the schema object type [type], one only the metadata may describe. */
+        @JvmSynthetic
+        internal fun objectType(type: ObjectTypeRef): ProjectArgumentType =
+            ProjectArgumentType(Kind.COMPOSITE, ProjectDatatypeFamily.COMPOSITE, false, null, null, null, CompositeKind.SCHEMA_OBJECT, objectType = type)
+
         @JvmSynthetic
         internal fun composite(type: DeclaredCompositeType): ProjectArgumentType =
             ProjectArgumentType(Kind.COMPOSITE, ProjectDatatypeFamily.COMPOSITE, false, null, null, declaredType = type)
@@ -155,7 +160,7 @@ class ProjectArgumentType private constructor(
                 ?: return ProjectArgumentType(
                     Kind.DESCRIBED, family, family == null && conclusive, null, null,
                     family?.let { DatatypeFamilies.externalRank(description) }, DatatypeFamilies.compositeKind(description),
-                    family?.let { DatatypeFamilies.declaredCompositeType(description) }, family?.let { DatatypeFamilies.objectType(description) },
+                    family?.let { DatatypeFamilies.declaredCompositeType(description) }, family?.let { DatatypeFamilies.objectType(description)?.let(ObjectTypeRef::Project) },
                     family != null && description.source.predefinedJsonAlternative
                 )
             // The package that resolved the built-in name: the last retained step's owner, else the request's owner.

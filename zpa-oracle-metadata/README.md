@@ -52,6 +52,13 @@ Only `ALL_*` views, so the session sees what its privileges allow:
 | `relation(schema, name)` | `ALL_ALL_TABLES`, `ALL_VIEWS`, `ALL_TAB_COLS` of those relations |
 | `publicSynonyms()` / `publicSynonymsFor(schema)` | `ALL_SYNONYMS` owned by `PUBLIC` (all, or those pointing into the given schemas) |
 
+Object types are read for the requested schemas, for the types their synonyms and the requested public synonyms stand
+for, and for the supertypes of each up to a type under none: `ALL_TYPES` (kind and supertype), `ALL_TYPE_ATTRS`,
+`ALL_TYPE_METHODS`, `ALL_METHOD_PARAMS` and `ALL_METHOD_RESULTS` (what each type declares itself, not what it
+inherits). `OracleMetadataResult` reports how many types, attributes and methods were read and how long that took.
+Before 12c the attributes are read without `CHAR_USED`, which the oldest releases do not have: the length semantics of
+such an attribute are unknown.
+
 ## Coverage
 
 Absence is claimed only where the metadata is complete:
@@ -65,6 +72,7 @@ Absence is claimed only where the metadata is complete:
   `publicSynonymsFor(...)` they are never complete.
 - An unqualified anchor name can be `RELATION_NOT_FOUND` only when the compilation schema and the public synonyms are
   complete.
+- An object type that was not read is not known to be absent.
 
 Requested relations the session cannot see are listed in `OracleMetadataResult.notVisible`.
 

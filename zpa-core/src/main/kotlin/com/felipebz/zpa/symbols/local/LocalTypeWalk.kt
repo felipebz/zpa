@@ -116,8 +116,83 @@ internal class LocalTypeWalk(
 
     private val metadata = external.metadata
 
-    /** How the object types of the project relate, for the overloads a value of one of them may bind to. */
-    val objectTypes: ObjectTypeHierarchy? by lazy(LazyThreadSafetyMode.NONE) { snapshot?.let(::ObjectTypeHierarchy) }
+    /** How the object types of the project and of the metadata relate, for the overloads a value of one of them may bind to. */
+    val objectTypes: ObjectTypeHierarchy? by lazy(LazyThreadSafetyMode.NONE) { snapshot?.let { ObjectTypeHierarchy(it, metadata) } }
+
+    /** A value of the object type [type]. */
+    private fun objectValue(type: ObjectTypeRef, described: ProjectExternalTypeDescription? = null): LocalTypeEvidence =
+        LocalTypeEvidence(ProjectArgumentType.objectType(type), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
+
+    /** The object type the written type name [segments] reaches from [region] in the metadata, or null. */
+    private fun reachedType(segments: List<OracleIdentifier>, region: LocalRegionId): ObjectTypeRef? =
+        objectTypes?.names?.reach(segments, compilationSchema(region))
+
+    /** The metadata's description of the object type of the value [evidence] gives, when only the metadata has it. */
+    private fun externalType(evidence: LocalTypeEvidence): ProjectExternalObjectType? =
+        (evidence.argumentType.objectType as? ObjectTypeRef.External)?.let { objectTypes?.names?.type(it) }
+
+    /** [type] and the supertypes the metadata has, nearest first; whether the chain reached a type under none. */
+    private fun externalChain(type: ProjectExternalObjectType): Pair<List<ProjectExternalObjectType>, Boolean> {
+        val names = objectTypes!!.names
+        val chain = arrayListOf(type)
+        var current = type
+        while (true) {
+            val owner = current.supertypeOwner.orElse(null) ?: return chain to true
+            val next = (names.exact(owner, current.supertypeName.get()) as? ObjectTypeRef.External)?.let(names::type) ?: return chain to false
+            if (chain.any { it.owner == next.owner && it.name == next.name }) return chain to false
+            chain += next
+            current = next
+        }
+    }
+
+    /** A value of the dictionary datatype [datatype]: a predefined type, or an object type the metadata or the project has. */
+    private fun externalValue(datatype: ProjectExternalDatatype?, what: String): LocalTypeEvidence {
+        datatype ?: return LocalTypeEvidence.unknown("$what has no datatype")
+        if (!datatype.typeOwner.isPresent) {
+            if (DatatypeFamilies.ofExternal(datatype) == null) return LocalTypeEvidence.unknown("$what is of ${datatype.name}")
+            return LocalTypeEvidence(ProjectArgumentType.builtIn(datatype.name, DatatypeFamilies.rankOfExternal(datatype)), LocalTypeEvidence.Terminal.BUILT_IN, emptyList(), null)
+        }
+        val type = objectTypes?.names?.ofDatatype(datatype) ?: return LocalTypeEvidence.unknown("$what is of a type the metadata does not describe")
+        return objectValue(type)
+    }
+
+    /**
+     * The result of calling a method named [name] of [type], a static one or a member one ([static]), with any of its
+     * overloads along the supertype chain: the type every one of them returns, when they agree. Oracle binds one of them
+     * or rejects the call, so the result has that type whichever it binds. Unknown when the chain is not whole.
+     */
+    private fun externalMethodResult(type: ProjectExternalObjectType, name: OracleIdentifier, static: Boolean): LocalTypeEvidence {
+        val (chain, complete) = externalChain(type)
+        if (!complete) return LocalTypeEvidence.unknown("a supertype of ${type.name.originalSpelling} the metadata does not describe")
+        val methods = chain.flatMap { it.findMethods(ProjectIdentifier.wrap(name)) }.filter { it.isStatic == static }
+        val first = methods.firstOrNull() ?: return LocalTypeEvidence.unknown("$name is no method of ${type.name.originalSpelling}")
+        if (!methods.all { it.isFunction && it.result == first.result }) return LocalTypeEvidence.unknown("the methods $name of ${type.name.originalSpelling} differ in result")
+        return externalValue(first.result.orElse(null), "the result of $name")
+    }
+
+    /**
+     * Evidence of a call of [name] that nothing local or in the project takes, when [name] reaches an object type of
+     * the metadata (its constructor builds a value of it; an opaque type has none) or names a static method of one
+     * (`type.method`, `owner.type.method`). Null otherwise.
+     */
+    fun externalTypeCall(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence? {
+        val names = objectTypes?.names ?: return null
+        when (val type = reachedType(name.segments, region)) {
+            is ObjectTypeRef.External -> if (names.type(type)?.kind != ProjectExternalObjectType.Kind.OPAQUE) return objectValue(type)
+            is ObjectTypeRef.Project, null -> {}
+        }
+        if (name.segments.size < 2) return null
+        val owner = reachedType(name.segments.dropLast(1), region) as? ObjectTypeRef.External ?: return null
+        val type = names.type(owner) ?: return null
+        return externalMethodResult(type, name.last, static = true).takeIf { it.terminal != LocalTypeEvidence.Terminal.UNKNOWN }
+    }
+
+    /**
+     * Evidence of `CAST(… AS name)`, read from [region]'s unit: a value of the object type [name] reaches, one the project
+     * describes or one of the metadata. Null otherwise.
+     */
+    fun castType(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence? =
+        constructorResult(name, region) ?: reachedType(name.segments, region)?.let { objectValue(it) }
 
     /** The project as seen from the unit holding [region]: its compilation schema first, and the run's synonyms. */
     fun projectView(region: LocalRegionId): ProjectSnapshot? = snapshot?.preferring(compilationSchema(region), metadata)
@@ -328,6 +403,7 @@ internal class LocalTypeWalk(
             return field(record.id, ordinal)
         }
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
+        externalType(evidence)?.let { return externalAttribute(it, name) }
         selectListOf(evidence)?.let { return selectField(snapshot, it, name, region) }
         val description = evidence.description?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT }
             ?: return LocalTypeEvidence.unknown("member $name of a value the project does not describe")
@@ -450,28 +526,48 @@ internal class LocalTypeWalk(
         val typeRef = member.typeRef
         val described = if (typeRef != null) snapshot.describeExternalType(typeRef, member.owner, metadata, schema)
         else snapshot.describeExternalType(member.typeName ?: return LocalTypeEvidence.unknown("no member type"), null, metadata, schema)
-        return describedResult(described, member.owner, typeRef, inSpecification = true)
+        return describedResult(described, member.owner, typeRef, inSpecification = true, schema)
+    }
+
+    /**
+     * The attribute [name] of a value of [type], declared by it or inherited from a supertype the metadata has. An
+     * attribute none of them declares is absent only when the whole chain is known; either way it gives no type.
+     */
+    private fun externalAttribute(type: ProjectExternalObjectType, name: OracleIdentifier): LocalTypeEvidence {
+        val (chain, complete) = externalChain(type)
+        val attribute = chain.firstNotNullOfOrNull { it.findAttribute(ProjectIdentifier.wrap(name)).orElse(null) }
+            ?: return LocalTypeEvidence.unknown(
+                if (complete) "$name is no attribute of ${type.name.originalSpelling}" else "a supertype of ${type.name.originalSpelling} the metadata does not describe"
+            )
+        return externalValue(attribute.datatype.orElse(null), "the attribute $name")
     }
 
     /**
      * A described type, or, when the project gives it no family, the composite an undeclared one-segment type name
      * stands for: SYS_REFCURSOR is a ref cursor and any other name that is not predefined a schema object, unless the
-     * package [owner] declares the name. [inSpecification] is false for a package body's private declaration, whose
+     * package [owner] declares the name. Such a name, or a two-segment one, that reaches an object type of the metadata
+     * from [schema] is a value of that type. [inSpecification] is false for a package body's private declaration, whose
      * own declarations are not covered.
      */
     private fun describedResult(
         described: ProjectExternalTypeDescription,
         owner: ProjectQualifiedName?,
         typeRef: ProjectTypeReference?,
-        inSpecification: Boolean
+        inSpecification: Boolean,
+        schema: ProjectIdentifier?
     ): LocalTypeEvidence {
         val argumentType = ProjectArgumentType.described(described, owner)
-        val name = typeRef?.takeIf { argumentType.familyOrNull == null && inSpecification && it.kind == ProjectTypeReference.Kind.NAMED && it.writtenIdentity == null }
-            ?.name?.name?.segments?.singleOrNull()
+        val reference = typeRef?.takeIf { argumentType.familyOrNull == null && inSpecification && it.kind == ProjectTypeReference.Kind.NAMED }
+        val segments = reference?.name?.name?.segments
+        // A qualified name keeps its spelling as its written identity: only a one-segment one may be a constrained predefined type.
+        val name = segments?.singleOrNull()?.takeIf { reference.writtenIdentity == null }
         val kind = name?.let { DatatypeFamilies.undeclaredTypeKind(it) }
+        val reached = { objectTypes?.names?.reach(segments!!, schema)?.let { objectValue(it, described) } }
         if (kind != null && (owner == null || !shadowed(owner.name, name))) {
+            if (kind == CompositeKind.SCHEMA_OBJECT) reached()?.let { return it }
             return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
         }
+        if (segments?.size == 2) reached()?.let { return it }
         return LocalTypeEvidence(argumentType, LocalTypeEvidence.Terminal.PROJECT, emptyList(), null, described)
     }
 
@@ -519,6 +615,7 @@ internal class LocalTypeWalk(
     ): LocalTypeEvidence {
         if (evidence.terminal == LocalTypeEvidence.Terminal.UNKNOWN) return evidence
         val snapshot = snapshot?.takeIf { prepared } ?: return LocalTypeEvidence.unknown(NO_PREPARED_PROJECT)
+        externalType(evidence)?.let { return externalMethodResult(it, name, static = false) }
         val type = evidence.description?.source?.takeIf { evidence.terminal == LocalTypeEvidence.Terminal.PROJECT && it.status == ProjectTypeDescription.Status.DECLARED_TYPE }
             ?.declaration?.orElse(null) ?: return LocalTypeEvidence.unknown("method $name of a value of no declared project type")
         val result = snapshot.methodResultType(type.id, name, arguments, argumentTypes, metadata, compilationSchema(region))
@@ -613,7 +710,9 @@ internal class LocalTypeWalk(
         }
         val owner = (function as? ProjectPackageSubprogramView)?.packageOwner
         val described = snapshot!!.describeExternalType(function.returnType, owner, metadata, compilationSchema(region))
-        return describedResult(described, owner, function.returnType, function.role != ProjectDeclarationRole.BODY)
+        // The RETURN type is named from the schema of the unit that declares the function.
+        val schema = snapshot.occurrenceOf(function.id)?.let(snapshot.projectIndex::effectiveSchema)?.let(ProjectIdentifier::wrap) ?: compilationSchema(region)
+        return describedResult(described, owner, function.returnType, function.role != ProjectDeclarationRole.BODY, schema)
     }
 
     /**
@@ -949,9 +1048,11 @@ internal class LocalTypeWalk(
                 }
                 val described = snapshot?.describeExternalType(ProjectQualifiedName.wrap(name), null, metadata, compilationSchema(use.lookupRegion))
                 val argumentType = described?.let { ProjectArgumentType.described(it, null) }
-                // A schema object the project does not describe is still composite: it rejects every scalar formal.
+                // A schema object the project does not describe is still composite: it rejects every scalar formal. An
+                // object type of the metadata it reaches is its type.
                 if (kind == CompositeKind.SCHEMA_OBJECT && argumentType?.familyOrNull == null) {
-                    return LocalTypeEvidence(ProjectArgumentType.composite(kind), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
+                    val type = reachedType(name.segments, use.lookupRegion)?.let { ProjectArgumentType.objectType(it) } ?: ProjectArgumentType.composite(kind)
+                    return LocalTypeEvidence(type, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
                 }
                 return LocalTypeEvidence(argumentType!!, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
             }
@@ -974,7 +1075,13 @@ internal class LocalTypeWalk(
                 )
             }
             if (anchor == TypeAnchor.ROWTYPE) projectCursor(name, region)?.let { return cursorRow(it, false, region, described) }
-            return LocalTypeEvidence(ProjectArgumentType.described(described, owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described, constrainedUse = constrained)
+            val argumentType = ProjectArgumentType.described(described, owner)
+            // `owner.type` that the project does not describe may be an object type of the metadata.
+            val reached = if (anchor == null && argumentType.familyOrNull == null && name.segments.size == 2) reachedType(name.segments, region) else null
+            return LocalTypeEvidence(
+                reached?.let { ProjectArgumentType.objectType(it) } ?: argumentType, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described,
+                constrainedUse = constrained
+            )
         }
 
         /**
