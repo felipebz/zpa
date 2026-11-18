@@ -129,8 +129,8 @@ class SpecificationAndLoopBindingTest {
             else {
                 val declared = context.declaredType(node) as DeclaredType.Project
                 val range = declared.declaration.sourceRange
-                "${context.typeCategory(node)} ${declared.declaration.fileId}:${range.startLine}:${range.startColumn} " +
-                    "${context.recordFields(node.firstChild.firstChild)}"
+                "${context.declaredType(node).category} ${declared.declaration.fileId}:${range.startLine}:${range.startColumn} " +
+                    "${(context.declaredType(node.firstChild.firstChild) as? DeclaredType.Record)?.fields}"
             }
         }
         // The same declaration the binding names; its fields are the specification's, not a record type of this file.

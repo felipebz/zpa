@@ -207,7 +207,9 @@ public enum class FieldBindingState {
     /** Undecided: see the reasons. */
     UNKNOWN,
     /** Not a field (a method, a column, a name of no value), or not one the analysis covers. */
-    NOT_A_FIELD
+    NOT_A_FIELD,
+    /** The value's type is known completely and has no member of that name. */
+    NO_SUCH_FIELD
 }
 
 public data class FieldBindingSummary(
@@ -252,7 +254,7 @@ private object SemanticInspectionMapper {
             projectAnalysis = projectAnalysis,
             legacy = semanticNode?.let(::legacySummary),
             typeName = categories?.takeIf { datatype }?.let { typeName(node, it.typeName(node), facts) },
-            typeCategory = categories?.takeIf { datatype }?.typeCategory(node)?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
+            typeCategory = context?.takeIf { datatype }?.declaredType(node)?.category?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
             valueCategory = categories?.takeIf { !datatype }?.category(node)?.takeUnless { it is ValueCategory.Unavailable }?.toString(),
             declaredProjectType = facts?.let { f -> categories?.let { declaredProjectType(f, it, node) } }?.let(::declaration),
             fields = context?.let { fields(fileId, node, it) }.orEmpty()
@@ -371,6 +373,7 @@ private object SemanticInspectionMapper {
             }
             is FieldBinding.Unknown -> FieldBindingSummary(text, range, FieldBindingState.UNKNOWN, null, null, null, binding.reasons.map { it.name }.sorted())
             is FieldBinding.Unavailable -> FieldBindingSummary(text, range, FieldBindingState.NOT_A_FIELD, null, null, null, listOf(binding.reason.name))
+            FieldBinding.NoSuchField -> FieldBindingSummary(text, range, FieldBindingState.NO_SUCH_FIELD, null, null, null, emptyList())
         }
     }
 

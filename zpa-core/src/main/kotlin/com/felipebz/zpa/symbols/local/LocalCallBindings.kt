@@ -10,11 +10,7 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.semantics.CallBinding
-import com.felipebz.zpa.api.semantics.ColumnBinding
-import com.felipebz.zpa.api.semantics.CallKeptLocalReason
-import com.felipebz.zpa.api.semantics.LocalCallStatus
-import com.felipebz.zpa.api.semantics.UsageUnavailability
+import com.felipebz.zpa.api.semantics.*
 
 /** The decisions of [LocalForwardCalls] for the file's calls, answered by the node of each call's name. */
 internal class LocalCallBindings(private val facts: LocalSemanticFacts) {
@@ -68,5 +64,5 @@ internal class LocalCallBindings(private val facts: LocalSemanticFacts) {
         LocalCallResolution.Status.INCOMPLETE -> LocalCallStatus.INCOMPLETE
     }
 
-    private fun unavailable() = CallBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+    private fun unavailable() = CallBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
 }

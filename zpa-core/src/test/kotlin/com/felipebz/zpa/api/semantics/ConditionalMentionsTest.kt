@@ -183,7 +183,7 @@ class ConditionalMentionsTest {
         }
         assertThat(code("\$IF \$\$x \$THEN e_other exception; \$END")).isEqualTo(ExceptionErrorCode.None)
         assertThat(code("\$IF \$\$x \$THEN e_other exception; \$ELSE pragma exception_init(e_late, -20001); \$END").toString())
-            .isEqualTo(ExceptionErrorCode.Unknown(setOf(UsageUncertainty.CONDITIONAL_COMPILATION)).toString())
+            .isEqualTo(ExceptionErrorCode.Unknown(setOf(Uncertainty.CONDITIONAL_COMPILATION)).toString())
     }
 
     /** `line:column:NAME=binding` of each segment of the qualified names of [text]. */

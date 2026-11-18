@@ -396,11 +396,11 @@ internal class LocalValueCategories(
     private fun terminal(region: LocalRegionId, evidence: LocalTypeEvidence): ValueCategory = when (evidence.terminal) {
         LocalTypeEvidence.Terminal.COMPOSITE -> composite(region, evidence)
         LocalTypeEvidence.Terminal.BUILT_IN ->
-            evidence.argumentType.familyOrNull?.let { ValueCategory.Scalar(scalarFamily(it)) } ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-        LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { described(region, it) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+            evidence.argumentType.familyOrNull?.let { ValueCategory.Scalar(scalarFamily(it)) } ?: unknown(Uncertainty.UNSUPPORTED_REFERENCE)
+        LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { described(region, it) } ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE)
         LocalTypeEvidence.Terminal.LITERAL -> unavailable()
         LocalTypeEvidence.Terminal.UNKNOWN -> evidence.incomplete?.let { ValueCategory.Unknown(reasons(it)) }
-            ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            ?: unknown(Uncertainty.UNSUPPORTED_REFERENCE)
     }
 
     /** A local record, collection or ref cursor type, a cursor's row, a query loop's record, or `SELF`. */
@@ -409,14 +409,20 @@ internal class LocalValueCategories(
         evidence.selectList?.let { return ValueCategory.Record(RecordOrigin.ROWTYPE, null, recordSelectList(it, model.fileId)) }
         val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return ValueCategory.ObjectInstance
         return when (last.kind) {
-            LocalDeclarationKind.RECORD_TYPE -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
             // A loop over a cursor with a RETURN type has the RETURN type's row, which the walk follows.
             LocalDeclarationKind.CURSOR -> row((last.details as? LocalCursor)?.row)
             LocalDeclarationKind.LOOP_INDEX -> row((last.details as? LocalLoopIndex)?.control?.takeIf { it.form == LocalLoopControl.Form.QUERY }?.row)
-            LocalDeclarationKind.REF_CURSOR_TYPE -> ValueCategory.CursorVariable
-            LocalDeclarationKind.COLLECTION_TYPE -> ValueCategory.Collection(collectionKind(last), of(region, walk.written(last.type)))
-            else -> unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            LocalDeclarationKind.RECORD_TYPE, LocalDeclarationKind.REF_CURSOR_TYPE, LocalDeclarationKind.COLLECTION_TYPE -> typeCategory(region, last)
+            else -> unknown(Uncertainty.UNSUPPORTED_REFERENCE)
         }
+    }
+
+    /** The category of a value of the local record, collection or REF CURSOR type [type]; [region] looks up its element. */
+    fun typeCategory(region: LocalRegionId, type: LocalDeclaration): ValueCategory = when (type.kind) {
+        LocalDeclarationKind.RECORD_TYPE -> ValueCategory.Record(RecordOrigin.RECORD_TYPE)
+        LocalDeclarationKind.REF_CURSOR_TYPE -> ValueCategory.CursorVariable
+        LocalDeclarationKind.COLLECTION_TYPE -> ValueCategory.Collection(collectionKind(type), of(region, walk.written(type.type)))
+        else -> unknown(Uncertainty.UNSUPPORTED_REFERENCE)
     }
 
     /**
@@ -432,8 +438,8 @@ internal class LocalValueCategories(
             // A field of a `%ROWTYPE` value stops at the row's anchor: the field, not the row, is meant.
             ProjectTypeDescription.Status.ANCHORED_REFERENCE ->
                 if (source.anchorStop.orElse(null) == ProjectTypeDescription.AnchorStop.ROWTYPE && source.fieldPath.isEmpty()) rowtype(region, description)
-                else unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            else -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+                else unknown(Uncertainty.DECLARATION_OUTSIDE_FILE)
+            else -> unknown(Uncertainty.DECLARATION_OUTSIDE_FILE)
         }
     }
 
@@ -464,10 +470,10 @@ internal class LocalValueCategories(
         ProjectTypeShape.REF_CURSOR -> ValueCategory.CursorVariable
         ProjectTypeShape.COLLECTION ->
             // A collection whose element leads back to it (Oracle rejects it, the index may still hold it) is unknown.
-            if (type.id in seen) unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            if (type.id in seen) unknown(Uncertainty.UNSUPPORTED_REFERENCE)
             else ValueCategory.Collection(type.collectionKind.orElse(null)?.let(::collectionKind), walk.projectElement(type, region)?.let { described(region, it, seen + type.id) }
-                ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
-        null -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+                ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE))
+        null -> unknown(Uncertainty.DECLARATION_OUTSIDE_FILE)
     }
 
     private fun scalarFamily(family: ProjectDatatypeFamily): ScalarFamily? = when (family) {
@@ -524,7 +530,7 @@ internal class LocalValueCategories(
         return when (evidence.terminal) {
             LocalTypeEvidence.Terminal.BUILT_IN -> LocalTypeName.BuiltIn(name.last.originalSpelling)
             LocalTypeEvidence.Terminal.PROJECT -> projectTypeName(evidence.description?.source)
-            else -> LocalTypeName.Undecided(evidence.incomplete?.let(::reasons) ?: EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            else -> LocalTypeName.Undecided(evidence.incomplete?.let(::reasons) ?: EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
         }
     }
 
@@ -543,15 +549,15 @@ internal class LocalValueCategories(
     private val declaredTypes by lazy(LazyThreadSafetyMode.NONE) { LocalDeclaredTypes(facts, walk, this) }
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.declaredType]. */
-    fun declaredType(datatype: AstNode, fields: LocalFields?): DeclaredType = declaredTypes.describe(datatype, fields)
+    fun declaredType(node: AstNode, fields: LocalFields?): DeclaredType = declaredTypes.describe(node, fields)
 
     private val columnBindings by lazy(LazyThreadSafetyMode.NONE) { LocalColumnBindings(model, walk, facts.names::binding) }
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.columnBinding]. */
     fun columnBinding(name: AstNode): ColumnBinding = columnBindings.binding(name)
 
-    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.outerJoined]. */
-    fun outerJoined(source: ColumnSource): Boolean = columnBindings.outerJoined(source)
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.mayBeOuterJoined]. */
+    fun mayBeOuterJoined(source: ColumnSource): Boolean = columnBindings.mayBeOuterJoined(source)
 
     /** The source a `TABLE_REFERENCE` of the file's static SQL is, as [columnBinding] reads it; null for any other node. */
     fun columnSource(reference: AstNode): ColumnSource? = columnBindings.source(reference)
@@ -571,8 +577,8 @@ internal class LocalValueCategories(
      */
     fun columnBinding(text: DynamicSqlText, name: AstNode): ColumnBinding? = textBindings(text)?.binding(name)
 
-    /** [outerJoined] of a source of the dynamic SQL [text]; null when the text was not analyzed. */
-    fun outerJoined(text: DynamicSqlText, source: ColumnSource): Boolean? = textBindings(text)?.outerJoined(source)
+    /** [mayBeOuterJoined] of a source of the dynamic SQL [text]; null when the text was not analyzed. */
+    fun mayBeOuterJoined(text: DynamicSqlText, source: ColumnSource): Boolean? = textBindings(text)?.mayBeOuterJoined(source)
 
     /** A numeric literal, or a value whose declared type is a number. */
     fun isNumber(expression: AstNode): Boolean {
@@ -641,28 +647,28 @@ internal class LocalValueCategories(
 
     /** The first declaration the project's description reached: its first subtype step, else the type it ends at. */
     private fun projectTypeName(source: ProjectTypeDescription?): LocalTypeName {
-        source ?: return LocalTypeName.Undecided(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+        source ?: return LocalTypeName.Undecided(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
         (source.steps.firstOrNull() as? ProjectTypeDeclarationView)?.let { return LocalTypeName.Project(it) }
         source.declaration.orElse(null)?.let { return LocalTypeName.Project(it) }
-        return source.resolution.orElse(null)?.let { LocalTypeName.Unresolved(it) } ?: LocalTypeName.Undecided(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+        return source.resolution.orElse(null)?.let { LocalTypeName.Unresolved(it) } ?: LocalTypeName.Undecided(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
     }
 
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
-    fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
-        val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+    fun reasons(outcome: LocalResolution.Incomplete): Set<Uncertainty> {
+        val reasons = EnumSet.noneOf(Uncertainty::class.java)
         outcome.regionReasons.forEach {
             reasons += it.usageUncertainty()
         }
         outcome.lookupReasons.forEach {
-            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE
+            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) Uncertainty.SQL_NAME_MAY_BE_COLUMN else Uncertainty.DECLARATION_OUTSIDE_FILE
         }
         return reasons
     }
 
-    private fun unknown(reason: UsageUncertainty) = ValueCategory.Unknown(EnumSet.of(reason))
+    private fun unknown(reason: Uncertainty) = ValueCategory.Unknown(EnumSet.of(reason))
 
-    private fun unavailable() = ValueCategory.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+    private fun unavailable() = ValueCategory.Unavailable(Unavailability.NOT_A_COVERED_NAME)
 
     private companion object {
         /** Positions whose written type is not a declaration of the model: expressions, SQL columns, external parameters. */

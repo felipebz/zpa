@@ -252,7 +252,7 @@ class UsageEvidenceTest {
         // A raise in the region the conditional compilation hides is not bound at all.
         assertThat(codes).containsExactly(
             ExceptionErrorCode.Associated(-20001), ExceptionErrorCode.None,
-            ExceptionBinding.Unknown(setOf(UsageUncertainty.CONDITIONAL_COMPILATION))
+            ExceptionBinding.Unknown(setOf(Uncertainty.CONDITIONAL_COMPILATION))
         )
     }
 
@@ -426,7 +426,7 @@ class UsageEvidenceTest {
             override fun leaveFile(node: AstNode) {
                 node.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).filter { it.parent.type !== PlSqlGrammar.CUSTOM_DATATYPE && it.parent.type !== PlSqlGrammar.ANCHORED_DATATYPE }
                     .forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.nameBinding(it)}" }
-                node.getDescendants(PlSqlGrammar.DATATYPE).forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.typeCategory(it)}" }
+                node.getDescendants(PlSqlGrammar.DATATYPE).forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.declaredType(it).category}" }
             }
         }
         val project = ProjectAnalysisContext.NOT_PREPARED
@@ -519,7 +519,7 @@ class UsageEvidenceTest {
         val rows = ArrayList<String>()
         val check = object : PlSqlCheck() {
             override fun leaveFile(node: AstNode) {
-                node.getDescendants(PlSqlGrammar.DATATYPE).forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.typeCategory(it)}" }
+                node.getDescendants(PlSqlGrammar.DATATYPE).forEach { rows += "${it.token.line}:${it.tokenOriginalValue}=${this.context.declaredType(it).category}" }
             }
         }
         val project = ProjectAnalysisContext.NOT_PREPARED
@@ -760,7 +760,7 @@ class UsageEvidenceTest {
         val root = PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse("declare\n  v number;\nbegin\n  null;\nend;\n/\n")
         val declaration = root.getFirstDescendant(PlSqlGrammar.VARIABLE_DECLARATION)
         val context = PlSqlVisitorContext(root, Source("u.sql", ""), null)
-        assertThat(context.usageEvidence(declaration)).isEqualTo(UsageEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED))
+        assertThat(context.usageEvidence(declaration)).isEqualTo(UsageEvidence.Unavailable(Unavailability.FILE_NOT_ANALYZED))
 
         val rows = ArrayList<UsageEvidence>()
         val check = object : PlSqlCheck() {
@@ -771,7 +771,7 @@ class UsageEvidenceTest {
         val project = ProjectAnalysisContext.NOT_PREPARED
         PlSqlAstWalker(SemanticAnalysisPipeline(project).create(FileId("u.sql")).all + check)
             .walk(PlSqlVisitorContext(root, Source("u.sql", "declare\n  v number;\nbegin\n  null;\nend;\n/\n"), null), SemanticScanCapabilities(createProjectAnalysis(project)))
-        assertThat(rows).containsExactly(UsageEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION))
+        assertThat(rows).containsExactly(UsageEvidence.Unavailable(Unavailability.NOT_A_COVERED_DECLARATION))
     }
     private val sqlCallSpec =
         "create or replace package pk_lines is\n" +

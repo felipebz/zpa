@@ -133,7 +133,7 @@ sealed interface ColumnBinding {
     }
 
     /** No evidence: the file was not analyzed, or the node is not a name of static SQL this query covers. */
-    class Unavailable(val reason: UsageUnavailability) : ColumnBinding {
+    class Unavailable(val reason: Unavailability) : ColumnBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

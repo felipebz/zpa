@@ -484,6 +484,6 @@ class CallBindingTest {
     fun aFileThatWasNotAnalyzed() {
         val context = PlSqlVisitorContext(PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(user), null, null)
         val name = context.rootTree()!!.getDescendants(PlSqlGrammar.MEMBER_EXPRESSION).first()
-        assertThat(context.callBinding(name)).isEqualTo(CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED))
+        assertThat(context.callBinding(name)).isEqualTo(CallBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED))
     }
 }

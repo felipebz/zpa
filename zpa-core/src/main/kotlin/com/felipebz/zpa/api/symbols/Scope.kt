@@ -16,13 +16,13 @@ import java.util.*
 /**
  * Deprecated: part of the legacy symbol model, removed in the next major version. For names use the read queries of
  * PlSqlVisitorContext: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty, valueCategory
- * and typeCategory. For properties of a unit (autonomous transaction, overriding member and the others) read the unit's
+ * and declaredType. For properties of a unit (autonomous transaction, overriding member and the others) read the unit's
  * AST.
  */
 @Deprecated(
     "Part of the legacy symbol model. It will be removed in the next major version. For names use the read " +
     "queries of PlSqlVisitorContext: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
-    "regionUncertainty, valueCategory and typeCategory. For properties of a unit (autonomous transaction, " +
+    "regionUncertainty, valueCategory and declaredType. For properties of a unit (autonomous transaction, " +
     "overriding member and the others) read the unit's AST."
 )
 interface Scope {

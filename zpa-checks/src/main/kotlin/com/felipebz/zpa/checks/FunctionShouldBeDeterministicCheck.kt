@@ -676,7 +676,7 @@ class FunctionShouldBeDeterministicCheck : AbstractBaseCheck() {
     }
 
     private fun declaredType(datatype: AstNode): Family? =
-        if (datatype.type === PlSqlGrammar.DATATYPE) family(context.typeCategory(datatype)) else null
+        if (datatype.type === PlSqlGrammar.DATATYPE) family(context.declaredType(datatype).category) else null
 
     private fun declaredFamily(declaration: AstNode): Family? =
         declaration.getFirstChildOrNull(PlSqlGrammar.DATATYPE)?.let(::declaredType)

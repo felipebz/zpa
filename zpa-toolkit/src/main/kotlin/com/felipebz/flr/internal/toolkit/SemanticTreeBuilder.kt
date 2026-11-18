@@ -201,6 +201,7 @@ internal class SemanticTreeBuilder {
         FieldBindingState.FIELD -> "${if (field.kind == "ATTRIBUTE") "attribute" else "field"} #${field.ordinal}"
         FieldBindingState.UNKNOWN -> "Undecided"
         FieldBindingState.NOT_A_FIELD -> "Not a field"
+        FieldBindingState.NO_SUCH_FIELD -> "No such field"
     }
 }
 

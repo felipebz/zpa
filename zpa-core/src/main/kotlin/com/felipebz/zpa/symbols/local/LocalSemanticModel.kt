@@ -6,7 +6,7 @@
 package com.felipebz.zpa.symbols.local
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
-import com.felipebz.zpa.api.semantics.UsageUncertainty
+import com.felipebz.zpa.api.semantics.Uncertainty
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
@@ -50,12 +50,12 @@ internal enum class LocalGapKind {
 
 /** The usage uncertainty an incomplete region gives the answers that rely on it. */
 @OptIn(ZpaExperimentalApi::class)
-internal fun LocalIncompleteness.usageUncertainty(): UsageUncertainty = when (this) {
-    LocalIncompleteness.CONDITIONAL_COMPILATION -> UsageUncertainty.CONDITIONAL_COMPILATION
-    LocalIncompleteness.SUBSTITUTION -> UsageUncertainty.SUBSTITUTION
-    LocalIncompleteness.PARSE_RECOVERY -> UsageUncertainty.PARSE_RECOVERY
+internal fun LocalIncompleteness.usageUncertainty(): Uncertainty = when (this) {
+    LocalIncompleteness.CONDITIONAL_COMPILATION -> Uncertainty.CONDITIONAL_COMPILATION
+    LocalIncompleteness.SUBSTITUTION -> Uncertainty.SUBSTITUTION
+    LocalIncompleteness.PARSE_RECOVERY -> Uncertainty.PARSE_RECOVERY
     LocalIncompleteness.PARTIAL_EXTRACTION, LocalIncompleteness.DISCARDED_SOURCE_TEXT,
-    LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS, LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE -> UsageUncertainty.INCOMPLETE_SOURCE
+    LocalIncompleteness.UNVERIFIED_SOURCE_POSITIONS, LocalIncompleteness.SOURCE_TEXT_UNAVAILABLE -> Uncertainty.INCOMPLETE_SOURCE
 }
 
 /** Evidence that something written in a region was not extracted. [syntax] names the grammar rule. */

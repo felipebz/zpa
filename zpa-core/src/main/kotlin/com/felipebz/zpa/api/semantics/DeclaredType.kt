@@ -15,9 +15,15 @@ import com.felipebz.zpa.api.project.ProjectTypeReference
 /**
  * What a written datatype declares, following subtypes and `%TYPE` anchors to where they end, as the local name
  * resolution and, for declarations in other files, the prepared project decide it. [Unknown] is never a proof.
+ *
+ * Every answer carries the [category] of a value of the type: the [ValueCategory] the same walk gives, also for
+ * [Unknown] and [Unavailable] answers.
  */
 @ZpaExperimentalApi
 sealed interface DeclaredType {
+    /** The category of a value of this type, from the same walk as the answer. */
+    val category: ValueCategory
+
     /**
      * A predefined type. [name] is its words upper-cased and without constraints (`VARCHAR2`, `TIMESTAMP WITH TIME ZONE`,
      * `INTERVAL DAY TO SECOND`). [constraints] are those that apply to the declaration: the ones written at the nearest
@@ -25,7 +31,7 @@ sealed interface DeclaredType {
      * constrained subtype's own), else the predefined type's. One that cannot be decided is
      * [WrittenTypeConstraint.Unknown]; a null one is written nowhere along the chain.
      */
-    class BuiltIn(val name: String, val constraints: WrittenTypeConstraints) : DeclaredType {
+    class BuiltIn(val name: String, val constraints: WrittenTypeConstraints, override val category: ValueCategory) : DeclaredType {
         override fun equals(other: Any?) = other is BuiltIn && name == other.name && constraints == other.constraints
 
         override fun hashCode() = name.hashCode() * 31 + constraints.hashCode()
@@ -33,8 +39,11 @@ sealed interface DeclaredType {
         override fun toString() = "BuiltIn($name$constraints)"
     }
 
-    /** A record type of this file: its [declaration] and its [fields], as `recordFields` gives them. */
-    class Record(val declaration: NameDeclaration, fields: List<DeclaredField>) : DeclaredType {
+    /**
+     * A record type of this file: its [declaration] and its [fields] in written order, each with the declaration
+     * `fieldBinding` gives for it.
+     */
+    class Record(val declaration: NameDeclaration, fields: List<DeclaredField>, override val category: ValueCategory) : DeclaredType {
         val fields: List<DeclaredField> = fields.toList()
 
         override fun equals(other: Any?) = other is Record && declaration == other.declaration && fields == other.fields
@@ -48,7 +57,9 @@ sealed interface DeclaredType {
      * A collection type of this file: its [declaration], [kind], and the `DATATYPE` node of its element, which this query
      * describes in turn. [element] is null when the element's node is not in the tree this was asked from.
      */
-    class Collection(val declaration: NameDeclaration, val kind: CollectionKind?, val element: AstNode?) : DeclaredType {
+    class Collection(
+        val declaration: NameDeclaration, val kind: CollectionKind?, val element: AstNode?, override val category: ValueCategory
+    ) : DeclaredType {
         override fun equals(other: Any?) = other is Collection && declaration == other.declaration && kind == other.kind && element === other.element
 
         override fun hashCode() = declaration.hashCode() * 31 + (kind?.hashCode() ?: 0)
@@ -57,7 +68,7 @@ sealed interface DeclaredType {
     }
 
     /** Another declaration of this file whose shape this query does not describe: a REF CURSOR type, or a cursor's row. */
-    class OtherLocal(val declaration: NameDeclaration) : DeclaredType {
+    class OtherLocal(val declaration: NameDeclaration, override val category: ValueCategory) : DeclaredType {
         override fun equals(other: Any?) = other is OtherLocal && declaration == other.declaration
 
         override fun hashCode() = declaration.hashCode()
@@ -66,7 +77,9 @@ sealed interface DeclaredType {
     }
 
     /** A type declared in another file of the project, or at schema level: the [declaration] its [description] reaches. */
-    class Project(val declaration: ProjectTypeDeclarationView, val description: ProjectExternalTypeDescription) : DeclaredType {
+    class Project(
+        val declaration: ProjectTypeDeclarationView, val description: ProjectExternalTypeDescription, override val category: ValueCategory
+    ) : DeclaredType {
         override fun equals(other: Any?) = other is Project && declaration.id == other.declaration.id
 
         override fun hashCode() = declaration.id.hashCode()
@@ -80,7 +93,10 @@ sealed interface DeclaredType {
      * `customer.name%TYPE` when `g_cust` is a `customer%ROWTYPE`). [description] is the project's reading of it, with the
      * scan's external metadata when it has any; without metadata the relation's columns are not known here.
      */
-    class Anchored(val anchor: ProjectTypeReference.Anchor, val name: ProjectQualifiedName, val description: ProjectExternalTypeDescription) : DeclaredType {
+    class Anchored(
+        val anchor: ProjectTypeReference.Anchor, val name: ProjectQualifiedName, val description: ProjectExternalTypeDescription,
+        override val category: ValueCategory
+    ) : DeclaredType {
         override fun equals(other: Any?) = other is Anchored && anchor == other.anchor && name == other.name
 
         override fun hashCode() = anchor.hashCode() * 31 + name.hashCode()
@@ -89,8 +105,8 @@ sealed interface DeclaredType {
     }
 
     /** Not decided; [reasons] says what the analysis could not see. Never a proof. */
-    class Unknown(reasons: Set<UsageUncertainty>) : DeclaredType {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>, override val category: ValueCategory) : DeclaredType {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -99,8 +115,8 @@ sealed interface DeclaredType {
         override fun toString() = "Unknown$reasons"
     }
 
-    /** No evidence: the file was not analyzed, or the node is not a datatype this query covers. */
-    class Unavailable(val reason: UsageUnavailability) : DeclaredType {
+    /** No evidence: the file was not analyzed, or the node is not a datatype or a type name this query covers. */
+    class Unavailable(val reason: Unavailability, override val category: ValueCategory = ValueCategory.Unavailable(reason)) : DeclaredType {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

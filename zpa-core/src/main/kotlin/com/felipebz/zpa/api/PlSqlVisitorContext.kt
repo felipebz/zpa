@@ -28,24 +28,24 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
     /**
      * Deprecated: part of the legacy symbol model, removed in the next major version. Use the read queries of
      * PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty,
-     * valueCategory and typeCategory.
+     * valueCategory and declaredType.
      */
     @Deprecated(
         "Part of the legacy symbol model. It will be removed in the next major version. Use the read queries of " +
         "PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
-        "regionUncertainty, valueCategory and typeCategory."
+        "regionUncertainty, valueCategory and declaredType."
     )
     @Suppress("DEPRECATION")
     var symbolTable: SymbolTable = SymbolTableImpl()
     /**
      * Deprecated: part of the legacy symbol model, removed in the next major version. Use the read queries of
      * PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, regionUncertainty,
-     * valueCategory and typeCategory.
+     * valueCategory and declaredType.
      */
     @Deprecated(
         "Part of the legacy symbol model. It will be removed in the next major version. Use the read queries of " +
         "PlSqlVisitorContext instead: nameBinding, usageEvidence, hidingEvidence, exceptionBinding, " +
-        "regionUncertainty, valueCategory and typeCategory."
+        "regionUncertainty, valueCategory and declaredType."
     )
     @Suppress("DEPRECATION")
     var currentScope: Scope? = null
@@ -114,14 +114,14 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * `VARIABLE_DECLARATION`, an `EXCEPTION_DECLARATION`, a `CURSOR_DECLARATION`, a `PARAMETER_DECLARATION` of a
      * subprogram with a body, or a `CURSOR_PARAMETER_DECLARATION`. A covered node the analysis holds no declaration for (the parameters of a call
      * specification, which an external routine receives, or of a heading without a body) is
-     * [UsageUnavailability.NOT_A_COVERED_DECLARATION].
+     * [Unavailability.NOT_A_COVERED_DECLARATION].
      *
      * [UsageEvidence.Unused] is the only proven absence; [UsageEvidence.Unknown] never is one. When the local analysis of
      * the file did not complete, the answer is [UsageEvidence.Unavailable] for every declaration: report nothing then.
      */
     @ZpaExperimentalApi
     fun usageEvidence(declaration: AstNode): UsageEvidence =
-        localSemanticFacts?.usages?.evidence(declaration) ?: UsageEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        localSemanticFacts?.usages?.evidence(declaration) ?: UsageEvidence.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * Which declaration the variable or exception [declaration] (a `VARIABLE_DECLARATION` or `EXCEPTION_DECLARATION` node
@@ -134,7 +134,7 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun hidingEvidence(declaration: AstNode): HidingEvidence =
-        localSemanticFacts?.hiding?.evidence(declaration) ?: HidingEvidence.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        localSemanticFacts?.hiding?.evidence(declaration) ?: HidingEvidence.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * The exception that [name] names: a `VARIABLE_NAME` or `MEMBER_EXPRESSION` written in a `RAISE` statement or as a
@@ -144,14 +144,14 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun exceptionBinding(name: AstNode): ExceptionBinding =
-        localSemanticFacts?.exceptions?.binding(name) ?: ExceptionBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        localSemanticFacts?.exceptions?.binding(name) ?: ExceptionBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * What the analysis cannot see in the region that holds [node] (for a block, subprogram or trigger, the region of
      * its body): empty when that region, and every region inside it, is complete. Null when the file was not analyzed.
      */
     @ZpaExperimentalApi
-    fun regionUncertainty(node: AstNode): Set<UsageUncertainty>? = localSemanticFacts?.exceptions?.regionUncertainty(node)
+    fun regionUncertainty(node: AstNode): Set<Uncertainty>? = localSemanticFacts?.exceptions?.regionUncertainty(node)
 
     /**
      * What [name], a `VARIABLE_NAME` read in an expression (in PL/SQL, or in SQL inside PL/SQL), naming a call in a
@@ -173,17 +173,21 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      *   (`g_rec` of `pkg.g_rec.f`, `p` of `fn.p`). A record field, a collection method or an object member after a
      *   value, an attribute after `%`, and the procedure a call statement names are [NameBinding.Unavailable].
      *
+     * For a call name and for the cursor of `OPEN`, `FETCH`, `CLOSE` or a cursor `FOR` loop, this answers among the
+     * file's declarations only: [callBinding] and [cursorBinding] give the full answer, the project's declarations,
+     * overloads and built-ins included.
+     *
      * A name of a dynamic SQL text this context parsed ([dynamicSql]) is answered among the text's own declarations, as
      * Oracle compiles the text on its own: no declaration of the file is visible there.
      */
     @ZpaExperimentalApi
     fun nameBinding(name: AstNode): NameBinding {
-        val facts = localSemanticFacts ?: return NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        val facts = localSemanticFacts ?: return NameBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
         if (name.parentOrNull != null && rootTree != null) {
             val root = generateSequence(name) { it.parentOrNull }.last()
             if (root !== rootTree) {
-                val text = dynamicSqlSupport?.textOf(root) ?: return NameBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
-                return text.context?.localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+                val text = dynamicSqlSupport?.textOf(root) ?: return NameBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
+                return text.context?.localSemanticFacts?.names?.binding(name) ?: NameBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
             }
         }
         return facts.names.binding(name)
@@ -204,7 +208,7 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun typeBinding(name: AstNode): NameBinding =
-        localSemanticFacts?.names?.typeBinding(name) ?: NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        localSemanticFacts?.names?.typeBinding(name) ?: NameBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * What [name], a `VARIABLE_NAME` or `MEMBER_EXPRESSION` written in static SQL of this file, reads, as Oracle resolves
@@ -250,13 +254,13 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun columnBinding(name: AstNode): ColumnBinding {
-        if (localSemanticFacts == null) return ColumnBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        if (localSemanticFacts == null) return ColumnBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
         val root = generateSequence(name) { it.parentOrNull }.last()
         if (root !== rootTree) {
-            val text = dynamicSqlSupport?.textOf(root) ?: return ColumnBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+            val text = dynamicSqlSupport?.textOf(root) ?: return ColumnBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
             return valueCategories?.columnBinding(text, name) ?: ColumnBinding.Unknown(setOf(ColumnUncertainty.DYNAMIC_SQL))
         }
-        return valueCategories?.columnBinding(name) ?: ColumnBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        return valueCategories?.columnBinding(name) ?: ColumnBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
     }
 
     /**
@@ -265,17 +269,17 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * side of a `RIGHT` join (every source joined before it in the same join), on either side of a `FULL` join, a lateral
      * inline view marked `(+)`, or a source a `(+)` marks in its query's `WHERE` (`t.col(+) = …`). An outer join nested
      * in a parenthesized join counts for the sources inside it. True also when a name marked `(+)` in that `WHERE` is
-     * not decided, or when the file was not analyzed.
+     * not decided, or when the file was not analyzed. Only `false` is a proof: no outer join gives nulls for [source].
      */
     @ZpaExperimentalApi
-    fun outerJoined(source: ColumnSource): Boolean {
+    fun mayBeOuterJoined(source: ColumnSource): Boolean {
         if (localSemanticFacts == null) return true
         val root = generateSequence(source.node) { it.parentOrNull }.last()
         if (root !== rootTree) {
             val text = dynamicSqlSupport?.textOf(root) ?: return true
-            return valueCategories?.outerJoined(text, source) ?: true
+            return valueCategories?.mayBeOuterJoined(text, source) ?: true
         }
-        return valueCategories?.outerJoined(source) ?: true
+        return valueCategories?.mayBeOuterJoined(source) ?: true
     }
 
     @OptIn(ZpaExperimentalApi::class)
@@ -330,13 +334,13 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun callBinding(name: AstNode): CallBinding {
-        val facts = localSemanticFacts ?: return CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        val facts = localSemanticFacts ?: return CallBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
         if (name.parentOrNull != null && rootTree != null) {
             val root = generateSequence(name) { it.parentOrNull }.last()
             if (root !== rootTree) {
-                val text = dynamicSqlSupport?.textOf(root) ?: return CallBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+                val text = dynamicSqlSupport?.textOf(root) ?: return CallBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
                 return text.context?.localSemanticFacts?.callBindings?.binding(name) { columnBinding(it) }
-                    ?: CallBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+                    ?: CallBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
             }
         }
         return facts.callBindings.binding(name) { columnBinding(it) }
@@ -365,19 +369,21 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun cursorBinding(name: AstNode): CursorBinding =
-        cursors?.takeIf { localSemanticFacts != null }?.binding(name) ?: CursorBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        cursors?.takeIf { localSemanticFacts != null }?.binding(name) ?: CursorBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * Which field [segment] names: a segment written after a value, as the `IDENTIFIER_NAME` of a qualified name
      * (`code` of `g_rec.code`, `inner` and `code` of `l_out.inner.code`, `code` of `pkg.v.code`) or the `VARIABLE_NAME`
      * of a member written after an element or a call result (`code` of `f().code`, `items` of `g_rows(1).items`).
-     * A field of a record type or an attribute of an object type gives [FieldBinding.Field]; the first name of a chain,
-     * a method, a name the value's type does not have and a column of a table's or view's `%ROWTYPE` give
-     * [FieldBinding.Unavailable]; a value whose type is not decided gives [FieldBinding.Unknown].
+     * A field of a record type or an attribute of an object type gives [FieldBinding.Field]. A name the value's type
+     * is known completely not to have gives [FieldBinding.NoSuchField]: a record type of this file, a cursor's row whose
+     * select list names every item, or an object type whose whole supertype chain is known. The first name of a chain,
+     * a method and a column of a table's or view's `%ROWTYPE` give [FieldBinding.Unavailable]; a value whose type is
+     * not decided, or whose type may have the name (a supertype not known), gives [FieldBinding.Unknown].
      *
      * The row of a cursor's query (`v c%ROWTYPE`, `v pk.c%ROWTYPE`, the record of `FOR r IN c` or of a loop over a query)
      * has the fields its select list names: the item of that name is [FieldBinding.Field] with
-     * [FieldDeclarationKind.SELECT_ITEM]. A name no item has is [FieldBinding.Unavailable] when every item has a known
+     * [FieldDeclarationKind.SELECT_ITEM]. A name no item has is [FieldBinding.NoSuchField] when every item has a known
      * name, and [FieldBinding.Unknown] when a `*`, a `t.*` or an expression without an alias may give it; a select list
      * that repeats a name gives a record Oracle rejects (PLS-00402), whose segments are all [FieldBinding.Unavailable].
      * A loop over a cursor with a `RETURN` type, and the `%ROWTYPE` of a package cursor declared with a `RETURN` type
@@ -391,21 +397,12 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      * After a value whose type is declared in another file (a package variable of another file, an element, a call
      * result, a parameter of a project type), the member is the one the project declares for that type, as the local
      * type walk of [valueCategory] reaches the value: a value of a type the project does not hold gives
-     * [FieldBinding.Unknown] with [UsageUncertainty.DECLARATION_OUTSIDE_FILE], and text this file may hold differently
+     * [FieldBinding.Unknown] with [Uncertainty.DECLARATION_OUTSIDE_FILE], and text this file may hold differently
      * (a `${'$'}IF`, a substitution) leaves the member undecided.
      */
     @ZpaExperimentalApi
     fun fieldBinding(segment: AstNode): FieldBinding =
-        fields?.takeIf { localSemanticFacts != null }?.binding(segment) ?: FieldBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
-
-    /**
-     * The fields of the record type whose name is [typeName] (the `IDENTIFIER_NAME` of a `TYPE … IS RECORD` of this
-     * file, at any depth), in written order, each with the declaration [fieldBinding] answers for it. Null when
-     * [typeName] names no record type the file's local analysis holds, or the analysis did not complete.
-     */
-    @ZpaExperimentalApi
-    fun recordFields(typeName: AstNode): List<DeclaredField>? =
-        fields?.takeIf { localSemanticFacts != null }?.recordFields(typeName)
+        fields?.takeIf { localSemanticFacts != null }?.binding(segment) ?: FieldBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * The category of the declared type of the value [name] denotes: a `VARIABLE_NAME`, or a `MEMBER_EXPRESSION` such as
@@ -428,37 +425,36 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
      */
     @ZpaExperimentalApi
     fun valueCategory(name: AstNode): ValueCategory =
-        if (localSemanticFacts == null) ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
-        else valueCategories?.category(name) ?: ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+        if (localSemanticFacts == null) ValueCategory.Unavailable(Unavailability.FILE_NOT_ANALYZED)
+        else valueCategories?.category(name) ?: ValueCategory.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
-     * The category of the type a `DATATYPE` node writes: the type of a variable, parameter or field declaration, or a
-     * function's RETURN type, followed as [valueCategory] follows a value's type.
-     */
-    @ZpaExperimentalApi
-    fun typeCategory(datatype: AstNode): ValueCategory =
-        if (localSemanticFacts == null) ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
-        else valueCategories?.typeCategory(datatype) ?: ValueCategory.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
-
-    /**
-     * What the `DATATYPE` node [datatype] declares (the type of a variable, constant, parameter, record field or
-     * collection element, or a function's RETURN type), from the same walk as [typeCategory]: subtypes and `%TYPE`
-     * anchors are followed, a local declaration hides a name declared elsewhere, and a name declared in another file is
-     * described by the prepared project, a `%TYPE` of a field of a package record value (`pk.g_rec.f%TYPE`, or
-     * `g_rec.f%TYPE` in the package) included.
+     * What a type declares, from one of two starting points:
+     * - a `DATATYPE` node (the type of a variable, constant, parameter, record field or collection element, or a
+     *   function's RETURN type, or a type written in an expression or a SQL column definition);
+     * - the `IDENTIFIER_NAME` of a `TYPE … IS RECORD`, `IS TABLE OF`, `IS VARRAY` or `IS REF CURSOR` of this file, at any
+     *   depth, answered as a `DATATYPE` naming that type is.
+     *
+     * Any other node gives [DeclaredType.Unavailable]. Subtypes and `%TYPE` anchors are followed, a local declaration
+     * hides a name declared elsewhere, and a name declared in another file is described by the prepared project, a
+     * `%TYPE` of a field of a package record value (`pk.g_rec.f%TYPE`, or `g_rec.f%TYPE` in the package) included.
      *
      * A predefined type gives its normalized name and written constraints. A constraint written as an expression is
      * evaluated from constants the analysis decides: a constant of this file whose default is such an expression, or a
      * package constant of another file whose default is an integer literal. Any other expression gives
-     * [com.felipebz.zpa.api.semantics.WrittenTypeConstraint.Unknown]. A record or collection type of this file gives
-     * its fields, or its kind and element's `DATATYPE` node to ask again. A `%ROWTYPE` or a column's `%TYPE` gives the
-     * anchor, described with the scan's external metadata when it has any; a field of a package value declared with a
-     * relation's `%ROWTYPE` gives that column's `%TYPE`. [DeclaredType.Unknown] is never a proof.
+     * [com.felipebz.zpa.api.semantics.WrittenTypeConstraint.Unknown]. A record type of this file gives its fields in
+     * written order, each with the declaration [fieldBinding] gives for it; a collection type its kind and element's
+     * `DATATYPE` node to ask again. A `%ROWTYPE` or a column's `%TYPE` gives the anchor, described with the scan's
+     * external metadata when it has any; a field of a package value declared with a relation's `%ROWTYPE` gives that
+     * column's `%TYPE`. [DeclaredType.Unknown] is never a proof.
+     *
+     * Every answer, [DeclaredType.Unknown] and [DeclaredType.Unavailable] included, has its [DeclaredType.category]:
+     * the category of a value of the type, followed as [valueCategory] follows a value's type.
      */
     @ZpaExperimentalApi
-    fun declaredType(datatype: AstNode): DeclaredType =
-        if (localSemanticFacts == null) DeclaredType.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
-        else valueCategories?.declaredType(datatype, fields) ?: DeclaredType.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED)
+    fun declaredType(node: AstNode): DeclaredType =
+        if (localSemanticFacts == null) DeclaredType.Unavailable(Unavailability.FILE_NOT_ANALYZED)
+        else valueCategories?.declaredType(node, fields) ?: DeclaredType.Unavailable(Unavailability.FILE_NOT_ANALYZED)
 
     /**
      * The type reference the prepared project retains for the declaration whose written type is [datatype], a

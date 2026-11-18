@@ -114,7 +114,7 @@ internal class LocalFields(
             // In SQL a column of a relation of the statement may take the name first.
             is LocalResolution.SqlColumnOrLocal -> {
                 val field = attribute(outcome.declaration) ?: return NOT_A_FIELD
-                if (noColumn) field else FieldBinding.Unknown(EnumSet.of(UsageUncertainty.SQL_NAME_MAY_BE_COLUMN))
+                if (noColumn) field else FieldBinding.Unknown(EnumSet.of(Uncertainty.SQL_NAME_MAY_BE_COLUMN))
             }
             is LocalResolution.Incomplete -> {
                 val provisional = unwrap(outcome.provisional)
@@ -141,8 +141,9 @@ internal class LocalFields(
     }
 
     /**
-     * What `SELF.name` answers from the project for the name [reference] starts with, in the type body [typeRegion]:
-     * the attribute, not a field for a method or a name the type's complete lists do not have, and undecided when the
+     * What a name written alone, or first in a chain, answers from the project as an attribute of the instance, in the
+     * type body [typeRegion]: the attribute, not a field for a method or for a name the type's complete lists do not
+     * have (Oracle reads it as something else: a local, a package, a pseudocolumn, a column), and undecided when the
      * type is not in the project or a list may be incomplete (an `ALTER TYPE`, an unread list, a supertype not found).
      */
     private fun selfMember(typeRegion: LocalRegion, reference: LocalReference): FieldBinding {
@@ -212,12 +213,25 @@ internal class LocalFields(
                     else -> Pending(FieldBinding.Unknown(reasons(own)))
                 }
             }
-            is LocalResolution.CollectionMethod, is LocalResolution.WrongKind, LocalResolution.Undeclared -> Decided(NOT_A_FIELD)
+            // PLS-00302 after a value: a record type of this file, or `SELF` of a type whose chain the file holds.
+            LocalResolution.Undeclared -> Decided(if (afterValue(steps, position)) NO_SUCH_FIELD else NOT_A_FIELD)
+            is LocalResolution.CollectionMethod, is LocalResolution.WrongKind -> Decided(NOT_A_FIELD)
             // The local resolver does not type the value: the project may.
             is LocalResolution.Unsupported -> null
             else -> Decided(NOT_A_FIELD)
         }
     }
+
+    /** Whether the segment before [position] is a value of a record type of this file (a variable, a parameter, a field), or `SELF`. */
+    private fun afterValue(steps: List<LocalResolution>, position: Int): Boolean = when (val before = steps.getOrNull(position - 1)?.let(::unwrap)) {
+        is LocalResolution.Field -> ofRecordType((model.declaration(before.recordType).details as LocalRecordType).fields[before.ordinal].type)
+        is LocalResolution.Bound -> model.declaration(before.declaration).let {
+            it.kind in TYPED_VALUES && (it.name == LocalResolver.SELF || ofRecordType(it.type))
+        }
+        else -> false
+    }
+
+    private fun ofRecordType(type: LocalTypeUse?): Boolean = typeWalk?.written(type)?.let(::recordOf) != null
 
     private fun field(step: LocalResolution.Field): FieldBinding = FieldBinding.Field(fieldDeclaration(step.recordType, step.ordinal))
 
@@ -225,14 +239,6 @@ internal class LocalFields(
         val field = (model.declaration(recordType).details as LocalRecordType).fields[ordinal]
         return FieldDeclaration(FieldDeclarationKind.RECORD_FIELD, ordinal, field.nameRange.startLine, field.nameRange.startColumn)
     }
-
-    /** The record types of the file by the start of their name. */
-    private val recordTypes: Map<Pair<Int, Int>, LocalDeclaration> by lazy(LazyThreadSafetyMode.NONE) {
-        model.declarations.filter { it.details is LocalRecordType }.associateBy { it.nameRange.startLine to it.nameRange.startColumn }
-    }
-
-    /** The fields of the record type named at [typeName], as [binding] answers them; null when it names none. */
-    fun recordFields(typeName: AstNode): List<DeclaredField>? = recordTypes[typeName.token.line to typeName.token.column]?.let { recordFields(it.id) }
 
     fun recordFields(type: LocalDeclarationId): List<DeclaredField>? {
         val record = model.declaration(type).details as? LocalRecordType ?: return null
@@ -249,7 +255,7 @@ internal class LocalFields(
         val first = model.declaration(attributes.first()).range
         val last = model.declaration(attributes.last()).range
         val hidden = model.hiddenAt(SourceRange(first.fileId, first.startLine, first.startColumn, last.endLine, last.endColumn))
-        if (hidden.isNotEmpty()) return FieldBinding.Unknown(hidden.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() })
+        if (hidden.isNotEmpty()) return FieldBinding.Unknown(hidden.mapTo(EnumSet.noneOf(Uncertainty::class.java)) { it.usageUncertainty() })
         val ordinal = attributes.indexOf(id)
         return FieldBinding.Field(FieldDeclaration(FieldDeclarationKind.ATTRIBUTE, ordinal, declaration.nameRange.startLine, declaration.nameRange.startColumn))
     }
@@ -274,7 +280,12 @@ internal class LocalFields(
         val local = base.followed.lastOrNull()?.takeIf { base.terminal == LocalTypeEvidence.Terminal.COMPOSITE }?.let(model::declaration)
         if (local?.details is LocalCollectionType) return NOT_A_FIELD
         // A value of a record type of this file, wherever the walk reached it (an element, a call result, in SQL or not).
-        recordOf(base)?.let { record -> return fieldOrdinal(record, segment)?.let { FieldBinding.Field(fieldDeclaration(record, it)) } }
+        recordOf(base)?.let { record ->
+            fieldOrdinal(record, segment)?.let { return FieldBinding.Field(fieldDeclaration(record, it)) }
+            // Hidden text in the field list may add the name.
+            val hidden = model.hiddenAt(model.declaration(record).range)
+            return if (hidden.isEmpty()) NO_SUCH_FIELD else FieldBinding.Unknown(hidden.mapTo(EnumSet.noneOf(Uncertainty::class.java)) { it.usageUncertainty() })
+        }
         walk.projectMember(base, name)?.let { return member(it) }
         // A value of a type the project names but does not declare (not found, a predefined type): no field of the file.
         val description = base.description ?: return null
@@ -292,7 +303,7 @@ internal class LocalFields(
         val ordinal = list.positionsOf(name).singleOrNull()
         return when {
             ordinal != null -> FieldBinding.Field(selectItemDeclaration(list.items[ordinal], ordinal, model.fileId))
-            list.complete -> NOT_A_FIELD
+            list.complete -> NO_SUCH_FIELD
             else -> UNSUPPORTED
         }
     }
@@ -300,7 +311,19 @@ internal class LocalFields(
     private fun member(resolution: ProjectRecordMemberResolution): FieldBinding = when (resolution) {
         is ProjectRecordMemberResolution.Resolved -> projectField(resolution.declaration, resolution.field)
         is ProjectRecordMemberResolution.Method, is ProjectRecordMemberResolution.CollectionMethod -> NOT_A_FIELD
+        is ProjectRecordMemberResolution.NotFound -> absent(resolution.declaration)
         else -> OUTSIDE_FILE
+    }
+
+    /**
+     * A name an object type does not have along its whole chain, which the project knows completely (every list read,
+     * no `ALTER TYPE`, every supertype found): no such field, unless conditional-compilation text in the chain may
+     * compile differently. Other types the project declares stay outside the file.
+     */
+    private fun absent(type: ProjectTypeDeclaration): FieldBinding {
+        if (type !is StandaloneTypeDeclaration || type.shape != ProjectTypeShape.OBJECT) return OUTSIDE_FILE
+        val conditional = memberResolver?.conditionalInChain(type) ?: return OUTSIDE_FILE
+        return if (conditional) FieldBinding.Unknown(EnumSet.of(Uncertainty.CONDITIONAL_COMPILATION)) else NO_SUCH_FIELD
     }
 
     private fun projectField(owner: ProjectTypeDeclaration?, field: ProjectRecordField): FieldBinding {
@@ -317,25 +340,25 @@ internal class LocalFields(
      * specification has conditional-compilation text (the kept branch may not be compiled), an object type whose
      * attribute list was not fully read. Null when they are.
      */
-    private fun uncertain(owner: ProjectTypeDeclaration?): UsageUncertainty? = when (owner) {
+    private fun uncertain(owner: ProjectTypeDeclaration?): Uncertainty? = when (owner) {
         is PackageTypeDeclaration -> {
             val index = projectIndex
             val specification = index?.occurrencesFor(owner.fileId)?.map { it.declaration }?.filterIsInstance<PackageDeclaration>()
                 ?.firstOrNull { it.role == DeclarationRole.SPECIFICATION && it.name == owner.owner && contains(it.sourceRange, owner.sourceRange) }
             val names = specification?.memberNames
             when {
-                names == null -> UsageUncertainty.INCOMPLETE_SOURCE
+                names == null -> Uncertainty.INCOMPLETE_SOURCE
                 names.isUnconditional(owner.sourceRange) -> null
-                names.conditionalRange != null -> UsageUncertainty.CONDITIONAL_COMPILATION
-                else -> UsageUncertainty.INCOMPLETE_SOURCE
+                names.conditionalRange != null -> Uncertainty.CONDITIONAL_COMPILATION
+                else -> Uncertainty.INCOMPLETE_SOURCE
             }
         }
         is StandaloneTypeDeclaration -> when {
-            owner.conditional -> UsageUncertainty.CONDITIONAL_COMPILATION
-            !owner.attributesComplete -> UsageUncertainty.INCOMPLETE_SOURCE
+            owner.conditional -> Uncertainty.CONDITIONAL_COMPILATION
+            !owner.attributesComplete -> Uncertainty.INCOMPLETE_SOURCE
             else -> null
         }
-        else -> UsageUncertainty.INCOMPLETE_SOURCE
+        else -> Uncertainty.INCOMPLETE_SOURCE
     }
 
     private fun contains(outer: SourceRange, inner: SourceRange) =
@@ -371,19 +394,21 @@ internal class LocalFields(
 
     private fun unwrap(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
-    private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
-        val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+    private fun reasons(outcome: LocalResolution.Incomplete): Set<Uncertainty> {
+        val reasons = EnumSet.noneOf(Uncertainty::class.java)
         outcome.regionReasons.forEach { reasons += it.usageUncertainty() }
         outcome.lookupReasons.forEach {
-            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE
+            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) Uncertainty.SQL_NAME_MAY_BE_COLUMN else Uncertainty.DECLARATION_OUTSIDE_FILE
         }
         return reasons
     }
 
     private companion object {
-        val NOT_A_FIELD = FieldBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
-        val OUTSIDE_FILE = FieldBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
-        val UNSUPPORTED = FieldBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+        val NOT_A_FIELD = FieldBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
+        val NO_SUCH_FIELD = FieldBinding.NoSuchField
+        val TYPED_VALUES = EnumSet.of(LocalDeclarationKind.VARIABLE, LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR_PARAMETER)
+        val OUTSIDE_FILE = FieldBinding.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
+        val UNSUPPORTED = FieldBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
         val VALUE_KINDS = EnumSet.of(
             LocalDeclarationKind.VARIABLE, LocalDeclarationKind.PARAMETER, LocalDeclarationKind.CURSOR_PARAMETER, LocalDeclarationKind.LOOP_INDEX
         )

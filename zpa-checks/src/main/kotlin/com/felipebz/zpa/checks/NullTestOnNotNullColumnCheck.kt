@@ -30,7 +30,7 @@ class NullTestOnNotNullColumnCheck : AbstractBaseCheck() {
         if (operand.type !== PlSqlGrammar.VARIABLE_NAME && operand.type !== PlSqlGrammar.MEMBER_EXPRESSION) return
         val binding = context.columnBinding(operand) as? ColumnBinding.Column ?: return
         val column = binding.column?.takeIf { binding.exists == true } ?: return
-        if (column.nullable.orElse(true) || context.outerJoined(binding.source)) return
+        if (column.nullable.orElse(true) || context.mayBeOuterJoined(binding.source)) return
         val name = column.name.originalSpelling.trim('"')
         if (node.hasDirectChildren(PlSqlKeyword.NOT)) {
             addIssue(node, getLocalizedMessage("alwaysTrueMessage"), name)

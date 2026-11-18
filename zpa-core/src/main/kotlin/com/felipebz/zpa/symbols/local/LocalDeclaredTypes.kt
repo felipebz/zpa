@@ -19,32 +19,46 @@ import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.StaticArithmetic
 import java.util.*
 
-/** [DeclaredType] answers from the walk [LocalValueCategories.typeCategory] runs. */
+/** [DeclaredType] answers from the walk [LocalValueCategories.typeCategory] runs, each with the category it gives. */
 internal class LocalDeclaredTypes(private val facts: LocalSemanticFacts, private val walk: LocalTypeWalk, private val categories: LocalValueCategories) {
     private val model = facts.model
     private var root: AstNode? = null
     private val datatypes = HashMap<Pair<Int, Int>, AstNode>()
     private val variables = HashMap<Pair<Int, Int>, AstNode>()
 
-    fun describe(datatype: AstNode, fields: LocalFields?): DeclaredType {
-        val written = categories.written(datatype) ?: return unavailable()
-        index(datatype)
-        if (written.external) return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-        if (categories.isRefCursorName(written)) return DeclaredType.BuiltIn("SYS_REFCURSOR", WrittenTypeConstraints.NONE)
+    /** A `DATATYPE`, or the name of a local record, collection or REF CURSOR type, as a `DATATYPE` naming it. */
+    fun describe(node: AstNode, fields: LocalFields?): DeclaredType {
+        if (node.type === PlSqlGrammar.IDENTIFIER_NAME) return declared(node, fields)
+        val written = categories.written(node) ?: return unavailable()
+        index(node)
+        val category = categories.typeCategory(node)
+        if (written.external) return unknown(Uncertainty.UNSUPPORTED_REFERENCE, category)
+        if (categories.isRefCursorName(written)) return DeclaredType.BuiltIn("SYS_REFCURSOR", WrittenTypeConstraints.NONE, category)
         val evidence = written.evidence
         return when (evidence.terminal) {
-            LocalTypeEvidence.Terminal.BUILT_IN -> evidence.terminalUse?.let { builtIn(it, evidence.constrainedUse) } ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-            LocalTypeEvidence.Terminal.COMPOSITE -> local(evidence, fields)
-            LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { project(it, evidence.constrainedUse) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+            LocalTypeEvidence.Terminal.BUILT_IN -> evidence.terminalUse?.let { builtIn(it, evidence.constrainedUse, category) }
+                ?: unknown(Uncertainty.UNSUPPORTED_REFERENCE, category)
+            LocalTypeEvidence.Terminal.COMPOSITE -> local(evidence, fields, category)
+            LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.let { project(it, evidence.constrainedUse, category) }
+                ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE, category)
             LocalTypeEvidence.Terminal.LITERAL -> unavailable()
-            LocalTypeEvidence.Terminal.UNKNOWN -> evidence.incomplete?.let { DeclaredType.Unknown(categories.reasons(it)) }
-                ?: unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+            LocalTypeEvidence.Terminal.UNKNOWN -> evidence.incomplete?.let { DeclaredType.Unknown(categories.reasons(it), category) }
+                ?: unknown(Uncertainty.UNSUPPORTED_REFERENCE, category)
         }
     }
 
-    private fun builtIn(terminal: LocalTypeUse, constrained: LocalTypeUse?): DeclaredType {
-        val syntax = (terminal.typeRef as? NamedTypeRef)?.writtenSyntax ?: return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
-        return DeclaredType.BuiltIn(syntax.name, constraints(syntax, constrained ?: terminal))
+    /** The name of a local type declaration, at any depth. */
+    private fun declared(name: AstNode, fields: LocalFields?): DeclaredType {
+        val type = model.declarations.firstOrNull {
+            it.kind in NAMED_TYPES && it.nameRange.startLine == name.token.line && it.nameRange.startColumn == name.token.column
+        } ?: return unavailable()
+        index(name)
+        return typeOf(type, fields, categories.typeCategory(type.region, type))
+    }
+
+    private fun builtIn(terminal: LocalTypeUse, constrained: LocalTypeUse?, category: ValueCategory): DeclaredType {
+        val syntax = (terminal.typeRef as? NamedTypeRef)?.writtenSyntax ?: return unknown(Uncertainty.UNSUPPORTED_REFERENCE, category)
+        return DeclaredType.BuiltIn(syntax.name, constraints(syntax, constrained ?: terminal), category)
     }
 
     /** The constraints of the predefined type [syntax] as the written type [use] constrains it. */
@@ -69,35 +83,41 @@ internal class LocalDeclaredTypes(private val facts: LocalSemanticFacts, private
     private fun defaultOf(constant: LocalDeclaration): AstNode? =
         variables[constant.range.startLine to constant.range.startColumn]?.getFirstChildOrNull(PlSqlGrammar.DEFAULT_VALUE_ASSIGNMENT)?.lastChild
 
-    private fun local(evidence: LocalTypeEvidence, fields: LocalFields?): DeclaredType {
+    private fun local(evidence: LocalTypeEvidence, fields: LocalFields?, category: ValueCategory): DeclaredType {
         // A package cursor's query row: the `%ROWTYPE` as written, as the project describes it.
-        if (evidence.selectList != null) return evidence.description?.let { project(it, evidence.constrainedUse) } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-        val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return unknown(UsageUncertainty.UNSUPPORTED_REFERENCE)
+        if (evidence.selectList != null) {
+            return evidence.description?.let { project(it, evidence.constrainedUse, category) } ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE, category)
+        }
+        val last = evidence.followed.lastOrNull()?.let(model::declaration) ?: return unknown(Uncertainty.UNSUPPORTED_REFERENCE, category)
+        return typeOf(last, fields, category)
+    }
+
+    private fun typeOf(last: LocalDeclaration, fields: LocalFields?, category: ValueCategory): DeclaredType {
         val declaration = facts.names.declaration(last.id)
         return when (last.kind) {
-            LocalDeclarationKind.RECORD_TYPE -> DeclaredType.Record(declaration, fields?.recordFields(last.id).orEmpty())
+            LocalDeclarationKind.RECORD_TYPE -> DeclaredType.Record(declaration, fields?.recordFields(last.id).orEmpty(), category)
             LocalDeclarationKind.COLLECTION_TYPE ->
-                DeclaredType.Collection(declaration, collectionKind(last), last.type?.range?.let { datatypes[it.startLine to it.startColumn] })
-            else -> DeclaredType.OtherLocal(declaration)
+                DeclaredType.Collection(declaration, collectionKind(last), last.type?.range?.let { datatypes[it.startLine to it.startColumn] }, category)
+            else -> DeclaredType.OtherLocal(declaration, category)
         }
     }
 
-    private fun project(description: ProjectExternalTypeDescription, constrained: LocalTypeUse?): DeclaredType {
+    private fun project(description: ProjectExternalTypeDescription, constrained: LocalTypeUse?, category: ValueCategory): DeclaredType {
         // An anchor the project leaves to external metadata, or one an external reading competes with.
         val anchor = description.anchor.orElse(null)
         if (anchor != null && description.status != ProjectExternalTypeDescription.Status.NOT_EXTERNAL) {
-            return DeclaredType.Anchored(anchor, description.anchorName.get(), description)
+            return DeclaredType.Anchored(anchor, description.anchorName.get(), description, category)
         }
         val source = description.source
         return when (source.status) {
             ProjectTypeDescription.Status.BUILT_IN -> source.terminalReference.orElse(null)?.writtenSyntax?.let { syntax ->
-                DeclaredType.BuiltIn(syntax.name, projectConstraints(syntax, source, constrained))
-            } ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            ProjectTypeDescription.Status.DECLARED_TYPE -> source.declaration.orElse(null)?.let { DeclaredType.Project(it, description) }
-                ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            ProjectTypeDescription.Status.ANCHORED_REFERENCE -> source.writtenAnchor.orElse(null)?.let { DeclaredType.Anchored(it.anchor, it.name, description) }
-                ?: unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
-            else -> unknown(UsageUncertainty.DECLARATION_OUTSIDE_FILE)
+                DeclaredType.BuiltIn(syntax.name, projectConstraints(syntax, source, constrained), category)
+            } ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE, category)
+            ProjectTypeDescription.Status.DECLARED_TYPE -> source.declaration.orElse(null)?.let { DeclaredType.Project(it, description, category) }
+                ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE, category)
+            ProjectTypeDescription.Status.ANCHORED_REFERENCE -> source.writtenAnchor.orElse(null)?.let { DeclaredType.Anchored(it.anchor, it.name, description, category) }
+                ?: unknown(Uncertainty.DECLARATION_OUTSIDE_FILE, category)
+            else -> unknown(Uncertainty.DECLARATION_OUTSIDE_FILE, category)
         }
     }
 
@@ -135,7 +155,11 @@ internal class LocalDeclaredTypes(private val facts: LocalSemanticFacts, private
         visit(top)
     }
 
-    private fun unknown(reason: UsageUncertainty) = DeclaredType.Unknown(EnumSet.of(reason))
+    private fun unknown(reason: Uncertainty, category: ValueCategory) = DeclaredType.Unknown(EnumSet.of(reason), category)
 
-    private fun unavailable() = DeclaredType.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+    private fun unavailable() = DeclaredType.Unavailable(Unavailability.NOT_A_COVERED_NAME)
+
+    private companion object {
+        val NAMED_TYPES = EnumSet.of(LocalDeclarationKind.RECORD_TYPE, LocalDeclarationKind.COLLECTION_TYPE, LocalDeclarationKind.REF_CURSOR_TYPE)
+    }
 }

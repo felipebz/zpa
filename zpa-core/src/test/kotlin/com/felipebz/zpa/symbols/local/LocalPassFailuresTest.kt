@@ -12,7 +12,7 @@ import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.semantics.NameBinding
-import com.felipebz.zpa.api.semantics.UsageUnavailability
+import com.felipebz.zpa.api.semantics.Unavailability
 import com.felipebz.zpa.project.FileId
 import com.felipebz.zpa.project.ProjectAnalysisContext
 import com.felipebz.zpa.squid.AstScanner
@@ -79,7 +79,7 @@ class LocalPassFailuresTest {
     @Test
     fun otherwiseTheFileIsNotAnalyzedAndTheOthersAre() {
         val bindings = withLocalPassFailuresLogged { scan(ReadOnce("good.sql", code, failing = false), ReadOnce("broken.sql", code, failing = true), ReadOnce("other.sql", code, failing = false)) }
-        assertThat(bindings[1]).isEqualTo(NameBinding.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED))
+        assertThat(bindings[1]).isEqualTo(NameBinding.Unavailable(Unavailability.FILE_NOT_ANALYZED))
         assertThat(bindings[0]).isInstanceOf(NameBinding.Local::class.java)
         assertThat(bindings[2]).isInstanceOf(NameBinding.Local::class.java)
     }

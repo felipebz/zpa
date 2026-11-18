@@ -29,8 +29,8 @@ sealed interface UsageEvidence {
     }
 
     /** Neither a certain use nor a proven absence; [reasons] says what could hold a use. Never a proven absence. */
-    class Unknown(reasons: Set<UsageUncertainty>) : UsageEvidence {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : UsageEvidence {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -40,7 +40,7 @@ sealed interface UsageEvidence {
     }
 
     /** No evidence at all: see [reason]. A check reports nothing for such a declaration. */
-    class Unavailable(val reason: UsageUnavailability) : UsageEvidence {
+    class Unavailable(val reason: Unavailability) : UsageEvidence {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()
@@ -49,9 +49,12 @@ sealed interface UsageEvidence {
     }
 }
 
-/** What may hold a use the analysis could not decide. */
+/**
+ * What may hold the answer a semantic query of the visitor context could not decide: the reasons of every query's
+ * `Unknown` (name, call, cursor, field, exception and usage evidence, value categories, declared types).
+ */
 @ZpaExperimentalApi
-enum class UsageUncertainty {
+enum class Uncertainty {
     /** A name in SQL that names the declaration unless the statement's relations have a column of that name. */
     SQL_NAME_MAY_BE_COLUMN,
 
@@ -83,9 +86,9 @@ enum class UsageUncertainty {
     VISIBLE_OUTSIDE_FILE
 }
 
-/** Why there is no usage evidence. */
+/** Why a semantic query of the visitor context gives no evidence: the reason of every query's `Unavailable`. */
 @ZpaExperimentalApi
-enum class UsageUnavailability {
+enum class Unavailability {
     /** The local analysis of the file did not complete (a failure was logged): nothing is known about it. */
     FILE_NOT_ANALYZED,
 

@@ -24,8 +24,8 @@ sealed interface FieldBinding {
     }
 
     /** Not decided; [reasons] says what the analysis could not see. Never a proof that the segment is not a field. */
-    class Unknown(reasons: Set<UsageUncertainty>) : FieldBinding {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : FieldBinding {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -35,11 +35,19 @@ sealed interface FieldBinding {
     }
 
     /**
-     * Not a field: the node is not a segment written after a value, or the segment is proven something else (a
-     * collection or object method, a name the value's type does not have, a column of a table's or view's `%ROWTYPE`, a
-     * name a complete select list does not have), or the file was not analyzed.
+     * A proven absence: the value's type is known completely and has no field or attribute of that name. That type is a
+     * record type of this file, a cursor row whose select list names every item, or an object type whose whole
+     * supertype chain is known. Oracle rejects the reference (PLS-00302).
      */
-    class Unavailable(val reason: UsageUnavailability) : FieldBinding {
+    data object NoSuchField : FieldBinding
+
+    /**
+     * Not a field, and no proof of a missing one: the node is not a segment written after a value (the first name of a
+     * chain), or the segment is proven something else (a collection or object method, a name a collection type does not
+     * have, a column of a table's or view's `%ROWTYPE`, a segment of a record whose select list repeats a name), or the
+     * file was not analyzed.
+     */
+    class Unavailable(val reason: Unavailability) : FieldBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

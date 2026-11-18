@@ -35,8 +35,8 @@ sealed interface ExceptionBinding {
     }
 
     /** Not decided; [reasons] says what the analysis could not see. */
-    class Unknown(reasons: Set<UsageUncertainty>) : ExceptionBinding {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : ExceptionBinding {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -46,7 +46,7 @@ sealed interface ExceptionBinding {
     }
 
     /** No evidence: the file was not analyzed, or the node is not such a name. */
-    class Unavailable(val reason: UsageUnavailability) : ExceptionBinding {
+    class Unavailable(val reason: Unavailability) : ExceptionBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()
@@ -112,8 +112,8 @@ sealed interface ExceptionErrorCode {
     }
 
     /** A pragma may exist that the analysis cannot see; [reasons] says why. Never a proof of [None]. */
-    class Unknown(reasons: Set<UsageUncertainty>) : ExceptionErrorCode {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : ExceptionErrorCode {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 

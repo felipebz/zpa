@@ -12,8 +12,8 @@ import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.semantics.HiddenDeclaration
 import com.felipebz.zpa.api.semantics.HidingEvidence
-import com.felipebz.zpa.api.semantics.UsageUnavailability
-import com.felipebz.zpa.api.semantics.UsageUncertainty
+import com.felipebz.zpa.api.semantics.Unavailability
+import com.felipebz.zpa.api.semantics.Uncertainty
 import com.felipebz.zpa.project.OracleIdentifier
 import com.felipebz.zpa.project.SourceRange
 import java.util.*
@@ -31,7 +31,7 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
     private val declarationsByName = declarationStarts(model)
 
     fun evidence(declarationNode: AstNode): HidingEvidence {
-        val declaration = declarationOf(declarationNode) ?: return HidingEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION)
+        val declaration = declarationOf(declarationNode) ?: return HidingEvidence.Unavailable(Unavailability.NOT_A_COVERED_DECLARATION)
         val search = search(declaration)
         search.specification?.let { hidden ->
             val own = reasons(model.region(declaration.region), declaration.name)
@@ -55,10 +55,10 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
     }
 
     /** What the enclosing regions declare of the name, and what the analysis could not see in them. */
-    private class Search(val outermost: LocalDeclaration?, val specification: HiddenDeclaration?, val reasons: Set<UsageUncertainty>)
+    private class Search(val outermost: LocalDeclaration?, val specification: HiddenDeclaration?, val reasons: Set<Uncertainty>)
 
     private fun search(declaration: LocalDeclaration): Search {
-        val unseen = EnumSet.noneOf(UsageUncertainty::class.java)
+        val unseen = EnumSet.noneOf(Uncertainty::class.java)
         var outermost: LocalDeclaration? = null
         var specification: HiddenDeclaration? = null
         // The declaration's own scope holds duplicates, not hidden declarations.
@@ -73,7 +73,7 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
                 when (val value = facts.specificationValues[region.id to declaration.name.lookupName]) {
                     is LocalSpecificationValue.Declared -> specification = HiddenDeclaration(value.line, value.column, value.fileId, null)
                     LocalSpecificationValue.None -> Unit
-                    LocalSpecificationValue.Unknown, null -> unseen += UsageUncertainty.DECLARATION_OUTSIDE_FILE
+                    LocalSpecificationValue.Unknown, null -> unseen += Uncertainty.DECLARATION_OUTSIDE_FILE
                 }
             }
             region = model.parent(region.id)
@@ -82,8 +82,8 @@ internal class LocalHiding(private val facts: LocalSemanticFacts) {
     }
 
     /** What the analysis cannot see in [region] that may declare, use or hide [name]. */
-    private fun reasons(region: LocalRegion, name: OracleIdentifier): Set<UsageUncertainty> =
-        region.completeness.reasonsFor(name).mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
+    private fun reasons(region: LocalRegion, name: OracleIdentifier): Set<Uncertainty> =
+        region.completeness.reasonsFor(name).mapTo(EnumSet.noneOf(Uncertainty::class.java)) { it.usageUncertainty() }
 
     /** The name nodes of the file, by the start of their token: collected once, when a first hidden declaration is found. */
     private var namesByStart: LocalPositionMap<AstNode>? = null

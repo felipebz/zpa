@@ -27,8 +27,8 @@ sealed interface HidingEvidence {
     }
 
     /** Neither a hidden declaration nor a proven absence; [reasons] says what the analysis could not see. */
-    class Unknown(reasons: Set<UsageUncertainty>) : HidingEvidence {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : HidingEvidence {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -38,7 +38,7 @@ sealed interface HidingEvidence {
     }
 
     /** No evidence at all: see [reason]. A check reports nothing for such a declaration. */
-    class Unavailable(val reason: UsageUnavailability) : HidingEvidence {
+    class Unavailable(val reason: Unavailability) : HidingEvidence {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

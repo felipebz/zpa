@@ -92,7 +92,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         return when (val outcome = unwrap(facts.resolutions[index].first())) {
             is LocalResolution.SqlBuiltinOrLocal, is LocalResolution.Bound -> value(outcome)?.let { NameBinding.Local(declaration(it)) } ?: unavailable()
             LocalResolution.SqlRelation -> NameBinding.NothingLocal(sqlColumnPossible = true)
-            LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+            LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
             is LocalResolution.Incomplete -> {
                 val provisional = unwrap(outcome.provisional)
                 val mayBeValue = value(provisional) != null || provisional == LocalResolution.ProvenAbsent ||
@@ -130,13 +130,13 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
             else -> if (first is LocalResolution.Incomplete) return NameBinding.Unknown(reasons(first))
         }
         for (step in 0 until position) {
-            when (val before = unwrap(steps.getOrNull(step) ?: return NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE)))) {
+            when (val before = unwrap(steps.getOrNull(step) ?: return NameBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE)))) {
                 is LocalResolution.Incomplete -> return NameBinding.Unknown(reasons(before))
                 is LocalResolution.Bound -> if (model.declaration(before.declaration).kind !in QUALIFIERS) return unavailable()
                 else -> return unavailable()
             }
         }
-        return when (val own = unwrap(steps.getOrNull(position) ?: return NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE)))) {
+        return when (val own = unwrap(steps.getOrNull(position) ?: return NameBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE)))) {
             is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(own))
             is LocalResolution.Field, is LocalResolution.CollectionMethod, is LocalResolution.Unsupported -> unavailable()
             else -> decided(own, segments[position - 1].range)
@@ -167,10 +167,10 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         val last = unwrap(steps.last())
         return when {
             last is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(last))
-            steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
             last is LocalResolution.Bound -> NameBinding.Local(declaration(last.declaration))
             last == LocalResolution.SpecificationMember -> decided(last, reference.segments.last().range)
-            else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            else -> NameBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
         }
     }
 
@@ -197,7 +197,7 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         val last = unwrap(steps.last())
         return when {
             last is LocalResolution.Incomplete -> NameBinding.Unknown(reasons(last))
-            steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            steps.size != reference.segments.size + 1 -> NameBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
             else -> decided(last, reference.segments.lastOrNull()?.range ?: reference.range)
         }
     }
@@ -245,8 +245,8 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         is LocalResolution.OutOfScope -> NameBinding.Local(declaration(outcome.declaration))
         LocalResolution.SpecificationMember -> facts.specificationMembers[range.startLine to range.startColumn]
             ?.let { NameBinding.Local(NameDeclaration(kind(it.kind), it.line, it.column, it.fileId)) }
-            ?: NameBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
-        else -> NameBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            ?: NameBinding.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
+        else -> NameBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
     }
 
     fun declaration(id: LocalDeclarationId): NameDeclaration {
@@ -268,18 +268,18 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         else -> NameDeclarationKind.OTHER
     }
 
-    private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
-        val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+    private fun reasons(outcome: LocalResolution.Incomplete): Set<Uncertainty> {
+        val reasons = EnumSet.noneOf(Uncertainty::class.java)
         outcome.regionReasons.forEach {
             reasons += it.usageUncertainty()
         }
         outcome.lookupReasons.forEach {
-            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE
+            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) Uncertainty.SQL_NAME_MAY_BE_COLUMN else Uncertainty.DECLARATION_OUTSIDE_FILE
         }
         return reasons
     }
 
-    private fun unavailable() = NameBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+    private fun unavailable() = NameBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
 
     companion object {
         /**

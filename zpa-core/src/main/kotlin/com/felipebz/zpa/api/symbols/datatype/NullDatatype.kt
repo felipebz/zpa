@@ -11,12 +11,12 @@ import com.felipebz.zpa.api.symbols.PlSqlType
 
 /**
  * Deprecated: part of the legacy symbol model, removed in the next major version. For a name use
- * PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar node. Length,
+ * PlSqlVisitorContext.valueCategory, for a DATATYPE node the category of declaredType; a literal's kind is its grammar node. Length,
  * precision and scale are read from the DATATYPE node of the declaration.
  */
 @Deprecated(
     "Part of the legacy symbol model. It will be removed in the next major version. For a name use " +
-    "PlSqlVisitorContext.valueCategory, for a DATATYPE node typeCategory; a literal's kind is its grammar node. " +
+    "PlSqlVisitorContext.valueCategory, for a DATATYPE node the category of declaredType; a literal's kind is its grammar node. " +
     "Length, precision and scale are read from the DATATYPE node of the declaration."
 )
 class NullDatatype : PlSqlDatatype {

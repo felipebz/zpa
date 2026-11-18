@@ -334,9 +334,9 @@ class CursorRowTest {
         assertThat(fields(text, "pk_ord.pks" to spec)).containsExactly(
             // Oracle: r.qty and r.mixed_case are PLS-00302.
             "4:r.quantity=Field(SELECT_ITEM#1@pk_ord.pks:6:43)",
-            "4:r.qty=Unavailable(NOT_A_COVERED_NAME)",
+            "4:r.qty=NoSuchField",
             "7:r.\"Mixed Case\"=Field(SELECT_ITEM#0@pk_ord.pks:9:34)",
-            "7:r.mixed_case=Unavailable(NOT_A_COVERED_NAME)",
+            "7:r.mixed_case=NoSuchField",
             // Oracle prints r.extra and r.line_no, a column `l.*` brings.
             "10:r.extra=Field(SELECT_ITEM#1@pk_ord.pks:7:37)",
             "10:r.line_no=Unknown[UNSUPPORTED_REFERENCE]",
@@ -465,7 +465,7 @@ class CursorRowTest {
             """.trimIndent() + "\n"
         assertThat(fields(text)).containsExactly(
             "5:r.amount=Field(SELECT_ITEM#0@4:25)",
-            "5:r.qty=Unavailable(NOT_A_COVERED_NAME)",
+            "5:r.qty=NoSuchField",
             "8:r.amount=Field(SELECT_ITEM#0@2:27)",
             "8:r.qty=Unknown[UNSUPPORTED_REFERENCE]"
         )

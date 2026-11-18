@@ -295,7 +295,7 @@ class DeclaredTypeTest {
                 "v_o" to "Anchored(t_rel.col_a%TYPE)"
             )
         )
-        val categories = scan("u.sql") { context, node -> context.typeCategory(node).toString() }
+        val categories = scan("u.sql") { context, node -> context.declaredType(node).category.toString() }
         assertThat(categories).contains("v_m=Collection(ASSOCIATIVE_ARRAY of Scalar(NUMERIC))", "v_s=Collection(NESTED_TABLE of Scalar(NUMERIC))")
     }
 
@@ -319,7 +319,7 @@ class DeclaredTypeTest {
     fun aFileThatWasNotAnalyzed() {
         val context = PlSqlVisitorContext(PlSqlParser.create(PlSqlConfiguration(StandardCharsets.UTF_8, false)).parse(user), null, null)
         val datatype = context.rootTree()!!.getFirstDescendant(PlSqlGrammar.DATATYPE)
-        assertThat(context.declaredType(datatype)).isEqualTo(DeclaredType.Unavailable(UsageUnavailability.FILE_NOT_ANALYZED))
+        assertThat(context.declaredType(datatype)).isEqualTo(DeclaredType.Unavailable(Unavailability.FILE_NOT_ANALYZED))
         assertThat(context.projectTypeReference(datatype)).isNull()
     }
 
@@ -346,7 +346,7 @@ class DeclaredTypeTest {
             assertThat(types["${prefix}deep"]).isEqualTo("BuiltIn(NUMBER(precision=9, scale=2))")
             // A field of a %ROWTYPE value is the column's %TYPE of its relation.
             assertThat(types["${prefix}name"]).isEqualTo("Anchored(customer.name%TYPE)")
-            val categories = scan(file) { context, node -> context.typeCategory(node).toString() }.toMap()
+            val categories = scan(file) { context, node -> context.declaredType(node).category.toString() }.toMap()
             assertThat(categories["${prefix}qty"]).isEqualTo("Scalar(NUMERIC)")
             assertThat(categories["${prefix}name"]).doesNotStartWith("Record")
 

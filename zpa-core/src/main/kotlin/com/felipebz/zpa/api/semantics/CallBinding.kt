@@ -55,7 +55,7 @@ sealed interface CallBinding {
     }
 
     /** No evidence: the file was not analyzed, or the node is not the name of a call the analysis covers. */
-    class Unavailable(val reason: UsageUnavailability) : CallBinding {
+    class Unavailable(val reason: Unavailability) : CallBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

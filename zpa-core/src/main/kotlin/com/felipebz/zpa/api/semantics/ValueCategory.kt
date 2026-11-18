@@ -61,8 +61,8 @@ sealed interface ValueCategory {
     }
 
     /** Not decided; [reasons] says what the analysis could not see. Never a proof of any category. */
-    class Unknown(reasons: Set<UsageUncertainty>) : ValueCategory {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : ValueCategory {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -72,7 +72,7 @@ sealed interface ValueCategory {
     }
 
     /** No evidence: the file was not analyzed, or the node is not such a name. */
-    class Unavailable(val reason: UsageUnavailability) : ValueCategory {
+    class Unavailable(val reason: Unavailability) : ValueCategory {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

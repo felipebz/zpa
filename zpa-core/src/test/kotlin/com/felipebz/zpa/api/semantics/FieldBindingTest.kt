@@ -578,8 +578,8 @@ class FieldBindingTest {
         val code = "Field(RECORD_FIELD#0@2:24)"
         assertThat(rows.filter { it.startsWith("9:") }).containsExactly("9:15:N=$n")
         assertThat(rows.filter { it.startsWith("10:") }).containsExactly("10:15:TAG=$tag", "10:19:CODE=$code", "10:38:TAG=$tag", "10:42:CODE=$code")
-        // A name the record does not have is left undecided, as before.
-        assertThat(rows.filter { it.startsWith("11:") }).containsExactly("11:15:MISSING=Unknown[UNSUPPORTED_REFERENCE]")
+        // A name the record does not have: Oracle rejects it (PLS-00302).
+        assertThat(rows.filter { it.startsWith("11:") }).containsExactly("11:15:MISSING=NoSuchField")
     }
 
     @Test
@@ -594,7 +594,7 @@ class FieldBindingTest {
             override fun leaveFile(node: AstNode) {
                 node.getDescendants(PlSqlGrammar.RECORD_DECLARATION).forEach {
                     val name = it.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME)
-                    rows += "${name.tokenValue}=${this.context.recordFields(name)}"
+                    rows += "${name.tokenValue}=${(this.context.declaredType(name) as? DeclaredType.Record)?.fields}"
                 }
                 node.getDescendants(PlSqlGrammar.CUSTOM_DATATYPE).forEach {
                     rows += "${it.token.line}:${it.token.column}=${this.context.typeBinding(it.firstChild)}"
@@ -678,9 +678,9 @@ class FieldBindingTest {
         assertThat(at(15, "X")).isEqualTo(x)
         assertThat(at(25, "ONE")).isEqualTo("Field(RECORD_FIELD#1@4:35)")
         assertThat(at(25, "X")).isEqualTo(x)
-        // An element of ITEMS is a T_R, which has no ONE (PLS-00302): undecided, as any name a record lacks.
+        // An element of ITEMS is a T_R, which has no ONE (PLS-00302); what follows it is undecided.
         assertThat(at(17, "ITEMS")).isEqualTo(items)
-        assertThat(at(17, "ONE")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
+        assertThat(at(17, "ONE")).isEqualTo("NoSuchField")
         assertThat(at(17, "X")).isEqualTo("Unknown[UNSUPPORTED_REFERENCE]")
         // A method of the local collection type ITEMS has: not a field.
         assertThat(at(16, "ITEMS")).isEqualTo(items)

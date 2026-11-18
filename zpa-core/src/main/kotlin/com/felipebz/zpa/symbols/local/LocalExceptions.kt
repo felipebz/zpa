@@ -28,7 +28,7 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
     private var codes: Map<LocalDeclarationId, Int?>? = null
 
     /** The region and name of each pragma the resolution did not decide, with what it could not see. */
-    private var undecidedPragmas: Map<Pair<LocalRegionId, String>, Set<UsageUncertainty>> = emptyMap()
+    private var undecidedPragmas: Map<Pair<LocalRegionId, String>, Set<Uncertainty>> = emptyMap()
 
     fun binding(name: AstNode): ExceptionBinding {
         if (name.type != PlSqlGrammar.VARIABLE_NAME && name.type != PlSqlGrammar.MEMBER_EXPRESSION) return unavailable()
@@ -41,11 +41,11 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         val outcome = steps.last()
         return when {
             outcome is LocalResolution.Incomplete -> ExceptionBinding.Unknown(reasons(outcome))
-            outcome is LocalResolution.Unsupported -> ExceptionBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+            outcome is LocalResolution.Unsupported -> ExceptionBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
             // A qualified name not followed to its last segment: a qualifier the file does not declare names a schema object.
             steps.size != reference.segments.size + 1 ->
                 if (unwrap(outcome) == LocalResolution.ProvenAbsent) ExceptionBinding.NotLocal
-                else ExceptionBinding.Unknown(EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE))
+                else ExceptionBinding.Unknown(EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE))
             else -> decided(reference, unwrap(outcome))
         }
     }
@@ -67,11 +67,11 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
     /** A member of the enclosing package's specification in another file, named alone or through the package. */
     private fun specificationMember(reference: LocalReference): ExceptionBinding {
         val body = LocalResolver.chain(model, reference.region).firstOrNull { it.kind == LocalRegionKind.PACKAGE_BODY }
-        val unit = body?.let { LocalTypeScope.unitOf(model, it.id) }?.unitName ?: return ExceptionBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+        val unit = body?.let { LocalTypeScope.unitOf(model, it.id) }?.unitName ?: return ExceptionBinding.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
         val name = (reference.segments.lastOrNull()?.name ?: reference.name).lookupName
         return ExceptionBinding.Declared(ExceptionDeclaration(
             "specification:${unit.lookupKey()}.$name", ExceptionScope.PACKAGE_SPECIFICATION, null, null,
-            ExceptionErrorCode.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+            ExceptionErrorCode.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
         ))
     }
 
@@ -94,7 +94,7 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         // Conditional text that never writes the exception's name holds no pragma for it.
         val hidden = model.region(declaration.region).completeness.reasonsFor(declaration.name)
         return when {
-            hidden.isNotEmpty() -> ExceptionErrorCode.Unknown(hidden.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() })
+            hidden.isNotEmpty() -> ExceptionErrorCode.Unknown(hidden.mapTo(EnumSet.noneOf(Uncertainty::class.java)) { it.usageUncertainty() })
             declaration.id in codes -> ExceptionErrorCode.Associated(codes[declaration.id])
             else -> undecidedPragmas[declaration.region to declaration.name.lookupName]?.let { ExceptionErrorCode.Unknown(it) } ?: ExceptionErrorCode.None
         }
@@ -104,7 +104,7 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         var root = node
         while (true) root = root.parentOrNull ?: break
         val codes = HashMap<LocalDeclarationId, Int?>()
-        val undecided = HashMap<Pair<LocalRegionId, String>, MutableSet<UsageUncertainty>>()
+        val undecided = HashMap<Pair<LocalRegionId, String>, MutableSet<Uncertainty>>()
         for (pragma in root.getDescendants(PlSqlGrammar.EXCEPTION_INIT_PRAGMA)) {
             val name = pragma.getFirstChildOrNull(PlSqlGrammar.VARIABLE_NAME, PlSqlGrammar.MEMBER_EXPRESSION) ?: continue
             val index = referencesByStart[name.token.line to name.token.column] ?: continue
@@ -115,9 +115,9 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
                 val code = pragma.getFirstChildOrNull(PlSqlPunctuator.COMMA)?.nextSibling
                 codes[declaration.id] = code?.tokens?.joinToString("") { it.value }?.toIntOrNull()
             } else if (outcome is LocalResolution.Incomplete || outcome is LocalResolution.Unsupported) {
-                val reasons = (outcome as? LocalResolution.Incomplete)?.let { reasons(it) } ?: EnumSet.of(UsageUncertainty.UNSUPPORTED_REFERENCE)
+                val reasons = (outcome as? LocalResolution.Incomplete)?.let { reasons(it) } ?: EnumSet.of(Uncertainty.UNSUPPORTED_REFERENCE)
                 val key = reference.region to (reference.segments.lastOrNull()?.name ?: reference.name).lookupName
-                undecided.getOrPut(key) { EnumSet.noneOf(UsageUncertainty::class.java) } += reasons
+                undecided.getOrPut(key) { EnumSet.noneOf(Uncertainty::class.java) } += reasons
             }
         }
         this.codes = codes
@@ -128,18 +128,18 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
      * What the analysis cannot see in the region that holds [node]: for a block or subprogram, the region of its `BEGIN`.
      * The regions inside it count too.
      */
-    fun regionUncertainty(node: AstNode): Set<UsageUncertainty> {
+    fun regionUncertainty(node: AstNode): Set<Uncertainty> {
         val token = (node.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION) ?: node).token
         val region = model.regions.filter { contains(it, token.line, token.column) }.maxByOrNull { depth(it) } ?: return emptySet()
         val reasons = model.regions.filter { within(it, region) }.flatMapTo(EnumSet.noneOf(LocalIncompleteness::class.java)) { it.completeness.reasons }
-        return reasons.mapTo(EnumSet.noneOf(UsageUncertainty::class.java)) { it.usageUncertainty() }
+        return reasons.mapTo(EnumSet.noneOf(Uncertainty::class.java)) { it.usageUncertainty() }
     }
 
-    private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
-        val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+    private fun reasons(outcome: LocalResolution.Incomplete): Set<Uncertainty> {
+        val reasons = EnumSet.noneOf(Uncertainty::class.java)
         outcome.regionReasons.forEach { reasons += it.usageUncertainty() }
         outcome.lookupReasons.forEach {
-            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE
+            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) Uncertainty.SQL_NAME_MAY_BE_COLUMN else Uncertainty.DECLARATION_OUTSIDE_FILE
         }
         return reasons
     }
@@ -167,7 +167,7 @@ internal class LocalExceptions(private val facts: LocalSemanticFacts) {
         return depth
     }
 
-    private fun unavailable() = ExceptionBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+    private fun unavailable() = ExceptionBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
 
     private companion object {
         /** The exceptions package STANDARD declares. */

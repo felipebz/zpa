@@ -102,6 +102,17 @@ class ProjectRecordMemberResolver(private val projectAnalysisContext: ProjectAna
         return chain.asReversed().flatMap { it.attributes }
     }
 
+    /** Whether a type of the chain from [type] has conditional-compilation text Oracle may compile differently. */
+    internal fun conditionalInChain(type: StandaloneTypeDeclaration): Boolean {
+        val visited = HashSet<StandaloneTypeDeclaration>()
+        var current: StandaloneTypeDeclaration? = type
+        while (current != null && visited.add(current)) {
+            if (current.conditional) return true
+            current = current.takeIf { it.supertype != null }?.let { supertypeOf(it) ?: return true }
+        }
+        return false
+    }
+
     internal fun methodsAltered(type: StandaloneTypeDeclaration): Boolean =
         (projectAnalysisContext?.state as? ProjectAnalysisContext.State.Prepared)?.result?.index?.alteredTypes?.methodsOf(type.name) ?: false
 

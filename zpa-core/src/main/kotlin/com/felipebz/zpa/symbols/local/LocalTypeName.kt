@@ -11,7 +11,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectDeclarationView
 import com.felipebz.zpa.api.project.ProjectNamedTypeResolution
 import com.felipebz.zpa.api.project.ProjectTypeDeclarationView
-import com.felipebz.zpa.api.semantics.UsageUncertainty
+import com.felipebz.zpa.api.semantics.Uncertainty
 
 /**
  * What the type name a `DATATYPE` writes denotes, as the local type walk decides it: the first declaration the name
@@ -39,7 +39,7 @@ internal sealed interface LocalTypeName {
     }
 
     /** Not decided: text this file may hold differently, or a lookup that relies on another file, or an unmodeled form. */
-    class Undecided(val reasons: Set<UsageUncertainty>) : LocalTypeName {
+    class Undecided(val reasons: Set<Uncertainty>) : LocalTypeName {
         override fun toString() = "Undecided${reasons.sorted()}"
     }
 

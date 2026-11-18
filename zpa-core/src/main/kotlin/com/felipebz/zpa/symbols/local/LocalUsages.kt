@@ -10,9 +10,9 @@ package com.felipebz.zpa.symbols.local
 import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.semantics.Unavailability
+import com.felipebz.zpa.api.semantics.Uncertainty
 import com.felipebz.zpa.api.semantics.UsageEvidence
-import com.felipebz.zpa.api.semantics.UsageUnavailability
-import com.felipebz.zpa.api.semantics.UsageUncertainty
 import java.util.*
 
 /**
@@ -27,7 +27,7 @@ import java.util.*
 internal class LocalUsages(private val facts: LocalSemanticFacts) {
     private val model = facts.model
     private val certain = HashSet<LocalDeclarationId>()
-    private val possible = HashMap<LocalDeclarationId, EnumSet<UsageUncertainty>>()
+    private val possible = HashMap<LocalDeclarationId, EnumSet<Uncertainty>>()
     private val unsupported = HashSet<Pair<LocalRegionId, String>>()
     /** Member names of qualified references whose qualifier conditional compilation leaves undecided, by enclosing region. */
     private val conditionalMembers = HashSet<Pair<LocalRegionId, String>>()
@@ -44,11 +44,11 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
 
     /** The evidence for a declaration node of [COVERED] whose declaration the model holds. */
     fun evidence(declarationNode: AstNode): UsageEvidence {
-        val declaration = declarationOf(declarationNode) ?: return UsageEvidence.Unavailable(UsageUnavailability.NOT_A_COVERED_DECLARATION)
+        val declaration = declarationOf(declarationNode) ?: return UsageEvidence.Unavailable(Unavailability.NOT_A_COVERED_DECLARATION)
         if (declaration.id in certain) return UsageEvidence.Used
-        val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+        val reasons = EnumSet.noneOf(Uncertainty::class.java)
         possible[declaration.id]?.let(reasons::addAll)
-        if (model.region(declaration.region).kind == LocalRegionKind.PACKAGE_SPEC) reasons += UsageUncertainty.VISIBLE_OUTSIDE_FILE
+        if (model.region(declaration.region).kind == LocalRegionKind.PACKAGE_SPEC) reasons += Uncertainty.VISIBLE_OUTSIDE_FILE
         // Conditional text that never writes the name, besides the declaration itself, holds no use of it.
         val own = LocalConditionalPiece.position(declaration.nameRange.startLine, declaration.nameRange.startColumn)
         incompleteness[declaration.region]?.let { subtree ->
@@ -58,8 +58,8 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
             }
             subtreeReasons.forEach { reasons += it.usageUncertainty() }
         }
-        if ((declaration.region to declaration.name.lookupName) in unsupported) reasons += UsageUncertainty.UNSUPPORTED_REFERENCE
-        if ((declaration.region to declaration.name.lookupName) in conditionalMembers) reasons += UsageUncertainty.CONDITIONAL_COMPILATION
+        if ((declaration.region to declaration.name.lookupName) in unsupported) reasons += Uncertainty.UNSUPPORTED_REFERENCE
+        if ((declaration.region to declaration.name.lookupName) in conditionalMembers) reasons += Uncertainty.CONDITIONAL_COMPILATION
         return if (reasons.isEmpty()) UsageEvidence.Unused else UsageEvidence.Unknown(reasons)
     }
 
@@ -76,13 +76,13 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
         when (outcome) {
             is LocalResolution.SpecificationCovered -> record(reference, outcome.outcome)
             is LocalResolution.Incomplete -> {
-                val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+                val reasons = EnumSet.noneOf(Uncertainty::class.java)
                 outcome.regionReasons.forEach { reasons += it.usageUncertainty() }
                 outcome.lookupReasons.forEach { reasons += uncertainty(it) }
-                named(outcome.provisional).forEach { possible.getOrPut(it) { EnumSet.noneOf(UsageUncertainty::class.java) } += reasons }
+                named(outcome.provisional).forEach { possible.getOrPut(it) { EnumSet.noneOf(Uncertainty::class.java) } += reasons }
             }
             is LocalResolution.SqlColumnOrLocal, is LocalResolution.SqlBuiltinOrLocal -> named(outcome).forEach {
-                possible.getOrPut(it) { EnumSet.noneOf(UsageUncertainty::class.java) } += UsageUncertainty.SQL_NAME_MAY_BE_COLUMN
+                possible.getOrPut(it) { EnumSet.noneOf(Uncertainty::class.java) } += Uncertainty.SQL_NAME_MAY_BE_COLUMN
             }
             is LocalResolution.Unsupported -> {
                 var region: LocalRegion? = model.region(reference.region)
@@ -211,7 +211,7 @@ internal class LocalUsages(private val facts: LocalSemanticFacts) {
     }
 
     private fun uncertainty(reason: LocalLookupGap) = when (reason) {
-        LocalLookupGap.SQL_COLUMN_UNKNOWN -> UsageUncertainty.SQL_NAME_MAY_BE_COLUMN
-        LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE -> UsageUncertainty.DECLARATION_OUTSIDE_FILE
+        LocalLookupGap.SQL_COLUMN_UNKNOWN -> Uncertainty.SQL_NAME_MAY_BE_COLUMN
+        LocalLookupGap.SPECIFICATION_NOT_IN_FILE, LocalLookupGap.SUPERTYPE_NOT_IN_FILE -> Uncertainty.DECLARATION_OUTSIDE_FILE
     }
 }

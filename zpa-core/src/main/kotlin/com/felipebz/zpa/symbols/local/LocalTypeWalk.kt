@@ -15,7 +15,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.api.semantics.ColumnBinding
 import com.felipebz.zpa.api.semantics.NameBinding
-import com.felipebz.zpa.api.semantics.UsageUnavailability
+import com.felipebz.zpa.api.semantics.Unavailability
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.symbols.StaticArithmetic
 import com.felipebz.zpa.symbols.local.LocalDeclarationKind.*
@@ -516,7 +516,7 @@ internal class LocalTypeWalk(
      * never asks what a PL/SQL name binds: the name bindings are not computed yet.
      */
     private val selectColumns: LocalColumnBindings? by lazy(LazyThreadSafetyMode.NONE) {
-        root?.let { LocalColumnBindings(model, this, { NameBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME) }) }
+        root?.let { LocalColumnBindings(model, this, { NameBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME) }) }
     }
 
     /**

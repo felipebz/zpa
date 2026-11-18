@@ -316,6 +316,7 @@ internal class ProjectOverviewBuilder(
                 when (val binding = fileContext!!.fieldBinding(astNode)) {
                     is FieldBinding.Field -> fields += astEntry("${nodeText(astNode)} → ${binding.declaration}", astNode)
                     is FieldBinding.Unknown -> fields += astEntry("${nodeText(astNode)} → undecided ${binding.reasons.sorted()}", astNode)
+                    FieldBinding.NoSuchField -> fields += astEntry("${nodeText(astNode)} → no such field", astNode)
                     is FieldBinding.Unavailable -> Unit
                 }
             }

@@ -55,8 +55,8 @@ sealed interface NameBinding {
     }
 
     /** Not decided; [reasons] says what the analysis could not see. Never a proof. */
-    class Unknown(reasons: Set<UsageUncertainty>) : NameBinding {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : NameBinding {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -66,7 +66,7 @@ sealed interface NameBinding {
     }
 
     /** No evidence: the file was not analyzed, or the node is not such a name. */
-    class Unavailable(val reason: UsageUnavailability) : NameBinding {
+    class Unavailable(val reason: Unavailability) : NameBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

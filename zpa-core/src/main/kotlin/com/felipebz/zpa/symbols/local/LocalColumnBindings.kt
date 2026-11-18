@@ -86,8 +86,8 @@ internal class LocalColumnBindings(
 
     private val plusJoined = IdentityHashMap<AstNode, Optional<Set<ColumnSource>>>()
 
-    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.outerJoined]. */
-    fun outerJoined(source: ColumnSource): Boolean {
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.mayBeOuterJoined]. */
+    fun mayBeOuterJoined(source: ColumnSource): Boolean {
         val node = source.node
         val clause = if (node.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE) node else node.parent.takeIf { it.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE }
         if (clause != null && ansiOuterJoined(clause)) return true
@@ -717,9 +717,9 @@ internal class LocalColumnBindings(
             val holds = !before(range.startLine, range.startColumn, t.startLine, t.startColumn) && !before(t.endLine, t.endColumn, range.endLine, range.endColumn)
             if (overlaps && !holds) {
                 reasons += when (text.reason.usageUncertainty()) {
-                    UsageUncertainty.CONDITIONAL_COMPILATION -> ColumnUncertainty.CONDITIONAL_COMPILATION
-                    UsageUncertainty.SUBSTITUTION -> ColumnUncertainty.SUBSTITUTION
-                    UsageUncertainty.PARSE_RECOVERY -> ColumnUncertainty.PARSE_RECOVERY
+                    Uncertainty.CONDITIONAL_COMPILATION -> ColumnUncertainty.CONDITIONAL_COMPILATION
+                    Uncertainty.SUBSTITUTION -> ColumnUncertainty.SUBSTITUTION
+                    Uncertainty.PARSE_RECOVERY -> ColumnUncertainty.PARSE_RECOVERY
                     else -> ColumnUncertainty.INCOMPLETE_SOURCE
                 }
             }
@@ -768,7 +768,7 @@ internal class LocalColumnBindings(
 
     private fun region(node: AstNode) = LocalReferenceCollector.innermostRegion(model, LocalSyntax.range(model.fileId, node))
 
-    private fun unavailable() = ColumnBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
+    private fun unavailable() = ColumnBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
 
     private companion object {
         val SCOPES = setOf(

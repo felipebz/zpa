@@ -44,8 +44,8 @@ sealed interface CursorBinding {
      * Not decided; [reasons] says what the analysis could not see: a cursor the project does not hold, text the file
      * may hold differently, a project that names several cursors.
      */
-    class Unknown(reasons: Set<UsageUncertainty>) : CursorBinding {
-        val reasons: Set<UsageUncertainty> = reasons.toSet()
+    class Unknown(reasons: Set<Uncertainty>) : CursorBinding {
+        val reasons: Set<Uncertainty> = reasons.toSet()
 
         override fun equals(other: Any?) = other is Unknown && reasons == other.reasons
 
@@ -58,7 +58,7 @@ sealed interface CursorBinding {
      * No cursor: the node is not such a name, the name is proven something else (a cursor variable, a relation of a
      * `%ROWTYPE`, a package variable), or the file was not analyzed.
      */
-    class Unavailable(val reason: UsageUnavailability) : CursorBinding {
+    class Unavailable(val reason: Unavailability) : CursorBinding {
         override fun equals(other: Any?) = other is Unavailable && reason == other.reason
 
         override fun hashCode() = reason.hashCode()

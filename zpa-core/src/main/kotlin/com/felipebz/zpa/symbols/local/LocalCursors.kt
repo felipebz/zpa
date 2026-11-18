@@ -15,13 +15,7 @@ import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectPackageCursorView
 import com.felipebz.zpa.api.project.ProjectValueResolution
 import com.felipebz.zpa.api.semantics.*
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.ParameterListBinding
-import com.felipebz.zpa.project.ProjectCallArgument
-import com.felipebz.zpa.project.ProjectCallArguments
-import com.felipebz.zpa.project.ProjectCallCandidate
-import com.felipebz.zpa.project.ProjectCallKind
-import com.felipebz.zpa.project.QualifiedName
+import com.felipebz.zpa.project.*
 import java.util.*
 
 /**
@@ -143,11 +137,11 @@ internal class LocalCursors(private val facts: LocalSemanticFacts, private val w
 
     private fun covered(outcome: LocalResolution) = (outcome as? LocalResolution.SpecificationCovered)?.outcome ?: outcome
 
-    private fun reasons(outcome: LocalResolution.Incomplete): Set<UsageUncertainty> {
-        val reasons = EnumSet.noneOf(UsageUncertainty::class.java)
+    private fun reasons(outcome: LocalResolution.Incomplete): Set<Uncertainty> {
+        val reasons = EnumSet.noneOf(Uncertainty::class.java)
         outcome.regionReasons.forEach { reasons += it.usageUncertainty() }
         outcome.lookupReasons.forEach {
-            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) UsageUncertainty.SQL_NAME_MAY_BE_COLUMN else UsageUncertainty.DECLARATION_OUTSIDE_FILE
+            reasons += if (it == LocalLookupGap.SQL_COLUMN_UNKNOWN) Uncertainty.SQL_NAME_MAY_BE_COLUMN else Uncertainty.DECLARATION_OUTSIDE_FILE
         }
         return reasons
     }
@@ -155,7 +149,7 @@ internal class LocalCursors(private val facts: LocalSemanticFacts, private val w
     private companion object {
         val CONTEXTS: Set<LocalReferenceContext> =
             EnumSet.of(LocalReferenceContext.CURSOR_OPERAND, LocalReferenceContext.FOR_CONTROL, LocalReferenceContext.ANCHOR_ROWTYPE)
-        val NOT_A_CURSOR = CursorBinding.Unavailable(UsageUnavailability.NOT_A_COVERED_NAME)
-        val OUTSIDE_FILE = CursorBinding.Unknown(EnumSet.of(UsageUncertainty.DECLARATION_OUTSIDE_FILE))
+        val NOT_A_CURSOR = CursorBinding.Unavailable(Unavailability.NOT_A_COVERED_NAME)
+        val OUTSIDE_FILE = CursorBinding.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
     }
 }
