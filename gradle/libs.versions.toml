@@ -11,7 +11,7 @@ sonarscanner = "7.6.0.18749"
 
 # libs
 flatlaf = "3.8"
-flr = "1.6.4-SNAPSHOT"
+flr = "2.0.0"
 jackson = "2.23.0"
 jsoup = "1.24.1"
 # see https://github.com/SonarSource/sonar-plugin-api/#sonarqube-community-build
