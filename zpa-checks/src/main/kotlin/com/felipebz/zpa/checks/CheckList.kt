@@ -76,6 +76,7 @@ object CheckList {
                 UtPlSqlTestShouldHaveDescriptionCheck::class.java,
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java,
-                NullTestOnNotNullColumnCheck::class.java)
+                NullTestOnNotNullColumnCheck::class.java,
+                FunctionWithoutReturnCheck::class.java)
 
 }

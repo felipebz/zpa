@@ -1,0 +1,45 @@
+<p>
+Uma função que chega ao seu <code>END</code> sem executar um comando <code>RETURN</code> lança o ORA-06503
+("PL/SQL: Function returned without value") quando é chamada. O Oracle alerta sobre algumas dessas funções na
+compilação (PLW-05005), só quando o <code>PLSQL_WARNINGS</code> o habilita, e não alerta sobre um tratador de exceção
+que segue adiante. Esse tratador é a causa mais comum: ele registra o erro e chega ao fim da função.
+</p>
+
+<p>
+Esta regra reporta uma função quando a execução pode chegar ao seu <code>END</code>, ou ao fim de um dos seus
+próprios tratadores de exceção, sem um <code>RETURN</code>. Um <code>RAISE</code>, uma chamada a
+<code>raise_application_error</code> ou uma chamada a uma procedure do mesmo arquivo que sempre lança um erro encerram
+o caminho. Um comando <code>CASE</code> sem <code>ELSE</code> não segue adiante quando nenhum ramo é escolhido: o
+Oracle lança <code>CASE_NOT_FOUND</code>. Um laço sem <code>EXIT</code> também não segue adiante. Funções
+<code>PIPELINED</code>, funções com <code>GOTO</code> e funções com compilação condicional não são verificadas.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create or replace function stock_level(p_item number) return number is
+  l_level number;
+begin
+  select qty into l_level from warehouse_stock where item_id = p_item;
+  return l_level;
+exception
+  when no_data_found then
+    audit_pkg.note('no stock row for ' || p_item);
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create or replace function stock_level(p_item number) return number is
+  l_level number;
+begin
+  select qty into l_level from warehouse_stock where item_id = p_item;
+  return l_level;
+exception
+  when no_data_found then
+    audit_pkg.note('no stock row for ' || p_item);
+    return 0;
+end;
+</pre>

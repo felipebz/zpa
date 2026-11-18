@@ -1,0 +1,45 @@
+<p>
+A function that reaches its <code>END</code> without running a <code>RETURN</code> statement raises ORA-06503
+("PL/SQL: Function returned without value") when it is called. Oracle warns about some of these functions at compile
+time (PLW-05005), only when <code>PLSQL_WARNINGS</code> enables it, and not about an exception handler that falls
+through. That handler is the usual cause: it logs the error and then reaches the end of the function.
+</p>
+
+<p>
+This rule reports a function when execution can reach its <code>END</code>, or the end of one of its own exception
+handlers, without a <code>RETURN</code>. A <code>RAISE</code>, a call to <code>raise_application_error</code>, or a call
+to a procedure of the same file that always raises ends the path. A <code>CASE</code> statement without
+<code>ELSE</code> does not fall through when no branch matches: Oracle raises <code>CASE_NOT_FOUND</code>. A loop
+without an <code>EXIT</code> does not fall through either. Pipelined functions, functions with a <code>GOTO</code> and
+functions with conditional compilation are not checked.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create or replace function stock_level(p_item number) return number is
+  l_level number;
+begin
+  select qty into l_level from warehouse_stock where item_id = p_item;
+  return l_level;
+exception
+  when no_data_found then
+    audit_pkg.note('no stock row for ' || p_item);
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create or replace function stock_level(p_item number) return number is
+  l_level number;
+begin
+  select qty into l_level from warehouse_stock where item_id = p_item;
+  return l_level;
+exception
+  when no_data_found then
+    audit_pkg.note('no stock row for ' || p_item);
+    return 0;
+end;
+</pre>
