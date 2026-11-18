@@ -15,9 +15,6 @@ indent_size=2
 [*.html]
 indent_size=2
 
-[*.properties]
-charset=latin1
-
 [*.sql]
 indent_size=2
 
