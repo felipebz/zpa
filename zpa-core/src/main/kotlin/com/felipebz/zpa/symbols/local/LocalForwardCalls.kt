@@ -548,7 +548,12 @@ internal class LocalForwardCalls(
         if (!actual.isCall || reference.segments.isNotEmpty() || reference.name.quoted || !StandardFunctions.covers(reference.name.lookupName)) return null
         val actuals = callsByPosition[actual.nameLine to actual.nameColumn]?.actuals?.takeIf { it.all { a -> a.label == null } }
             ?: return LocalTypeEvidence.unknown("a call of named actuals")
-        val result = StandardFunctions.result(reference.name.lookupName, actuals.map { evidence(it, reference.region, sql).argumentType }, sql)
+        val evidence = actuals.map { evidence(it, reference.region, sql) }
+        // CARDINALITY takes a nested table only; a VARRAY or an associative array is rejected (PLS-00306).
+        if (reference.name.lookupName == "CARDINALITY" && evidence.singleOrNull()?.let(walk::isNestedTable) != true) {
+            return LocalTypeEvidence.unknown("CARDINALITY of a value that is not a nested table")
+        }
+        val result = StandardFunctions.result(reference.name.lookupName, evidence.map { it.argumentType }, sql)
         return typed(result, "${reference.name.lookupName} of these actuals")
     }
 

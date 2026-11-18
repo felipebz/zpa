@@ -365,10 +365,20 @@ internal class LocalTypeWalk(
     }
 
     /** Whether [evidence] is a value of a local collection type or of a collection type the project describes. */
-    private fun isCollection(evidence: LocalTypeEvidence): Boolean = when (evidence.terminal) {
+    fun isCollection(evidence: LocalTypeEvidence): Boolean = when (evidence.terminal) {
         LocalTypeEvidence.Terminal.COMPOSITE -> evidence.followed.lastOrNull()?.let(model::declaration)?.kind == COLLECTION_TYPE
         LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.takeIf { !it.anchor.isPresent && it.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
             ?.source?.declaration?.orElse(null)?.let { (it as? ProjectShapedTypeView)?.shape?.orElse(null) == PublicTypeShape.COLLECTION } == true
+        else -> false
+    }
+
+    /** Whether [evidence] is a value of a nested table type, local or described by the project: not a VARRAY nor an associative array. */
+    fun isNestedTable(evidence: LocalTypeEvidence): Boolean = when (evidence.terminal) {
+        LocalTypeEvidence.Terminal.COMPOSITE -> evidence.followed.lastOrNull()?.let(model::declaration)
+            ?.takeIf { it.kind == COLLECTION_TYPE }?.let { (it.details as? LocalCollectionType)?.form == LocalCollectionForm.NESTED_TABLE } == true
+        LocalTypeEvidence.Terminal.PROJECT -> evidence.description?.takeIf { !it.anchor.isPresent && it.source.status == ProjectTypeDescription.Status.DECLARED_TYPE }
+            ?.source?.declaration?.orElse(null)?.let { it as? ProjectShapedTypeView }
+            ?.takeIf { it.shape.orElse(null) == PublicTypeShape.COLLECTION }?.collectionKind?.orElse(null) == com.felipebz.zpa.api.project.ProjectCollectionKind.NESTED_TABLE
         else -> false
     }
 

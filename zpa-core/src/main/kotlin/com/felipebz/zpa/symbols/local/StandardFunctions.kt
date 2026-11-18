@@ -30,7 +30,8 @@ internal object StandardFunctions {
         "TO_NUMBER" to "NUMBER", "TO_DATE" to "DATE", "TO_TIMESTAMP" to "TIMESTAMP", "TO_TIMESTAMP_TZ" to "TIMESTAMP WITH TIME ZONE",
         "TO_CHAR" to "VARCHAR2", "TO_CLOB" to "CLOB", "HEXTORAW" to "RAW", "RAWTOHEX" to "VARCHAR2", "CHR" to "VARCHAR2",
         "INITCAP" to "VARCHAR2", "TRANSLATE" to "VARCHAR2", "ASCII" to "PLS_INTEGER", "SIGN" to "PLS_INTEGER",
-        "MONTHS_BETWEEN" to "NUMBER", "ADD_MONTHS" to "DATE", "LAST_DAY" to "DATE", "NEXT_DAY" to "DATE", "SYS_GUID" to "RAW"
+        "MONTHS_BETWEEN" to "NUMBER", "ADD_MONTHS" to "DATE", "LAST_DAY" to "DATE", "NEXT_DAY" to "DATE", "SYS_GUID" to "RAW",
+        "EMPTY_BLOB" to "BLOB", "EMPTY_CLOB" to "CLOB"
     )
 
     /** VARCHAR2 for a value that converts to it, CLOB for a CLOB. */
@@ -51,7 +52,8 @@ internal object StandardFunctions {
         "UPPER" to 1..1, "LOWER" to 1..1, "REPLACE" to 2..3, "TRIM" to 1..1, "LTRIM" to 1..2, "RTRIM" to 1..2, "LPAD" to 2..3,
         "RPAD" to 2..3, "SUBSTR" to 2..3, "INSTR" to 2..4, "LENGTH" to 1..1, "ABS" to 1..1, "ROUND" to 1..2, "TRUNC" to 1..2,
         "CEIL" to 1..1, "FLOOR" to 1..1, "SQRT" to 1..1, "MOD" to 2..2, "POWER" to 2..2, "CONCAT" to 2..2, "NVL" to 2..2,
-        "GREATEST" to 1..Int.MAX_VALUE, "LEAST" to 1..Int.MAX_VALUE, "COALESCE" to 2..Int.MAX_VALUE
+        "GREATEST" to 1..Int.MAX_VALUE, "LEAST" to 1..Int.MAX_VALUE, "COALESCE" to 2..Int.MAX_VALUE,
+        "LENGTHB" to 1..1, "CARDINALITY" to 1..1, "EMPTY_BLOB" to 0..0, "EMPTY_CLOB" to 0..0
     )
 
     /** Whether [name] is a function this types. */
@@ -74,6 +76,14 @@ internal object StandardFunctions {
                 in TO_CHARACTER -> "PLS_INTEGER"
                 else -> null
             }
+            // NUMBER for a VARCHAR2, INTEGER for a CLOB or a BLOB.
+            "LENGTHB" -> when (first?.familyOrNull) {
+                CLOB, ProjectDatatypeFamily.BLOB -> "INTEGER"
+                in TO_CHARACTER -> "NUMBER"
+                else -> null
+            }
+            // Of a nested table; the caller checks that the argument is a collection.
+            "CARDINALITY" -> "PLS_INTEGER".takeIf { first?.familyOrNull == ProjectDatatypeFamily.COMPOSITE }
             in NUMERIC_WITH_INTEGER -> when {
                 first?.familyOrNull == DATETIME && name != "ABS" && first.rank == OverloadRank.DATE -> "DATE"
                 else -> numeric(arguments, integer = true)
