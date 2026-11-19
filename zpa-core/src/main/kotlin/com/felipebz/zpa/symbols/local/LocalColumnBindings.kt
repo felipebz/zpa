@@ -87,13 +87,19 @@ internal class LocalColumnBindings(
     private val plusJoined = IdentityHashMap<AstNode, Optional<Set<ColumnSource>>>()
 
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.mayBeOuterJoined]. */
-    fun mayBeOuterJoined(source: ColumnSource): Boolean {
+    fun mayBeOuterJoined(source: ColumnSource): Boolean = outerJoined(source) != false
+
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.isOuterJoined]. */
+    fun isOuterJoined(source: ColumnSource): Boolean = outerJoined(source) == true
+
+    /** Whether an outer join can give nulls for [source]: null when a name marked `(+)` in its query's `WHERE` is not decided. */
+    private fun outerJoined(source: ColumnSource): Boolean? {
         val node = source.node
         val clause = if (node.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE) node else node.parent.takeIf { it.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE }
         if (clause != null && ansiOuterJoined(clause)) return true
         val scope = owner(clause ?: node)?.takeIf { it.type in SCOPES } ?: return false
         val joined = plusJoined.getOrPut(scope) { Optional.ofNullable(plusJoinedSources(scope)) }
-        return joined.map { source in it }.orElse(true)
+        return joined.map { source in it }.orElse(null)
     }
 
     private fun ansiOuterJoined(clause: AstNode): Boolean {

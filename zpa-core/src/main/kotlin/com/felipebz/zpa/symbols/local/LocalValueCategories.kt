@@ -559,6 +559,9 @@ internal class LocalValueCategories(
     /** See [com.felipebz.zpa.api.PlSqlVisitorContext.mayBeOuterJoined]. */
     fun mayBeOuterJoined(source: ColumnSource): Boolean = columnBindings.mayBeOuterJoined(source)
 
+    /** See [com.felipebz.zpa.api.PlSqlVisitorContext.isOuterJoined]. */
+    fun isOuterJoined(source: ColumnSource): Boolean = columnBindings.isOuterJoined(source)
+
     /** The source a `TABLE_REFERENCE` of the file's static SQL is, as [columnBinding] reads it; null for any other node. */
     fun columnSource(reference: AstNode): ColumnSource? = columnBindings.source(reference)
 
@@ -579,6 +582,9 @@ internal class LocalValueCategories(
 
     /** [mayBeOuterJoined] of a source of the dynamic SQL [text]; null when the text was not analyzed. */
     fun mayBeOuterJoined(text: DynamicSqlText, source: ColumnSource): Boolean? = textBindings(text)?.mayBeOuterJoined(source)
+
+    /** [isOuterJoined] of a source of the dynamic SQL [text]; null when the text was not analyzed. */
+    fun isOuterJoined(text: DynamicSqlText, source: ColumnSource): Boolean? = textBindings(text)?.isOuterJoined(source)
 
     /** A numeric literal, or a value whose declared type is a number. */
     fun isNumber(expression: AstNode): Boolean {

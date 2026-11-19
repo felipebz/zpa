@@ -77,6 +77,7 @@ object CheckList {
                 RedundantExpectationCheck::class.java,
                 UnnecessaryLikeCheck::class.java,
                 NullTestOnNotNullColumnCheck::class.java,
-                FunctionWithoutReturnCheck::class.java)
+                FunctionWithoutReturnCheck::class.java,
+                OuterJoinDiscardedByConditionCheck::class.java)
 
 }

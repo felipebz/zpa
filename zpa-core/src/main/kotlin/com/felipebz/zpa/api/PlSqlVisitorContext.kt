@@ -282,6 +282,22 @@ open class PlSqlVisitorContext private constructor(private val rootTree: AstNode
         return valueCategories?.mayBeOuterJoined(source) ?: true
     }
 
+    /**
+     * Whether an outer join is proven to give nulls for the columns of [source], in the places [mayBeOuterJoined]
+     * lists. Only `true` is a proof; `false` also when a name marked `(+)` in that `WHERE` is not decided, or when the
+     * file was not analyzed.
+     */
+    @ZpaExperimentalApi
+    fun isOuterJoined(source: ColumnSource): Boolean {
+        if (localSemanticFacts == null) return false
+        val root = generateSequence(source.node) { it.parentOrNull }.last()
+        if (root !== rootTree) {
+            val text = dynamicSqlSupport?.textOf(root) ?: return false
+            return valueCategories?.isOuterJoined(text, source) ?: false
+        }
+        return valueCategories?.isOuterJoined(source) ?: false
+    }
+
     @OptIn(ZpaExperimentalApi::class)
     internal fun columnSource(reference: AstNode): ColumnSource? = valueCategories?.columnSource(reference)
 

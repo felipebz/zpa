@@ -1,0 +1,34 @@
+<p>
+On the rows an outer join adds for a source without a matching row, every column of that source is null. A condition
+that is never true for a null column of that source, written in the <code>WHERE</code> or in the <code>ON</code> of a
+later inner join, removes exactly those rows: the outer join then gives the same rows as an inner join. The code runs,
+but the rows without a match disappear.
+</p>
+
+<p>
+Comparisons, <code>LIKE</code>, <code>BETWEEN</code>, <code>IN</code> with a list and <code>IS NOT NULL</code> on a
+column of the outer-joined source are reported when they apply to the whole query: alone or joined to the rest of the
+condition by <code>AND</code>. A condition that keeps the null rows, such as <code>IS NULL</code>, <code>NVL</code> or
+an <code>OR</code> with <code>IS NULL</code>, is not reported. In the old join syntax, a condition whose column is
+marked <code>(+)</code> belongs to the outer join and is not reported either.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select count(*)
+  into n
+  from shelf s
+  left join crate c on c.shelf_id = s.id
+ where c.color = 'RED'; -- Noncompliant
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into n
+  from shelf s
+  left join crate c on c.shelf_id = s.id and c.color = 'RED';
+</pre>

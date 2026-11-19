@@ -1,0 +1,34 @@
+<p>
+Nas linhas que um outer join adiciona para uma origem sem linha correspondente, todas as colunas dessa origem são
+nulas. Uma condição que nunca é verdadeira para uma coluna nula dessa origem, escrita no <code>WHERE</code> ou no
+<code>ON</code> de um inner join posterior, remove exatamente essas linhas: o outer join passa a dar as mesmas linhas
+que um inner join. O código executa, mas as linhas sem correspondência desaparecem.
+</p>
+
+<p>
+Comparações, <code>LIKE</code>, <code>BETWEEN</code>, <code>IN</code> com uma lista e <code>IS NOT NULL</code> sobre
+uma coluna da origem do outer join são reportados quando se aplicam à consulta inteira: sozinhos ou ligados ao resto
+da condição por <code>AND</code>. Uma condição que mantém as linhas nulas, como <code>IS NULL</code>, <code>NVL</code>
+ou um <code>OR</code> com <code>IS NULL</code>, não é reportada. Na sintaxe antiga de join, uma condição cuja coluna é
+marcada com <code>(+)</code> pertence ao outer join e também não é reportada.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select count(*)
+  into n
+  from shelf s
+  left join crate c on c.shelf_id = s.id
+ where c.color = 'RED'; -- Não conforme
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into n
+  from shelf s
+  left join crate c on c.shelf_id = s.id and c.color = 'RED';
+</pre>
