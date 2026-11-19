@@ -7,7 +7,9 @@ package com.felipebz.zpa.oracle
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectIdentifier
+import com.felipebz.zpa.oracle.OracleMetadataSettings.Companion.dictionaryName
 import com.felipebz.zpa.oracle.metadata.OracleMetadataRequest
+import com.felipebz.zpa.oracle.metadata.OracleRelationName
 import org.sonar.api.config.Configuration
 import org.sonar.api.utils.MessageException
 import java.nio.file.Files
@@ -92,14 +94,14 @@ internal class OracleMetadataSettings(
                 throw failure("$URL_KEY must not contain credentials; use $USER_KEY and the password environment variable")
             }
             if (user.isEmpty()) throw failure("$URL_KEY requires $USER_KEY")
-            val schemas = schemaValues.onEach { requireDictionaryName(it, SCHEMAS_KEY) }.distinct()
+            val schemas = schemaValues.map { dictionaryName(it, SCHEMAS_KEY) }.distinct()
             val relations = relationValues.map { relation ->
-                val parts = relation.split('.')
-                if (parts.size != 2 || parts.any { it.isEmpty() }) {
+                val name = try {
+                    OracleRelationName.parse(relation)
+                } catch (_: IllegalArgumentException) {
                     throw failure("invalid $RELATIONS_KEY entry '$relation': expected SCHEMA.RELATION")
                 }
-                parts.forEach { requireDictionaryName(it, RELATIONS_KEY) }
-                parts[0] to parts[1]
+                name.schema to name.name
             }.distinct()
             if (schemas.isEmpty() && relations.isEmpty()) throw failure("$URL_KEY requires $SCHEMAS_KEY or $RELATIONS_KEY")
             val variable = configuration.get(PASSWORD_ENV_KEY).orElse(DEFAULT_PASSWORD_ENV).trim()
@@ -119,22 +121,22 @@ internal class OracleMetadataSettings(
             return OracleMetadataSettings(url, user, password, schemas, relations, driverJar, publicSynonyms)
         }
 
-        /** The configured default compilation schema as an exact identifier, or null. Independent of acquisition. */
+        /** The configured default compilation schema (read as [dictionaryName] reads it), or null. Independent of acquisition. */
         fun compilationSchema(configuration: Configuration): ProjectIdentifier? {
             val name = configuration.get(COMPILATION_SCHEMA_KEY).orElse("").trim()
             if (name.isEmpty()) return null
-            requireDictionaryName(name, COMPILATION_SCHEMA_KEY)
-            return ProjectIdentifier.fromSource("\"$name\"")
+            return ProjectIdentifier.fromSource("\"${dictionaryName(name, COMPILATION_SCHEMA_KEY)}\"")
         }
 
         /** A comma-separated parameter; undeclared keys are not multi-valued for the platform, so it is split here. */
         private fun list(configuration: Configuration, key: String): List<String> =
             configuration.get(key).orElse("").split(',').map { it.trim() }.filter { it.isNotEmpty() }
 
-        private fun requireDictionaryName(name: String, key: String) {
-            if (name.contains('"') || name.any { it.isWhitespace() }) {
-                throw failure("invalid $key entry '$name': use exact dictionary names (e.g. HR), without quotes")
-            }
+        /** [name] as Oracle reads an identifier: unquoted, upper-cased; in double quotes, exactly as written. */
+        private fun dictionaryName(name: String, key: String): String = try {
+            OracleRelationName.dictionaryNameOf(name)
+        } catch (_: IllegalArgumentException) {
+            throw failure("invalid $key entry '$name': write a schema name as in SQL (e.g. HR, or \"hr\" in quotes)")
         }
     }
 }

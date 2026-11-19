@@ -275,8 +275,9 @@ class PlSqlSquidSensorOracleTest {
         assertThat(failure(oracle - OracleMetadataSettings.USER_KEY)).contains("requires sonar.zpa.oracle.user")
         assertThat(failure(oracle - OracleMetadataSettings.SCHEMAS_KEY)).contains("sonar.zpa.oracle.schemas or sonar.zpa.oracle.relations")
         assertThat(failure(oracle + (OracleMetadataSettings.RELATIONS_KEY to "COUNTRIES"))).contains("expected SCHEMA.RELATION")
-        assertThat(failure(oracle + (OracleMetadataSettings.SCHEMAS_KEY to "\"hr\""))).contains("exact dictionary names")
-        assertThat(failure(oracle + (OracleMetadataSettings.COMPILATION_SCHEMA_KEY to "\"hr\""))).contains("exact dictionary names")
+        assertThat(failure(oracle + (OracleMetadataSettings.SCHEMAS_KEY to "h\"r"))).contains("invalid sonar.zpa.oracle.schemas entry")
+        assertThat(failure(oracle + (OracleMetadataSettings.COMPILATION_SCHEMA_KEY to "h r"))).contains("invalid sonar.zpa.oracle.compilationSchema entry")
+        assertThat(failure(oracle + (OracleMetadataSettings.RELATIONS_KEY to "\"ref.countries"))).contains("expected SCHEMA.RELATION")
         assertThat(failure(oracle + (OracleMetadataSettings.DRIVER_PATH_KEY to "missing/ojdbc17.jar"))).contains("does not name a JAR file")
         assertThat(failure(oracle, env = emptyMap())).contains("'ZPA_ORACLE_PASSWORD' is not set")
         assertThat(failure(oracle + (OracleMetadataSettings.PASSWORD_ENV_KEY to "MY_DB_PASSWORD"))).contains("'MY_DB_PASSWORD' is not set")
@@ -299,6 +300,20 @@ class PlSqlSquidSensorOracleTest {
         assertThat(settings.password).isEqualTo("other")
         assertThat(settings.schemas).containsExactly("HR")
         assertThat(settings.relations).containsExactly("REF" to "COUNTRIES", "REF" to "CITIES")
+    }
+
+    @Test
+    fun namesAreReadAsOracleReadsIdentifiers() {
+        val acquirer = StubAcquirer()
+        val names = mapOf(
+            OracleMetadataSettings.SCHEMAS_KEY to "hr, HR, \"Mixed\"",
+            OracleMetadataSettings.RELATIONS_KEY to "ref.countries, \"ref\".\"Odd.Name\""
+        )
+        sensor(oracle + names, acquirer).execute(context("hr_api.pks" to hrApi))
+        val settings = acquirer.settings!!
+        // Unquoted, upper-cased; quoted, exactly as written.
+        assertThat(settings.schemas).containsExactly("HR", "Mixed")
+        assertThat(settings.relations).containsExactly("REF" to "COUNTRIES", "ref" to "Odd.Name")
     }
 
     @Test
