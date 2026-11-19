@@ -91,7 +91,9 @@ internal class LocalNames(private val facts: LocalSemanticFacts) {
         if (reference.segments.isEmpty() && SqlBuiltinFunctions.mayTake(reference.name)) return unavailable()
         return when (val outcome = unwrap(facts.resolutions[index].first())) {
             is LocalResolution.SqlBuiltinOrLocal, is LocalResolution.Bound -> value(outcome)?.let { NameBinding.Local(declaration(it)) } ?: unavailable()
-            LocalResolution.SqlRelation -> NameBinding.NothingLocal(sqlColumnPossible = true)
+            // A table, view or alias of the statement takes the first name of `x.f(…)` when it has the column `f`, as for `x.f`.
+            LocalResolution.SqlRelation -> facts.sqlRelationAlternatives[index]?.let { columnOr(first(index, it.first())) }
+                ?: NameBinding.NothingLocal(sqlColumnPossible = true)
             LocalResolution.SpecificationMember -> NameBinding.Unknown(EnumSet.of(Uncertainty.DECLARATION_OUTSIDE_FILE))
             is LocalResolution.Incomplete -> {
                 val provisional = unwrap(outcome.provisional)

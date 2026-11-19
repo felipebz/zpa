@@ -150,18 +150,19 @@ internal class LocalColumnBindings(
         else -> unavailable()
     }
 
-    /** `q.col.method(…)`: a method of a column; `f(…)` and `q.f(…)` are calls. */
+    /**
+     * `q.col.method(…)`: a method of a column, whose name answers as `q.col` does in the same place; `f(…)` and
+     * `q.f(…)` are calls, and so is a name whose qualifier is no source.
+     */
     private fun methodCallee(name: AstNode, start: AstNode, segments: List<OracleIdentifier>): ColumnBinding {
         if (segments.size < 3) return unavailable()
-        return when (val capture = qualified(name, start, segments.dropLast(1))) {
-            is Capture.Found -> capture.binding
-            // A PL/SQL call may take the whole name (`schema.pkg.f`, `pkg.v.method`); in a SQL statement text none does.
-            is Capture.Lacking -> if (dynamic?.isSqlStatement == true) columnOf(capture.source, capture.column, false) else plSqlNameUndecided(capture)
-            null -> unavailable()
-        }
+        return qualifiedName(name, start, segments.dropLast(1), unavailable())
     }
 
-    private fun qualifiedName(name: AstNode, start: AstNode, segments: List<OracleIdentifier>): ColumnBinding {
+    private fun qualifiedName(
+        name: AstNode, start: AstNode, segments: List<OracleIdentifier>,
+        notASource: ColumnBinding = ColumnBinding.PlSqlName(PlSqlNameReason.QUALIFIER_NOT_A_SOURCE)
+    ): ColumnBinding {
         val last = segments.last()
         val capture = qualified(name, start, segments)
         // `seq.NEXTVAL`, unless a source the qualifier names has a column of that name.
@@ -171,7 +172,7 @@ internal class LocalColumnBindings(
         return when (capture) {
             is Capture.Found -> capture.unverified?.let { unverified(name, capture.binding, it, segments) } ?: capture.binding
             is Capture.Lacking -> lacking(name, capture, segments)
-            null -> ColumnBinding.PlSqlName(PlSqlNameReason.QUALIFIER_NOT_A_SOURCE)
+            null -> notASource
         }
     }
 

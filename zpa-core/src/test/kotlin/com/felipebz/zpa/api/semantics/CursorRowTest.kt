@@ -404,6 +404,56 @@ class CursorRowTest {
     }
 
     @Test
+    fun theLoopRecordOfACursorWithAReturnTypeHasThatRow() {
+        val text = """
+            create package pk_cur as
+              cursor c_h return order_head%rowtype;
+              cursor c_q is select order_id a from order_head;
+              procedure p;
+            end;
+            /
+            create package body pk_cur as
+              cursor c_h return order_head%rowtype is select order_id a, head_no b, customer c from order_head;
+              procedure p is
+                cursor c_l is select order_id a from order_head;
+                v c_h%rowtype;
+                v_line order_head%rowtype;
+                x number;
+              begin
+                x := v.a;
+                for r in c_q loop x := r.a; end loop;
+                for r in c_l loop x := r.a; end loop;
+                for r in (select order_id a from order_head) loop x := r.a; end loop;
+                for r in c_h loop x := r.a + r.head_no; end loop;
+                for r in pk_cur.c_h loop x := r.a + r.head_no; end loop;
+                x := v_line.a + v_line.head_no;
+              end;
+            end;
+            /
+            create procedure p_out is
+              x number;
+            begin
+              for r in pk_cur.c_h loop x := r.a + r.head_no; end loop;
+            end;
+            /
+            """.trimIndent() + "\n"
+        // Oracle: a loop over c_h has ORDER_HEAD's columns, in the body after the query as anywhere else (r.a is
+        // PLS-00302, r.head_no compiles), as a variable of ORDER_HEAD%ROWTYPE has; a %ROWTYPE of c_h declared there has
+        // the query's A, B, C.
+        val column = "Unavailable(NOT_A_COVERED_NAME)"
+        assertThat(fields(text)).containsExactly(
+            "15:v.a=Field(SELECT_ITEM#0@8:58)",
+            "16:r.a=Field(SELECT_ITEM#0@3:32)",
+            "17:r.a=Field(SELECT_ITEM#0@10:34)",
+            "18:r.a=Field(SELECT_ITEM#0@18:30)",
+            "19:r.a=$column", "19:r.head_no=$column",
+            "20:r.a=$column", "20:r.head_no=$column",
+            "21:v_line.a=$column", "21:v_line.head_no=$column",
+            "28:r.a=$column", "28:r.head_no=$column"
+        )
+    }
+
+    @Test
     fun aKeywordAfterAnExpressionNamesNoField() {
         val probe = """
             create package pk_probe as

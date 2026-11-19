@@ -17,6 +17,7 @@ import com.felipebz.zpa.api.project.*
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.squid.AstScanner
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
@@ -321,6 +322,22 @@ class ColumnBindingTest {
             // REF takes an alias; a method called on a column reads that column.
             "16:ol=source OL",
             "16:ol.amount.to_text=column SHOP.ORDER_LINE.AMOUNT"
+        )
+    }
+
+    @Test
+    fun aMethodAfterAColumnAnswersAsTheColumn() {
+        val sources = listOf("order_head", "order_note", "zz_crate_unknown")
+        val rows = answers(procedure(*sources.map {
+            "for q in (select 'x' doc from dual) loop select q.doc, q.doc.get_text(), q.doc.get_text(1), q.doc.get_text into v, v, v, v from $it q; end loop;"
+        }.toTypedArray())).filter { ":q.doc" in it }
+        val byLine = rows.groupBy({ it.substringBefore(':') }, { it.substringAfter('=') })
+        // The loop record takes the name when the source lacks the column: a complete source that lacks it leaves only
+        // the record, the others leave the column a candidate.
+        assertThat(byLine).containsExactly(
+            entry("8", List(4) { "plsql NO_SOURCE_HAS_IT" }),
+            entry("9", List(4) { "Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column SHOP.ORDER_NOTE.DOC unverified" }),
+            entry("10", List(4) { "Unknown[SOURCE_COLUMNS_UNKNOWN] maybe column Q.DOC unverified" })
         )
     }
 

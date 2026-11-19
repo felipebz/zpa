@@ -11,6 +11,7 @@ import com.felipebz.flr.api.AstNode
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlPunctuator
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
+import com.felipebz.zpa.api.project.ProjectTypeReference
 import com.felipebz.zpa.api.semantics.*
 import com.felipebz.zpa.project.*
 import java.util.*
@@ -287,9 +288,12 @@ internal class LocalFields(
             return if (hidden.isEmpty()) NO_SUCH_FIELD else FieldBinding.Unknown(hidden.mapTo(EnumSet.noneOf(Uncertainty::class.java)) { it.usageUncertainty() })
         }
         walk.projectMember(base, name)?.let { return member(it) }
-        // A value of a type the project names but does not declare (not found, a predefined type): no field of the file.
         val description = base.description ?: return null
-        return OUTSIDE_FILE.takeIf { base.terminal == LocalTypeEvidence.Terminal.PROJECT && !description.anchor.isPresent }
+        if (base.terminal != LocalTypeEvidence.Terminal.PROJECT) return null
+        // A relation's `%ROWTYPE`, also the row a loop over a cursor with a RETURN type has: its columns, not fields.
+        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return NOT_A_FIELD
+        // A value of a type the project names but does not declare (not found, a predefined type): no field of the file.
+        return OUTSIDE_FILE.takeIf { !description.anchor.isPresent }
     }
 
     /**

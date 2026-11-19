@@ -865,8 +865,9 @@ class UsageEvidenceTest {
             // Neither a relation of the statement nor one of an enclosing query takes `v(1)`: Oracle reads the collection.
             "9:L_NUMS=$lNums",
             "10:COUNT=Unavailable(NOT_A_COVERED_NAME)", "10:L_NUMS=$lNums",
-            // The alias takes the first name of an object column's method; without one, the local object does.
-            "11:L_XML=NothingLocal(column possible)",
+            // The alias takes the first name of an object column's method when its relation has that column, else the
+            // local object does, as for a qualified name; without an alias, the local object does.
+            "11:L_XML=ColumnOrLocal(VARIABLE@7:2)",
             "12:L_XML=Local(VARIABLE@7:2)",
             // A package or schema function keeps no answer; its argument is the local collection.
             "13:PK_LINES_UTIL=Unavailable(NOT_A_COVERED_NAME)", "13:L_NUMS=$lNums",
