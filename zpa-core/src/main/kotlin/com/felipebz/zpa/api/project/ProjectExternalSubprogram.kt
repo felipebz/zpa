@@ -71,29 +71,40 @@ class ProjectExternalSubprogram private constructor(
             parameters: List<ProjectExternalSubprogramParameter>,
             result: ProjectExternalDatatype?,
             resultPackageType: String? = null
-        ): ProjectExternalSubprogram = create(owner, packageName, name, overload, true, parameters, result, resultPackageType)
+        ): ProjectExternalSubprogram = ProjectExternalSubprogram(
+            dictionaryIdentifier(owner, "schema"),
+            packageName?.let { dictionaryIdentifier(it, "package") },
+            dictionaryIdentifier(name, "subprogram"),
+            overload,
+            true,
+            distinct(owner, name, parameters),
+            result,
+            resultPackageType?.let { dictionaryIdentifier(it, "type") })
 
         /** A procedure; the arguments as for [function]. */
         @JvmStatic
-        fun procedure(owner: String, packageName: String?, name: String, overload: Int?, parameters: List<ProjectExternalSubprogramParameter>) =
-            create(owner, packageName, name, overload, false, parameters, null, null)
-
-        private fun create(
+        fun procedure(
             owner: String,
             packageName: String?,
             name: String,
             overload: Int?,
-            function: Boolean,
-            parameters: List<ProjectExternalSubprogramParameter>,
-            result: ProjectExternalDatatype?,
-            resultPackageType: String?
-        ): ProjectExternalSubprogram {
+            parameters: List<ProjectExternalSubprogramParameter>
+        ) =
+            ProjectExternalSubprogram(
+                dictionaryIdentifier(owner, "schema"),
+                packageName?.let { dictionaryIdentifier(it, "package") },
+                dictionaryIdentifier(name, "subprogram"),
+                overload,
+                false,
+                distinct(owner, name, parameters),
+                null,
+                null
+            )
+
+        private fun distinct(owner: String, name: String, parameters: List<ProjectExternalSubprogramParameter>): List<ProjectExternalSubprogramParameter> {
             val list = parameters.toList()
             require(list.map { it.name }.toSet().size == list.size) { "Duplicate parameter in $owner.$name" }
-            return ProjectExternalSubprogram(
-                dictionaryIdentifier(owner, "schema"), packageName?.let { dictionaryIdentifier(it, "package") },
-                dictionaryIdentifier(name, "subprogram"), overload, function, list, result, resultPackageType?.let { dictionaryIdentifier(it, "type") }
-            )
+            return list
         }
     }
 }
