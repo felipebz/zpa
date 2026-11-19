@@ -79,6 +79,7 @@ object CheckList {
                 NullTestOnNotNullColumnCheck::class.java,
                 FunctionWithoutReturnCheck::class.java,
                 OuterJoinDiscardedByConditionCheck::class.java,
-                ColumnHidesPlSqlNameCheck::class.java)
+                ColumnHidesPlSqlNameCheck::class.java,
+                NotInWithNullCheck::class.java)
 
 }

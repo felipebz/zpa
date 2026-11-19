@@ -1,0 +1,41 @@
+<p>
+<code>x NOT IN (a, b, c)</code> significa <code>x &lt;&gt; a AND x &lt;&gt; b AND x &lt;&gt; c</code>. Quando um dos
+valores é nulo, a sua comparação é desconhecida para qualquer <code>x</code>, então a condição inteira nunca é
+verdadeira: um <code>WHERE</code> com ela não retorna linhas, e um <code>IF</code> nunca executa o seu ramo. O Oracle
+também trata <code>''</code> como nulo. <code>x &lt;&gt; ALL (subconsulta)</code> é a mesma condição.
+</p>
+
+<p>
+Esta regra reporta um <code>NOT IN</code> cuja lista contém o literal <code>NULL</code> ou <code>''</code>, que nunca é
+verdadeiro. Ela também reporta um <code>NOT IN</code> ou <code>&lt;&gt; ALL</code> sobre uma subconsulta cuja única
+coluna pode ser nula: os metadados do banco dizem que a coluna aceita nulo, ou um outer join da subconsulta gera nulos
+para ela, e nenhuma condição do <code>WHERE</code> da subconsulta rejeita nulo para essa coluna. A consulta funciona até
+um nulo ser selecionado, e então passa a não retornar linhas, sem erro. Sem os metadados, só as listas são verificadas.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- bin_item.rack_id pode ser nulo
+select count(*)
+  into idle_racks
+  from rack
+ where id not in (select rack_id from bin_item);
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into idle_racks
+  from rack r
+ where not exists (select 1 from bin_item b where b.rack_id = r.id);
+</pre>
+
+<pre>
+select count(*)
+  into idle_racks
+  from rack
+ where id not in (select rack_id from bin_item where rack_id is not null);
+</pre>

@@ -1,0 +1,41 @@
+<p>
+<code>x NOT IN (a, b, c)</code> means <code>x &lt;&gt; a AND x &lt;&gt; b AND x &lt;&gt; c</code>. When one of the values
+is null, its comparison is unknown for every <code>x</code>, so the whole condition is never true: a <code>WHERE</code>
+with it returns no rows, and an <code>IF</code> never takes its branch. Oracle treats <code>''</code> as null too.
+<code>x &lt;&gt; ALL (subquery)</code> is the same condition.
+</p>
+
+<p>
+This rule reports a <code>NOT IN</code> whose list holds the literal <code>NULL</code> or <code>''</code>, which is never
+true. It also reports a <code>NOT IN</code> or <code>&lt;&gt; ALL</code> over a subquery whose only column may be null:
+the database metadata says the column is nullable, or an outer join in the subquery gives nulls for it, and no
+condition of the subquery's <code>WHERE</code> rejects null for that column. The query is right until a null is
+selected, and then it silently returns no rows. Without the metadata only the lists are checked.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- bin_item.rack_id may be null
+select count(*)
+  into idle_racks
+  from rack
+ where id not in (select rack_id from bin_item);
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into idle_racks
+  from rack r
+ where not exists (select 1 from bin_item b where b.rack_id = r.id);
+</pre>
+
+<pre>
+select count(*)
+  into idle_racks
+  from rack
+ where id not in (select rack_id from bin_item where rack_id is not null);
+</pre>

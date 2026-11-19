@@ -6,7 +6,6 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.ConditionsGrammar
 import com.felipebz.zpa.api.DmlGrammar
 import com.felipebz.zpa.api.PlSqlGrammar
 import com.felipebz.zpa.api.PlSqlKeyword
@@ -28,19 +27,19 @@ class OuterJoinDiscardedByConditionCheck : AbstractBaseCheck() {
     override fun visitNode(node: AstNode) {
         val from = node.getFirstChildOrNull(DmlGrammar.FROM_CLAUSE) ?: return
         node.getFirstChildOrNull(DmlGrammar.WHERE_CLAUSE)?.lastChild?.let { where ->
-            conjuncts(where).forEach { condition -> check(condition, node) { context.isOuterJoined(it) } }
+            NullRejectingConditions.conjuncts(where).forEach { condition -> check(condition, node) { context.isOuterJoined(it) } }
         }
         for (join in from.getDescendants(DmlGrammar.INNER_CROSS_JOIN_CLAUSE)) {
             if (join.getFirstAncestorOrNull(DmlGrammar.QUERY_BLOCK) !== node) continue
             val on = join.getFirstChildOrNull(DmlGrammar.ON_OR_USING_EXPRESSION)
                 ?.takeIf { it.firstChild.type === PlSqlKeyword.ON } ?: continue
-            conjuncts(on.lastChild).forEach { condition -> check(condition, node) { nullableBefore(it, join) } }
+            NullRejectingConditions.conjuncts(on.lastChild).forEach { condition -> check(condition, node) { nullableBefore(it, join) } }
         }
     }
 
     private fun check(condition: AstNode, block: AstNode, nullable: (ColumnSource) -> Boolean) {
         if (condition.hasDescendant(PlSqlGrammar.OUTER_JOIN_PLUS_SIGN)) return
-        for (operand in nullRejectingOperands(condition)) {
+        for (operand in NullRejectingConditions.operands(condition)) {
             if (operand.type !== PlSqlGrammar.VARIABLE_NAME && operand.type !== PlSqlGrammar.MEMBER_EXPRESSION) continue
             val source = when (val binding = context.columnBinding(operand)) {
                 is ColumnBinding.Column -> binding.source
@@ -77,46 +76,6 @@ class OuterJoinDiscardedByConditionCheck : AbstractBaseCheck() {
         val clause = if (node.type === DmlGrammar.DML_TABLE_EXPRESSION_CLAUSE) node else node.parent
         clause.getFirstChildOrNull(DmlGrammar.ALIAS)?.let { return it.lastToken.originalValue }
         return source.alias ?: node.tokens.joinToString("") { it.originalValue }
-    }
-
-    /** The operands of [condition] a null makes it never true, when it is a condition that rejects null. */
-    private fun nullRejectingOperands(condition: AstNode): List<AstNode> = when (condition.type) {
-        PlSqlGrammar.COMPARISON_EXPRESSION -> {
-            val operator = condition.getFirstChildOrNull(ConditionsGrammar.RELATIONAL_OPERATOR)
-            when {
-                // `x <> ALL (…)` is true for a null x when the list is empty.
-                operator != null -> if (operator.children.size == 1) listOf(
-                    condition.firstChild,
-                    condition.lastChild
-                ) else emptyList()
-
-                // `x NOT BETWEEN a AND b` is `x < a OR x > b`: a null bound leaves the other comparison to decide.
-                condition.hasDirectChildren(PlSqlKeyword.BETWEEN) ->
-                    if (condition.hasDirectChildren(PlSqlKeyword.NOT)) listOf(condition.firstChild) else condition.children.filter { it.type !is PlSqlKeyword }
-                else -> emptyList()
-            }
-        }
-
-        ConditionsGrammar.LIKE_CONDITION -> condition.children.filter { it.type !is PlSqlKeyword }.take(2)
-        PlSqlGrammar.IN_EXPRESSION ->
-            if (condition.hasDescendant(DmlGrammar.SELECT_EXPRESSION)) emptyList() else listOf(condition.firstChild)
-
-        ConditionsGrammar.BOOLEAN_TEST_CONDITION ->
-            if (condition.hasDirectChildren(PlSqlKeyword.NOT) && condition.hasDirectChildren(PlSqlGrammar.NULL_LITERAL)) listOf(
-                condition.firstChild
-            )
-            else emptyList()
-
-        else -> emptyList()
-    }
-
-    /** The top-level conjuncts of [expression]: itself, or the operands of its `AND` chain, through parentheses. */
-    private fun conjuncts(expression: AstNode): List<AstNode> = when {
-        expression.type === PlSqlGrammar.AND_EXPRESSION -> expression.children.filter { it.type !== PlSqlKeyword.AND }
-            .flatMap(::conjuncts)
-
-        expression.type === PlSqlGrammar.BRACKED_EXPRESSION && expression.children.size == 3 -> conjuncts(expression.children[1])
-        else -> listOf(expression)
     }
 
     /**
