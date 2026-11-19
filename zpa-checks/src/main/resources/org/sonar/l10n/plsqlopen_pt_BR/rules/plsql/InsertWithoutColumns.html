@@ -3,13 +3,13 @@ Especifique as colunas em um comando insert para evitar que o código pare de fu
 </p>
 
 <!-- section: fix -->
-<h2>Código em desconformidade</h2>
+<h2>Exemplo de código não conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 insert into tab values (1);
 </pre>
 
-<h2>Código correto</h2>
+<h2>Solução conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="compliant">
 insert into tab (col) values (1);

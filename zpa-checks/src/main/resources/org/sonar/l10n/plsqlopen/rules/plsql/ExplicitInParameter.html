@@ -3,12 +3,12 @@ If not set, the parameter mode is IN. However, defining it explicitly does make 
 </p>
 
 <pre>
-CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- violation
+CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- Noncompliant
 BEGIN
   NULL;
 END;
 
-CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- correct, the parameter mode is defined
+CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- Compliant; the parameter mode is defined
 BEGIN
   NULL;
 END;

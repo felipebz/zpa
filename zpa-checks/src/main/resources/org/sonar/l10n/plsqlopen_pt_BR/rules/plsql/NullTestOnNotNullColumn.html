@@ -13,7 +13,7 @@ um outer join que não tem linha correspondente é nula mesmo quando a tabela n�
 </p>
 
 <!-- section: fix -->
-<h2>Código em desconformidade</h2>
+<h2>Exemplo de código não conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 -- shipments.tracking_code é declarada NOT NULL
@@ -23,7 +23,7 @@ select count(*)
  where tracking_code is null;
 </pre>
 
-<h2>Código correto</h2>
+<h2>Solução conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="compliant">
 select count(*)

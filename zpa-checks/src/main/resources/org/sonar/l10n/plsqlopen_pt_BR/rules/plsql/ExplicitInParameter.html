@@ -3,12 +3,12 @@ Se não for informado, o modo padrão dos parâmetros é IN. Porém, definir ele
 </p>
 
 <pre>
-CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- violação
+CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- Não conforme
 BEGIN
   NULL;
 END;
 
-CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- correto, o modo do parâmetro está definido
+CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- Conforme; o modo do parâmetro está definido
 BEGIN
   NULL;
 END;

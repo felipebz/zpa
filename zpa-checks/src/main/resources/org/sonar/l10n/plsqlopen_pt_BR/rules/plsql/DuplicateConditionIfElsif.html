@@ -10,19 +10,19 @@ na manutenção do código e obviamente pode levar a um comportamento inesperado
 </p>
 
 <!-- section: fix -->
-<h2>Código em desconformidade</h2>
+<h2>Exemplo de código não conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 IF (param = 1) THEN
   open();
 ELSIF (param = 2) THEN
   close();
-ELSIF (param = 1) THEN // Incorreto
+ELSIF (param = 1) THEN -- Não conforme
   move();
 END IF;
 </pre>
 
-<h2>Código correto</h2>
+<h2>Solução conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="compliant">
 IF (param = 1) THEN

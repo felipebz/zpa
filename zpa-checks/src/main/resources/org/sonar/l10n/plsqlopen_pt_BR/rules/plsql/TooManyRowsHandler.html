@@ -3,7 +3,7 @@ Quando um comando SELECT INTO causa a exceção pré-definida TOO_MANY_ROWS os v
 </p>
 
 <!-- section: fix -->
-<h2>Código em desconformidade</h2>
+<h2>Exemplo de código não conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 begin
@@ -16,7 +16,7 @@ exception
 end;
 </pre>
 
-<h2>Código correto</h2>
+<h2>Solução conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="compliant">
 begin

@@ -2,13 +2,13 @@
 na pior é um erro de programação. Se a mesma lógica é realmente necessária para as duas situações, então as condições devem ser combinadas.</p>
 
 <!-- section: fix -->
-<h2>Código em desconformidade</h2>
+<h2>Exemplo de código não conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="noncompliant">
 IF var BETWEEN 0 AND 10 THEN
   do_the_thing();
 ELSIF var BETWEEN 10 AND 20 THEN
-  do_the_thing(); -- Noncompliant; duplicates first condition
+  do_the_thing(); -- Não conforme; duplica a primeira condição
 ELSIF var BETWEEN 20 AND 50 THEN
   do_the_another_thing();
 ELSE
@@ -16,7 +16,7 @@ ELSE
 END IF;
 </pre>
 
-<h2>Código correto</h2>
+<h2>Solução conforme</h2>
 
 <pre data-diff-id="1" data-diff-type="compliant">
 IF var BETWEEN 0 AND 10 THEN

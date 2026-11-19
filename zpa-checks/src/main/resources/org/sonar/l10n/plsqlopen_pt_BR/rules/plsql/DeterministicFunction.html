@@ -13,7 +13,7 @@ Para funções de pacote, a declaração deve ser DETERMINISTIC na especificaç�
 </p>
 
 <!-- section: fix -->
-<h2>Código em desconformidade</h2>
+<h2>Exemplo de código não conforme</h2>
 
 <pre>
 CREATE FUNCTION current_value RETURN DATE DETERMINISTIC IS
@@ -22,7 +22,7 @@ BEGIN
 END;
 </pre>
 
-<h2>Código correto</h2>
+<h2>Solução conforme</h2>
 
 <pre>
 CREATE FUNCTION double_value(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS

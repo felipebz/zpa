@@ -8,10 +8,10 @@ O tipo de dados CHAR não oferece nenhuma vantagem sobre o VARCHAR2 e faz com qu
 
 <pre>
 declare
-  var1 varchar(10); -- violação
-  var2 char(10); -- violação
+  var1 varchar(10); -- Não conforme
+  var2 char(10); -- Não conforme
   
-  var3 varchar2(10); -- ok
+  var3 varchar2(10); -- Conforme
 begin
   null;
 end;
