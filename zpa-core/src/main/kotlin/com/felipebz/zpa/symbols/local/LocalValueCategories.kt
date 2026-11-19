@@ -445,6 +445,7 @@ internal class LocalValueCategories(
      */
     private fun described(region: LocalRegionId, description: ProjectExternalTypeDescription, seen: Set<ProjectDeclarationId> = emptySet()): ValueCategory {
         if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return rowtype(region, description)
+        resolvedColumn(description)?.let { return it }
         val source = description.source
         return when (source.status) {
             ProjectTypeDescription.Status.DECLARED_TYPE -> shaped(region, source.declaration.orElse(null) as? ProjectShapedTypeView, seen)
@@ -455,6 +456,19 @@ internal class LocalValueCategories(
                 else unknown(Uncertainty.DECLARATION_OUTSIDE_FILE)
             else -> unknown(Uncertainty.DECLARATION_OUTSIDE_FILE)
         }
+    }
+
+    /**
+     * A `%TYPE` of a column the metadata proves: the column's family, as a dictionary datatype has it. Null for any other
+     * description, a column without a datatype, one of a type with an owner, or one of a type with no family.
+     */
+    private fun resolvedColumn(description: ProjectExternalTypeDescription): ValueCategory? {
+        if (description.status != ProjectExternalTypeDescription.Status.RESOLVED) return null
+        val datatype = description.lookup.flatMap { it.column }.flatMap { it.datatype }.orElse(null) ?: return null
+        if (datatype.typeOwner.isPresent) return null
+        // A type zpa gives no family (an object type written without its owner, LONG) is no predefined scalar.
+        val family = DatatypeFamilies.ofExternal(datatype)?.let(::scalarFamily) ?: return null
+        return ValueCategory.Scalar(family)
     }
 
     /**

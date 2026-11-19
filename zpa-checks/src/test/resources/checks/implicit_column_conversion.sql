@@ -3,6 +3,8 @@ create table box_tag (tag varchar2(5), weight number);
 create or replace procedure run_check(p_num number, p_code varchar2, p_day date) is
   n number;
   v_code varchar2(5);
+  v_id crate.id%type;
+  v_weight box_tag.weight%type;
 begin
   select count(*) into n from crate where code = 10; -- Noncompliant {{Oracle converts column "CODE" to a number to compare it: an index on it is not used, and a value that is not a number raises ORA-01722.}}
   select count(*) into n from crate where code = p_num; -- Noncompliant
@@ -18,6 +20,8 @@ begin
   select count(*) into n from crate group by code having code > 1; -- Noncompliant
   select count(*) into n from crate start with code = 1 connect by prior id = id; -- Noncompliant
   select count(*) into n from box_tag where tag = 10; -- Noncompliant
+  select count(*) into n from crate where code = v_id; -- Noncompliant
+  select count(*) into n from box_tag where tag = v_weight; -- Noncompliant
 
   -- Not reported.
   select count(*) into n from crate where code = '10';
