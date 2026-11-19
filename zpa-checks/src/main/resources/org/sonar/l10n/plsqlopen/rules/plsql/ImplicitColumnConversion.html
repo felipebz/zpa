@@ -1,0 +1,42 @@
+<p>
+When Oracle compares a character value with a number, it converts the character value to a number; when it compares
+it with a date, it converts it to a date. If the character side is a column, Oracle converts the value of every row.
+A normal index on that column is then not used for the condition, and a row whose value is not a valid number or date
+raises an error (ORA-01722 for a number), even a row the query would not return. The code compiles, and it fails or
+slows down only with certain data.
+</p>
+
+<p>
+This rule reports a comparison in a SQL condition (<code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>,
+<code>&gt;</code>, <code>IN</code> with a list, <code>BETWEEN</code>) between a <code>VARCHAR2</code>, <code>CHAR</code>,
+<code>NVARCHAR2</code> or <code>NCHAR</code> column and a number or a date: a literal, a PL/SQL variable or parameter,
+or a column of another source. It uses the column types read from the database, or those of the tables the project's
+sources create, and reports nothing without them.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- rack.label is VARCHAR2
+select count(*)
+  into found
+  from rack
+ where label = 42;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into found
+  from rack
+ where label = '42';
+</pre>
+
+<pre>
+select count(*)
+  into found
+  from rack
+ where label = to_char(p_number);
+</pre>

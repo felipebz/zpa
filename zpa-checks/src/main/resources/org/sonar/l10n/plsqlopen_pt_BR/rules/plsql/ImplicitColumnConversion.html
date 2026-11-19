@@ -1,0 +1,42 @@
+<p>
+Quando o Oracle compara um valor de caracteres com um número, ele converte o valor de caracteres para número; quando o
+compara com uma data, ele o converte para data. Se o lado de caracteres é uma coluna, o Oracle converte o valor de cada
+linha. Um índice normal nessa coluna deixa de ser usado para a condição, e uma linha cujo valor não é um número ou uma
+data válida lança um erro (ORA-01722 para número), mesmo uma linha que a consulta não retornaria. O código compila, e só
+falha ou fica lento com certos dados.
+</p>
+
+<p>
+Esta regra reporta uma comparação em uma condição SQL (<code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>,
+<code>&gt;</code>, <code>IN</code> com lista, <code>BETWEEN</code>) entre uma coluna <code>VARCHAR2</code>,
+<code>CHAR</code>, <code>NVARCHAR2</code> ou <code>NCHAR</code> e um número ou uma data: um literal, uma variável ou um
+parâmetro PL/SQL, ou uma coluna de outra origem. Ela usa os tipos das colunas lidos do banco, ou os das tabelas criadas
+nos fontes do projeto, e não reporta nada sem eles.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- rack.label é VARCHAR2
+select count(*)
+  into found
+  from rack
+ where label = 42;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into found
+  from rack
+ where label = '42';
+</pre>
+
+<pre>
+select count(*)
+  into found
+  from rack
+ where label = to_char(p_number);
+</pre>

@@ -35,7 +35,21 @@ internal class LocalValueCategories(
     private val model = facts.model
     private val referencesByStart = referenceStarts(facts.references) { it.lastSegmentContext in CONTEXTS }
 
-    fun category(name: AstNode): ValueCategory = hostVariable(name) ?: valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: unavailable()
+    fun category(name: AstNode): ValueCategory {
+        val first = hostVariable(name) ?: valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: return unavailable()
+        // A name of static SQL that no column takes ([ColumnBinding.PlSqlName]) is the PL/SQL value it names.
+        if ((first as? ValueCategory.Unknown)?.reasons?.contains(Uncertainty.SQL_NAME_MAY_BE_COLUMN) != true) return first
+        if (columnBinding(name) !is ColumnBinding.PlSqlName) return first
+        noColumnAt = name.token.line to name.token.column
+        try {
+            return valueOf(name)?.let { (region, evidence) -> of(region, evidence) } ?: first
+        } finally {
+            noColumnAt = null
+        }
+    }
+
+    /** The start of the SQL name [category] retries with columns excluded; null otherwise. */
+    private var noColumnAt: Pair<Int, Int>? = null
 
     /** A Forms host variable `:qualifier.name` whose type the [forms] metadata gives; null for any other node, or no type. */
     private fun hostVariable(name: AstNode): ValueCategory? {
@@ -338,7 +352,7 @@ internal class LocalValueCategories(
     private fun lastStep(reference: LocalReference, last: LocalResolution): LocalTypeEvidence = when (last) {
         // In SQL a column of the same name would take it.
         is LocalResolution.SqlColumnOrLocal ->
-            if (reference.sql?.excludesColumn(reference.name) == true) walk.value(last.declaration)
+            if (reference.sql?.excludesColumn(reference.name) == true || noColumnAt == (reference.range.startLine to reference.range.startColumn)) walk.value(last.declaration)
             else LocalTypeEvidence.unknown("a column may take it", incomplete = LocalResolution.Incomplete(emptySet(), EnumSet.of(LocalLookupGap.SQL_COLUMN_UNKNOWN), last))
         // `name(…)` in SQL: the local value, whose elements the call reads.
         is LocalResolution.SqlBuiltinOrLocal -> last.declarations.singleOrNull()?.let(walk::value) ?: LocalTypeEvidence.unknown("several declarations")

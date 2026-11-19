@@ -80,6 +80,7 @@ object CheckList {
                 FunctionWithoutReturnCheck::class.java,
                 OuterJoinDiscardedByConditionCheck::class.java,
                 ColumnHidesPlSqlNameCheck::class.java,
-                NotInWithNullCheck::class.java)
+                NotInWithNullCheck::class.java,
+                ImplicitColumnConversionCheck::class.java)
 
 }
