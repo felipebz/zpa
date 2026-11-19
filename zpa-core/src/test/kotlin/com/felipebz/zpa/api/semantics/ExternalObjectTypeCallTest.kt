@@ -222,8 +222,8 @@ class ExternalObjectTypeCallTest {
             "begin\n" +
             "  n := pk_bin.put(o);\n" +
             "end;\n/\n"
-        // BIN_GONE may be under BIN_SHAPE: neither object formal is ruled out.
-        assertThat(answers(bin, user, "pk_bin.put", bins)).containsExactly("4:AMBIGUOUS")
+        // BIN_GONE may be under BIN_SHAPE: that formal is not ruled out. No type is under ANYDATA, which is not an object type.
+        assertThat(answers(bin, user, "pk_bin.put", bins, bindings = true)).containsExactly("4:RESOLVED (a bin_shape) [UNKNOWN]")
     }
 
     @Test

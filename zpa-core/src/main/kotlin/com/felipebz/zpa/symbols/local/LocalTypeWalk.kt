@@ -970,7 +970,7 @@ internal class LocalTypeWalk(
                 val described = snapshot.describeExternalType(returnType, cursor.owner, metadata, compilationSchema(region))
                 return LocalTypeEvidence(ProjectArgumentType.described(described, cursor.owner), LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described)
             }
-            return LocalTypeEvidence(ProjectArgumentType.composite(), LocalTypeEvidence.Terminal.COMPOSITE, followed.toList(), null, anchored, selectList = fact.selectList)
+            return LocalTypeEvidence(ProjectArgumentType.composite(CompositeKind.ROW), LocalTypeEvidence.Terminal.COMPOSITE, followed.toList(), null, anchored, selectList = fact.selectList)
         }
 
         /** The element type of the local collection [holder] holds. */
@@ -1046,7 +1046,7 @@ internal class LocalTypeWalk(
                 followed += target.id
                 // A forward declaration with a RETURN type writes no query: Oracle gives its %ROWTYPE the RETURN type's row.
                 val cursor = target.details as? LocalCursor
-                cursor?.returnType?.takeIf { cursor.isForward }?.let(::type) ?: composite(followed.toList())
+                cursor?.returnType?.takeIf { cursor.isForward }?.let(::type) ?: composite(followed.toList(), CompositeKind.ROW)
             }
             else -> unknown("${target.kind} ${target.name} anchors no row")
         }
@@ -1098,8 +1098,13 @@ internal class LocalTypeWalk(
             }
             if (anchor == TypeAnchor.ROWTYPE) projectCursor(name, region)?.let { return cursorRow(it, false, region, described) }
             val argumentType = ProjectArgumentType.described(described, owner)
-            // `owner.type` that the project does not describe may be an object type of the metadata.
-            val reached = if (anchor == null && argumentType.familyOrNull == null && name.segments.size == 2) reachedType(name.segments, region) else null
+            // `owner.type` that the project does not describe may be a schema type of the metadata, and so may the base
+            // type of a package subtype.
+            val reached = when {
+                anchor == TypeAnchor.ROWTYPE || argumentType.familyOrNull != null -> null
+                anchor == null && name.segments.size == 2 -> reachedType(name.segments, region)
+                else -> null
+            } ?: objectTypes?.names?.takeIf { anchor != TypeAnchor.ROWTYPE && argumentType.familyOrNull == null }?.throughSubtypes(described, shadowed)
             return LocalTypeEvidence(
                 reached?.let { ProjectArgumentType.objectType(it) } ?: argumentType, LocalTypeEvidence.Terminal.PROJECT, followed.toList(), null, described,
                 constrainedUse = constrained

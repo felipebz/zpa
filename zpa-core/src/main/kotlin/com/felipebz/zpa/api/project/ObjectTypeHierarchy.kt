@@ -11,9 +11,9 @@ import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.ProjectTypeShape as IndexedTypeShape
 
 /**
- * The identity of an object type: one the project declares ([Project]), or one only the external metadata has
- * ([External], by its exact owner and name). A name that reaches a type the project declares is that declaration, so
- * the two never stand for the same object.
+ * The identity of a type created with CREATE TYPE: one the project declares ([Project], an object type or a
+ * collection), or one only the external metadata has ([External], by its exact owner and name, of any kind). A name
+ * that reaches a type the project declares is that declaration, so the two never stand for the same type.
  */
 @OptIn(ZpaExperimentalApi::class)
 internal sealed interface ObjectTypeRef {
@@ -23,10 +23,10 @@ internal sealed interface ObjectTypeRef {
 }
 
 /**
- * The object type a written type name reaches, seen from a schema, as Oracle resolves it: an object of the schema,
- * then, for a one-segment name the schema is known not to hold, a public synonym; a synonym (one the sources create
- * first, then the metadata's) is followed to its target. The target is the project's declaration of that schema and
- * name, else the object type the metadata has there. Nothing is reached without metadata.
+ * The type created with CREATE TYPE a written type name reaches, seen from a schema, as Oracle resolves it: an object
+ * of the schema, then, for a one-segment name the schema is known not to hold, a public synonym; a synonym (one the
+ * sources create first, then the metadata's) is followed to its target. The target is the project's declaration of
+ * that schema and name, else the type the metadata has there. Nothing is reached without metadata.
  */
 @OptIn(ZpaExperimentalApi::class)
 internal class ObjectTypeNames(private val snapshot: ProjectSnapshot, private val metadata: ProjectExternalMetadata) {
@@ -50,6 +50,27 @@ internal class ObjectTypeNames(private val snapshot: ProjectSnapshot, private va
         val written = type.supertype as? NamedTypeRef ?: return null
         val schema = snapshot.projectIndex.effectiveSchema(occurrence)?.let(ProjectIdentifier::wrap)
         return reach(written.name.segments, schema)
+    }
+
+    /**
+     * The schema type a package subtype stands for, when the project describes nothing past it: [description] ends,
+     * unresolved, after a subtype whose base type is a name of one or two segments, which reaches that type from the
+     * schema of the subtype's package. A one-segment name counts only when no member of that package may take it
+     * ([shadowed]) and it names no predefined type. A subtype of a schema type is that type.
+     */
+    fun throughSubtypes(description: ProjectExternalTypeDescription, shadowed: (QualifiedName, OracleIdentifier) -> Boolean): ObjectTypeRef? {
+        val source = description.source
+        if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE || source.status != ProjectTypeDescription.Status.UNRESOLVED_NAME) return null
+        val subtype = source.steps.lastOrNull() as? ProjectSubtypeView ?: return null
+        val base = subtype.baseType.takeIf { it.kind == ProjectTypeReference.Kind.NAMED } ?: return null
+        val segments = base.name.name.segments
+        if (segments.size == 1) {
+            val name = segments.single()
+            if (base.writtenIdentity != null || DatatypeFamilies.undeclaredTypeKind(name) != CompositeKind.SCHEMA_OBJECT) return null
+            if (shadowed(subtype.owner.name, name)) return null
+        }
+        val occurrence = snapshot.occurrenceOf(subtype.id) ?: return null
+        return reach(segments, snapshot.projectIndex.effectiveSchema(occurrence)?.let(ProjectIdentifier::wrap))
     }
 
     /** The object type [owner].[name], a name the dictionary writes exactly (a supertype): the project's, else the metadata's. */
@@ -92,19 +113,24 @@ internal class ObjectTypeNames(private val snapshot: ProjectSnapshot, private va
         return null
     }
 
-    /** The object type the project declares once with schema [owner] and name [name]. */
+    /** The object type or collection the project declares once with schema [owner] and name [name]. */
     private fun project(owner: ProjectIdentifier, name: ProjectIdentifier): ObjectTypeRef? {
         val occurrence = snapshot.projectIndex.findInSchema(owner.identifier, QualifiedName(listOf(name.identifier)))
-            .singleOrNull { (it.declaration as? StandaloneTypeDeclaration)?.shape == IndexedTypeShape.OBJECT } ?: return null
+            .singleOrNull { (it.declaration as? StandaloneTypeDeclaration)?.shape in SCHEMA_TYPE_SHAPES } ?: return null
         return ObjectTypeRef.Project(snapshot.viewsOf(listOf(occurrence)).single().id)
+    }
+
+    private companion object {
+        val SCHEMA_TYPE_SHAPES = setOf(IndexedTypeShape.OBJECT, IndexedTypeShape.COLLECTION)
     }
 }
 
 /**
- * How two object types relate through their supertypes, the project's (`UNDER` clauses) and the external metadata's
- * (`SUPERTYPE_OWNER`, `SUPERTYPE_NAME`), along a chain that may mix both. A value of an object type can be passed to a
- * formal of that type or of one of its supertypes, and to no other object type (PLS-00306); among candidates that each
- * take it, Oracle prefers the formal nearest to the value's own type.
+ * How two types created with CREATE TYPE relate through their supertypes, the project's (`UNDER` clauses) and the
+ * external metadata's (`SUPERTYPE_OWNER`, `SUPERTYPE_NAME`), along a chain that may mix both. A value of an object type
+ * can be passed to a formal of that type or of one of its supertypes, and to no other schema type (PLS-00306); among
+ * candidates that each take it, Oracle prefers the formal nearest to the value's own type. A collection or an opaque
+ * type is under no type and no type is under it: it takes only a value of itself.
  */
 @OptIn(ZpaExperimentalApi::class)
 internal class ObjectTypeHierarchy(private val snapshot: ProjectSnapshot, metadata: ProjectExternalMetadata = ProjectExternalMetadata.none()) {
@@ -134,16 +160,22 @@ internal class ObjectTypeHierarchy(private val snapshot: ProjectSnapshot, metada
 
     /**
      * Whether a value of the type [actual] can be passed to a formal of the type [formal]: compatible when [formal] is
-     * that type or one of its supertypes, incompatible when the whole supertype chain is known and does not reach it;
-     * null when that cannot be told (a supertype neither the project holds once nor the metadata has, a project with
-     * preparation failures).
+     * that type or one of its supertypes, incompatible when the whole supertype chain is known and does not reach it,
+     * or when [formal] is a collection or an opaque type, which is no type's supertype; null when that cannot be told
+     * (a supertype neither the project holds once nor the metadata has, a project with preparation failures).
      */
     fun outcome(actual: ObjectTypeRef, formal: ObjectTypeRef): Outcome? {
         if (distance(actual, formal) != null) return Outcome.COMPATIBLE
         val chain = chain(actual) ?: return null
         val target = node(formal) ?: return null
         if (target is ProjectNode && target.occurrence.declaration !is StandaloneTypeDeclaration) return null
-        return if (chain.complete && snapshot.failures.isEmpty()) Outcome.INCOMPATIBLE else null
+        if (snapshot.failures.isNotEmpty()) return null
+        return if (chain.complete || !isObjectType(target)) Outcome.INCOMPATIBLE else null
+    }
+
+    private fun isObjectType(node: Node): Boolean = when (node) {
+        is ProjectNode -> (node.occurrence.declaration as? StandaloneTypeDeclaration)?.shape == IndexedTypeShape.OBJECT
+        is ExternalNode -> node.type.kind == ProjectExternalObjectType.Kind.OBJECT
     }
 
     private fun node(ref: ObjectTypeRef): Node? = when (ref) {

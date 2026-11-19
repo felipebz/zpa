@@ -163,17 +163,22 @@ internal enum class OverloadRank(val group: Group) {
 }
 
 /**
- * What a composite value or formal is, where Oracle's compatibility between composites depends on it: a ref cursor
- * variable (weak or strong) is accepted by a SYS_REFCURSOR formal and rejected by a formal of a schema
- * object type, and a schema object value is rejected by a SYS_REFCURSOR formal. Two schema object types are never told
- * apart this way: a synonym or a subtype may relate two names.
+ * What a composite value or formal is, where Oracle's compatibility between composites depends on it. Two composite
+ * types are compatible only when they are the same type, so these kinds reject each other: a ref cursor variable
+ * (weak or strong) is accepted by a SYS_REFCURSOR formal and rejected by a formal of a schema type, and a value of a
+ * schema type is rejected by a SYS_REFCURSOR formal. A `%ROWTYPE` row is rejected by a ref cursor formal and by a
+ * formal of a schema type zpa resolves, and the other way round. Two schema types are never told apart by their kind:
+ * a synonym or a subtype may relate two names ([ObjectTypeHierarchy] compares the ones it reaches).
  */
 internal enum class CompositeKind {
     /** A ref cursor value; as a formal, SYS_REFCURSOR. */
     REF_CURSOR,
 
-    /** A type created with CREATE TYPE, or a synonym of one. */
-    SCHEMA_OBJECT
+    /** A type created with CREATE TYPE (an object type, a collection or an opaque type), or a synonym of one. */
+    SCHEMA_OBJECT,
+
+    /** A `%ROWTYPE` row, of a relation or of a cursor, which Oracle compares field by field with another record. */
+    ROW
 }
 
 /**

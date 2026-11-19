@@ -45,7 +45,10 @@ class ProjectArgumentType private constructor(
     /** For a composite, what it is where Oracle's compatibility between composites depends on it; null when not known. */
     @get:JvmSynthetic internal val compositeKind: CompositeKind? = null,
     @get:JvmSynthetic internal val declaredType: DeclaredCompositeType? = null,
-    /** For a value of an object type, the project's or the metadata's, that type: it orders the overloads its supertypes take. */
+    /**
+     * For a value of a type created with CREATE TYPE, the project's or the metadata's, that type: it orders the
+     * overloads an object type's supertypes take, and a schema type rejects any other.
+     */
     @get:JvmSynthetic internal val objectType: ObjectTypeRef? = null,
     /** True when the value is of the schema's type `json` or of the predefined JSON type, as the database version decides. */
     @get:JvmSynthetic internal val predefinedJsonAlternative: Boolean = false
@@ -153,7 +156,7 @@ class ProjectArgumentType private constructor(
             classify(description, true, packageOwner?.name)
 
         private fun classify(description: ProjectExternalTypeDescription, ownerKnown: Boolean, owner: QualifiedName?): ProjectArgumentType {
-            if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return COMPOSITE
+            if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return composite(CompositeKind.ROW)
             val family = DatatypeFamilies.ofDescription(description, null, null)
             val conclusive = DatatypeFamilies.isConclusive(description)
             val builtIn = DatatypeFamilies.builtInName(description, null)?.takeIf { family != null }

@@ -142,14 +142,14 @@ internal object DatatypeFamilies {
         return if (shape == ProjectTypeShape.RECORD || shape == ProjectTypeShape.COLLECTION) DeclaredCompositeType.Project(type.id) else null
     }
 
-    /** The object type created with CREATE TYPE that [description] reaches in the project, or null. */
+    /** The object type or collection created with CREATE TYPE that [description] reaches in the project, or null. */
     fun objectType(description: ProjectExternalTypeDescription): ProjectDeclarationId? {
         if (description.status != ProjectExternalTypeDescription.Status.NOT_EXTERNAL) return null
         if (description.anchor.orElse(null) == ProjectTypeReference.Anchor.ROWTYPE) return null
         val source = description.source
         if (source.status != ProjectTypeDescription.Status.DECLARED_TYPE) return null
         val type = source.declaration.orElse(null) as? ProjectStandaloneTypeView ?: return null
-        return type.id.takeIf { type.shape.orElse(null) == ProjectTypeShape.OBJECT }
+        return type.id.takeIf { type.shape.orElse(null) == ProjectTypeShape.OBJECT || type.shape.orElse(null) == ProjectTypeShape.COLLECTION }
     }
 
     /** The overload rank of a built-in type spelled as text, read as [ofTypeName] reads it; null when not known. */

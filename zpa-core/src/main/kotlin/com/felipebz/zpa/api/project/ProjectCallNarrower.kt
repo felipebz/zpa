@@ -221,11 +221,11 @@ internal object ProjectCallNarrower {
         names: ObjectTypeNames,
         declaringSchema: ProjectIdentifier?
     ): Evidence {
-        if (DatatypeFamilies.isRowtypeReference(reference)) return Evidence(ProjectDatatypeFamily.COMPOSITE, null)
+        if (DatatypeFamilies.isRowtypeReference(reference)) return Evidence(ProjectDatatypeFamily.COMPOSITE, null, null, CompositeKind.ROW)
         val description = snapshot.describeExternalType(reference, owner, metadata, currentSchema)
         val family = DatatypeFamilies.ofDescription(description, null, reference)
         if (family == null) {
-            externalObjectType(reference, owner, undeclared, names, declaringSchema)?.let {
+            (externalObjectType(reference, owner, undeclared, names, declaringSchema) ?: names.throughSubtypes(description, shadowed))?.let {
                 return Evidence(ProjectDatatypeFamily.COMPOSITE, null, null, CompositeKind.SCHEMA_OBJECT, objectType = it)
             }
             if (undeclared != null && namesSchemaObject(reference, undeclared)) {
@@ -320,10 +320,18 @@ internal object ProjectCallNarrower {
     }
 
     /**
-     * Two composites, when what they are decides it: a value of an object type goes to a formal of that type or of a
-     * supertype, never to another object type; a formal of a declared record or collection type accepts only a value of
-     * that same declared type (another one with the same fields or element is rejected); a ref cursor and a schema object
-     * type reject each other; a SYS_REFCURSOR formal takes any ref cursor. Null when none of these applies.
+     * Two composites, when what they are decides it. Two composite types are compatible only when they are the same
+     * type (PLS-00306 otherwise, even with the same fields or element):
+     * - a value of a schema type (an object type, a collection or an opaque type created with CREATE TYPE, reached
+     *   through synonyms and subtypes) goes to a formal of that type or, for an object type, of a supertype
+     *   ([ObjectTypeHierarchy]);
+     * - a formal of a record or collection type declared in a package or a block accepts only a value of that same
+     *   declared type;
+     * - a declared record or collection, and a `%ROWTYPE` row, are never a schema type zpa resolves nor a ref cursor;
+     * - a ref cursor and a schema type reject each other, and a SYS_REFCURSOR formal takes any ref cursor.
+     *
+     * A `%ROWTYPE` against a declared record, or against another row, is compared field by field and not decided here.
+     * Null when none of these applies, or a side's type is not known (an unresolved name, a dictionary package type).
      */
     internal fun compositeOutcome(actual: Evidence, formal: Evidence, hierarchy: ObjectTypeHierarchy?): Outcome? {
         if (actual.objectType != null && formal.objectType != null && hierarchy != null) {
@@ -332,14 +340,23 @@ internal object ProjectCallNarrower {
         if (actual.declaredType != null && formal.declaredType != null) {
             return if (actual.declaredType == formal.declaredType) Outcome.COMPATIBLE else Outcome.INCOMPATIBLE
         }
+        if (isRecordLike(actual) && isSchemaTypeOrCursor(formal) || isRecordLike(formal) && isSchemaTypeOrCursor(actual)) return Outcome.INCOMPATIBLE
         val actualKind = actual.compositeKind ?: return null
         val formalKind = formal.compositeKind ?: return null
         return when {
-            actualKind != formalKind -> Outcome.INCOMPATIBLE
-            actualKind == CompositeKind.REF_CURSOR -> Outcome.COMPATIBLE
+            actualKind == CompositeKind.REF_CURSOR && formalKind == CompositeKind.REF_CURSOR -> Outcome.COMPATIBLE
+            setOf(actualKind, formalKind) == REF_CURSOR_AND_SCHEMA_TYPE -> Outcome.INCOMPATIBLE
             else -> null
         }
     }
+
+    /** A record or collection declared in a package or a block, or a `%ROWTYPE` row. */
+    private fun isRecordLike(evidence: Evidence) = evidence.declaredType != null || evidence.compositeKind == CompositeKind.ROW
+
+    /** A schema type zpa resolves, or a ref cursor. */
+    private fun isSchemaTypeOrCursor(evidence: Evidence) = evidence.objectType != null || evidence.compositeKind == CompositeKind.REF_CURSOR
+
+    private val REF_CURSOR_AND_SCHEMA_TYPE = setOf(CompositeKind.REF_CURSOR, CompositeKind.SCHEMA_OBJECT)
 
     /**
      * A package member named like a predefined type shadows it inside the package (a package
