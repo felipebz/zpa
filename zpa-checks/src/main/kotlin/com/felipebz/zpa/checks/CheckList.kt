@@ -78,6 +78,7 @@ object CheckList {
                 UnnecessaryLikeCheck::class.java,
                 NullTestOnNotNullColumnCheck::class.java,
                 FunctionWithoutReturnCheck::class.java,
-                OuterJoinDiscardedByConditionCheck::class.java)
+                OuterJoinDiscardedByConditionCheck::class.java,
+                ColumnHidesPlSqlNameCheck::class.java)
 
 }

@@ -1,0 +1,32 @@
+<p>
+Dentro de um comando SQL, uma coluna de uma origem em escopo toma um nome não qualificado antes de um parâmetro,
+variável ou constante de mesmo nome. Quando uma condição ou o valor de um <code>SET</code> se refere ao nome PL/SQL, o
+Oracle lê a coluna no lugar dele: a condição compara a coluna com ela mesma, e o <code>SET</code> grava a coluna de
+volta sem alterá-la. O código compila e executa, mas afeta as linhas erradas.
+</p>
+
+<p>
+Esta regra reporta esse nome somente quando a existência da coluna é comprovada: pelos metadados de tabelas e views
+lidos do banco de dados, ou por uma tabela que os fontes analisados criam. Um nome na lista do select, no
+<code>ORDER BY</code>, no <code>GROUP BY</code>, num destino de <code>INTO</code> ou no <code>VALUES</code> de um
+<code>INSERT</code> de uma linha não é reportado.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure drop_crates(shelf_id number) is
+begin
+  delete from crate where crate.shelf_id = shelf_id; -- Não conforme
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure drop_crates(shelf_id number) is
+begin
+  delete from crate where crate.shelf_id = drop_crates.shelf_id;
+end;
+</pre>

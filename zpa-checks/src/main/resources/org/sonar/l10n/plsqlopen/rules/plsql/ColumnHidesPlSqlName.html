@@ -1,0 +1,32 @@
+<p>
+Inside a SQL statement, a column of a source in scope takes an unqualified name before a parameter, variable or
+constant of the same name. When a condition or the value of a <code>SET</code> means the PL/SQL name, Oracle reads the
+column instead: the condition compares the column with itself, and the <code>SET</code> writes the column back
+unchanged. The code compiles and runs, but it affects the wrong rows.
+</p>
+
+<p>
+This rule reports such a name only when the column is proven to exist: in the table and view metadata read from the
+database, or in a table the analyzed sources create. A name in the select list, <code>ORDER BY</code>,
+<code>GROUP BY</code>, an <code>INTO</code> target or the <code>VALUES</code> of a single-row <code>INSERT</code> is not
+reported.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure drop_crates(shelf_id number) is
+begin
+  delete from crate where crate.shelf_id = shelf_id; -- Noncompliant
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure drop_crates(shelf_id number) is
+begin
+  delete from crate where crate.shelf_id = drop_crates.shelf_id;
+end;
+</pre>
