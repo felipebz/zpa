@@ -166,6 +166,7 @@ jobs:
             zpa-checks-testkit
             zpa-toolkit
             sonar-zpa-plugin
+            zpa-oracle-metadata
           )
 
           [[ -d ${group_root} ]] || {
@@ -201,7 +202,7 @@ jobs:
             done
 
             case ${module} in
-              zpa-core|zpa-checks|zpa-toolkit)
+              zpa-core|zpa-checks|zpa-toolkit|zpa-oracle-metadata)
                 [[ -f ${version_root}/${module}-${RELEASE_VERSION}.module ]] || {
                   printf 'Expected Gradle module metadata is missing for %s\n' "${module}" >&2
                   exit 1
