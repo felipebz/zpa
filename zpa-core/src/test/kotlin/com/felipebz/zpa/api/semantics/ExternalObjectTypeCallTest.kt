@@ -236,4 +236,56 @@ class ExternalObjectTypeCallTest {
             "end;\n/\n"
         assertThat(answers(bin, user, "pk_bin.put", bins)).containsExactly("4:RESOLVED (a number)", "5:RESOLVED (a varchar2)")
     }
+
+    private val held = ProjectExternalObjectType.of(
+        "PK_HOLD", "T_OBJ", ProjectExternalObjectType.Kind.OBJECT, null, null, listOf(ProjectExternalTypeAttribute.of("N", datatype("NUMBER"))), emptyList()
+    )
+
+    /** The schema PK_HOLD complete with its type T_OBJ, the public synonyms complete, and APP as [app] lists it. */
+    private fun holding(app: (ProjectExternalMetadata.Builder) -> ProjectExternalMetadata.Builder): ProjectExternalMetadata =
+        app(ProjectExternalMetadata.builder("fixture").completeSchema("PK_HOLD").completePublicSynonyms().objectType(held)).build()
+
+    private val holdKit = "create package pk_chk as\n" +
+        "  function chk(a number) return number;\n" +
+        "  function chk(a varchar2) return number;\n" +
+        "  function chk(a date) return number;\n" +
+        "end;\n/\n" +
+        "create package pk_mine as\n" +
+        "  subtype s_obj is pk_hold.t_obj;\n" +
+        "end;\n/\n" +
+        "create package pk_put as\n" +
+        "  function put(x pk_hold.t_obj) return number;\n" +
+        "  function put(x varchar2) return number;\n" +
+        "end;\n/\n"
+
+    private val holdUser = "create procedure run_hold is\n" +
+        "  v pk_hold.t_obj; s pk_mine.s_obj; n number;\n" +
+        "begin\n" +
+        "  n := pk_chk.chk(v.n);\n" +
+        "  n := pk_chk.chk(s.n);\n" +
+        "  n := pk_put.put(n);\n" +
+        "end;\n/\n"
+
+    private fun holdAnswers(metadata: ProjectExternalMetadata) =
+        answers(holdKit, holdUser, "pk_chk.chk", metadata) + answers(holdKit, holdUser, "pk_put.put", metadata)
+
+    @Test
+    fun aTwoSegmentTypeIsTheSchemasOnlyWhenNoObjectTakesItsFirstName() {
+        // APP holds a package PK_HOLD: `pk_hold.t_obj` is a type of that package, which the project does not have.
+        val withPackage = holding { it.completeSchema("APP").schemaObject(ProjectExternalObject.of("APP", "PK_HOLD", ProjectExternalObject.Kind.PACKAGE)) }
+        assertThat(holdAnswers(withPackage)).containsExactly("4:AMBIGUOUS", "5:AMBIGUOUS", "6:AMBIGUOUS")
+        // APP may hold an object PK_HOLD.
+        assertThat(holdAnswers(holding { it })).containsExactly("4:AMBIGUOUS", "5:AMBIGUOUS", "6:AMBIGUOUS")
+        // Only the schema can take it.
+        assertThat(holdAnswers(holding { it.completeSchema("APP") }))
+            .containsExactly("4:RESOLVED (a number)", "5:RESOLVED (a number)", "6:RESOLVED (x varchar2)")
+    }
+
+    @Test
+    fun aPackageOfTheProjectTakesTheFirstName() {
+        val kit = holdKit + "create package pk_hold as\n  type t_obj is record (n varchar2(10));\nend;\n/\n"
+        val metadata = holding { it.completeSchema("APP") }
+        // The package's record: its field is a VARCHAR2.
+        assertThat(answers(kit, holdUser, "pk_chk.chk", metadata)).containsExactly("4:RESOLVED (a varchar2)", "5:RESOLVED (a varchar2)")
+    }
 }

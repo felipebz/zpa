@@ -33,13 +33,18 @@ internal class ObjectTypeNames(private val snapshot: ProjectSnapshot, private va
     private val objects = snapshot.objects(metadata)
     private val enabled = metadata.origin.isPresent
 
-    /** The object type the written name [segments] reaches from [schema]; null when it reaches none, or that is not known. */
+    /**
+     * The type the written name [segments] reaches from [schema]; null when it reaches none, or that is not known. Oracle
+     * reads the first segment of `a.t` as an object of the unit's schema (a package, a type, a synonym), then as a public
+     * synonym, and as the schema `a` only when neither takes it: a two-segment name is read as `owner.type` only when
+     * no object is named like its first segment ([ProjectSnapshot.provesNoObjectNamed]).
+     */
     fun reach(segments: List<OracleIdentifier>, schema: ProjectIdentifier?): ObjectTypeRef? {
         if (!enabled) return null
         val names = segments.map(ProjectIdentifier::wrap)
         return when (names.size) {
             1 -> schema?.let { follow(it, names[0], unqualified = true) }
-            2 -> follow(names[0], names[1], unqualified = false)
+            2 -> if (snapshot.provesNoObjectNamed(segments[0], schema, metadata)) follow(names[0], names[1], unqualified = false) else null
             else -> null
         }
     }
