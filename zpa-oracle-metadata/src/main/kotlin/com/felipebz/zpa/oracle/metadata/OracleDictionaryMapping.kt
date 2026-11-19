@@ -309,27 +309,39 @@ internal object OracleDictionaryMapping {
         arguments: List<ArgumentRow> = emptyList(),
         argumentsReadIn: Duration = Duration.ZERO
     ): OracleMetadataResult {
-        val columnsByRelation = columns.groupBy { it.schema to it.relation }
         val origin = "oracle ${session.database}/${session.container} as ${session.sessionUser} at $acquiredAt"
         val builder = ProjectExternalMetadata.builder(origin)
         val complete = request.schemas.filter { it == session.sessionUser || it in request.completeSchemas }
         complete.forEach { builder.completeSchema(it) }
         val seen = HashSet<Pair<String, String>>()
+        val columnCount = addRelations(builder, relations, columns, seen)
+        val objectCount = addObjects(builder, objects)
+        addSynonyms(builder, synonyms)
+        val objectTypes = addObjectTypes(builder, types)
+        val subprograms = addSubprograms(builder, arguments)
+        if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) builder.completePublicSynonyms()
+        val notVisible = request.relations.filter { it.schema !in request.schemas && (it.schema to it.name) !in seen }
+        return OracleMetadataResult(
+            builder.build(), session.sessionUser, session.currentSchema, session.database, session.container, acquiredAt,
+            complete, notVisible, seen.size, columnCount, objectCount, synonyms.size,
+            version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
+            objectTypes.size, objectTypes.sumOf { it.attributes.size }, objectTypes.sumOf { it.methods.size }, typesReadIn,
+            subprograms.size, arguments.size, argumentsReadIn
+        )
+    }
+
+    /** Adds each relation with its columns, recording it in [seen]; returns the number of columns added. */
+    private fun addRelations(
+        builder: ProjectExternalMetadata.Builder, relations: List<RelationRow>, columns: List<ColumnRow>, seen: MutableSet<Pair<String, String>>
+    ): Int {
+        val columnsByRelation = columns.groupBy { it.schema to it.relation }
         var columnCount = 0
         for (relation in relations) {
             val key = relation.schema to relation.name
             if (!seen.add(key)) throw OracleMetadataException("The dictionary returned relation ${relation.schema}.${relation.name} more than once", null)
             val rows = columnsByRelation[key].orEmpty()
             try {
-                val descriptors = rows.map { column(it, relation.valid) }
-                val rowType = relation.typeName?.let { ProjectExternalDatatype.of(it, relation.typeOwner, null, null, null, null) }
-                val descriptor = when {
-                    relation.view && rowType != null -> ProjectExternalRelation.objectView(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
-                    relation.view -> ProjectExternalRelation.view(relation.schema, relation.name, relation.columnsAcquired, descriptors)
-                    rowType != null -> ProjectExternalRelation.objectTable(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
-                    else -> ProjectExternalRelation.of(relation.schema, relation.name, relation.columnsAcquired, descriptors)
-                }
-                builder.relation(descriptor)
+                builder.relation(relation(relation, rows))
             } catch (e: IllegalArgumentException) {
                 throw OracleMetadataException("Inconsistent dictionary metadata for ${relation.schema}.${relation.name}: ${e.message}", e)
             } catch (e: ArithmeticException) {
@@ -337,6 +349,22 @@ internal object OracleDictionaryMapping {
             }
             columnCount += rows.size
         }
+        return columnCount
+    }
+
+    private fun relation(relation: RelationRow, rows: List<ColumnRow>): ProjectExternalRelation {
+        val descriptors = rows.map { column(it, relation.valid) }
+        val rowType = relation.typeName?.let { ProjectExternalDatatype.of(it, relation.typeOwner, null, null, null, null) }
+        return when {
+            relation.view && rowType != null -> ProjectExternalRelation.objectView(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
+            relation.view -> ProjectExternalRelation.view(relation.schema, relation.name, relation.columnsAcquired, descriptors)
+            rowType != null -> ProjectExternalRelation.objectTable(relation.schema, relation.name, rowType, relation.columnsAcquired, descriptors)
+            else -> ProjectExternalRelation.of(relation.schema, relation.name, relation.columnsAcquired, descriptors)
+        }
+    }
+
+    /** Adds the objects of a kind the metadata models; returns how many distinct names were added. */
+    private fun addObjects(builder: ProjectExternalMetadata.Builder, objects: List<ObjectRow>): Int {
         val objectNames = HashSet<Pair<String, String>>()
         for (row in objects) {
             val kind = objectKind(row.type) ?: continue
@@ -347,6 +375,10 @@ internal object OracleDictionaryMapping {
             }
             objectNames += row.schema to row.name
         }
+        return objectNames.size
+    }
+
+    private fun addSynonyms(builder: ProjectExternalMetadata.Builder, synonyms: List<SynonymRow>) {
         for (row in synonyms) {
             try {
                 builder.synonym(synonym(row))
@@ -354,6 +386,9 @@ internal object OracleDictionaryMapping {
                 throw OracleMetadataException("Inconsistent dictionary metadata for synonym ${row.owner}.${row.name}: ${e.message}", e)
             }
         }
+    }
+
+    private fun addObjectTypes(builder: ProjectExternalMetadata.Builder, types: TypeRows): List<ProjectExternalObjectType> {
         val objectTypes = try {
             objectTypes(types)
         } catch (e: IllegalArgumentException) {
@@ -368,6 +403,10 @@ internal object OracleDictionaryMapping {
                 throw OracleMetadataException("The dictionary returned object type ${type.owner}.${type.name} more than once", e)
             }
         }
+        return objectTypes
+    }
+
+    private fun addSubprograms(builder: ProjectExternalMetadata.Builder, arguments: List<ArgumentRow>): List<ProjectExternalSubprogram> {
         val subprograms = try {
             subprograms(arguments)
         } catch (e: IllegalArgumentException) {
@@ -380,14 +419,6 @@ internal object OracleDictionaryMapping {
                 throw OracleMetadataException("The dictionary returned subprogram $subprogram more than once", e)
             }
         }
-        if (request.publicSynonyms && request.publicSynonymTargets.isEmpty()) builder.completePublicSynonyms()
-        val notVisible = request.relations.filter { it.schema !in request.schemas && (it.schema to it.name) !in seen }
-        return OracleMetadataResult(
-            builder.build(), session.sessionUser, session.currentSchema, session.database, session.container, acquiredAt,
-            complete, notVisible, seen.size, columnCount, objectNames.size, synonyms.size,
-            version.getOrNull(), version.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName },
-            objectTypes.size, objectTypes.sumOf { it.attributes.size }, objectTypes.sumOf { it.methods.size }, typesReadIn,
-            subprograms.size, arguments.size, argumentsReadIn
-        )
+        return subprograms
     }
 }

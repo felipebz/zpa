@@ -555,8 +555,8 @@ class ProjectSnapshot private constructor(
         if (schema == null || preparationState == ProjectPreparationState.NOT_PREPARED || preparationState == ProjectPreparationState.PREPARED_WITH_FAILURES) return false
         val index = preparationResult.index
         val spec = index.findOccurrences(QualifiedName(first))
-            .filter { val d = it.declaration; d !is PackageDeclaration || d.role == DeclarationRole.SPECIFICATION }
-            .singleOrNull()?.takeIf { it.declaration is PackageDeclaration } ?: return false
+            .singleOrNull { val d = it.declaration; d !is PackageDeclaration || d.role == DeclarationRole.SPECIFICATION }
+            ?.takeIf { it.declaration is PackageDeclaration } ?: return false
         val evidence = PackageMemberNames.at(index, spec, member, null)
         return when (evidence.status) {
             MemberNameStatus.NOT_DECLARED -> true

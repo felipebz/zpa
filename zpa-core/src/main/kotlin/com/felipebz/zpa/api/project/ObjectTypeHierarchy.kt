@@ -7,11 +7,7 @@ package com.felipebz.zpa.api.project
 
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.project.ProjectBindingCompatibility.Outcome
-import com.felipebz.zpa.project.IndexedDeclaration
-import com.felipebz.zpa.project.NamedTypeRef
-import com.felipebz.zpa.project.OracleIdentifier
-import com.felipebz.zpa.project.QualifiedName
-import com.felipebz.zpa.project.StandaloneTypeDeclaration
+import com.felipebz.zpa.project.*
 import com.felipebz.zpa.project.ProjectTypeShape as IndexedTypeShape
 
 /**
@@ -99,8 +95,7 @@ internal class ObjectTypeNames(private val snapshot: ProjectSnapshot, private va
     /** The object type the project declares once with schema [owner] and name [name]. */
     private fun project(owner: ProjectIdentifier, name: ProjectIdentifier): ObjectTypeRef? {
         val occurrence = snapshot.projectIndex.findInSchema(owner.identifier, QualifiedName(listOf(name.identifier)))
-            .filter { (it.declaration as? StandaloneTypeDeclaration)?.shape == IndexedTypeShape.OBJECT }
-            .singleOrNull() ?: return null
+            .singleOrNull { (it.declaration as? StandaloneTypeDeclaration)?.shape == IndexedTypeShape.OBJECT } ?: return null
         return ObjectTypeRef.Project(snapshot.viewsOf(listOf(occurrence)).single().id)
     }
 }

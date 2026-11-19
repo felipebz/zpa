@@ -177,10 +177,8 @@ internal class LocalTypeWalk(
      */
     fun externalTypeCall(name: QualifiedName, region: LocalRegionId): LocalTypeEvidence? {
         val names = objectTypes?.names ?: return null
-        when (val type = reachedType(name.segments, region)) {
-            is ObjectTypeRef.External -> if (names.type(type)?.kind != ProjectExternalObjectType.Kind.OPAQUE) return objectValue(type)
-            is ObjectTypeRef.Project, null -> {}
-        }
+        val reached = reachedType(name.segments, region)
+        if (reached is ObjectTypeRef.External && names.type(reached)?.kind != ProjectExternalObjectType.Kind.OPAQUE) return objectValue(reached)
         if (name.segments.size < 2) return null
         val owner = reachedType(name.segments.dropLast(1), region) as? ObjectTypeRef.External ?: return null
         val type = names.type(owner) ?: return null

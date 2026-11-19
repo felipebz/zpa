@@ -230,14 +230,14 @@ internal class PackageMemberParser(
         while (true) {
             val ends = index >= endExclusive ||
                 expected.isEmpty() && (stream.isCloser(index) || SELECT_LIST_TERMINATORS.any { stream.isKeyword(index, it) } && !stream.isKeyword(index - 1, "MULTISET"))
-            if (ends || expected.isEmpty() && stream.isPunctuator(index, PlSqlPunctuator.COMMA)) {
-                items += selectItem(itemStart, index) ?: return null
-                if (ends) break
-                itemStart = index + 1
-            } else if (stream.isOpener(index)) {
-                expected.addLast(stream.closerFor(index))
-            } else if (stream.isCloser(index) && expected.removeLastOrNull() !== stream.tokens[index].type) {
-                return null
+            when {
+                ends || expected.isEmpty() && stream.isPunctuator(index, PlSqlPunctuator.COMMA) -> {
+                    items += selectItem(itemStart, index) ?: return null
+                    if (ends) break
+                    itemStart = index + 1
+                }
+                stream.isOpener(index) -> expected.addLast(stream.closerFor(index))
+                stream.isCloser(index) && expected.removeLastOrNull() !== stream.tokens[index].type -> return null
             }
             index++
         }
