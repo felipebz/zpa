@@ -356,3 +356,11 @@ begin
   $end
 end;
 /
+
+create or replace function exit_unknown_label return number is
+begin
+  loop
+    exit bin_nowhere;
+  end loop;
+end;
+/

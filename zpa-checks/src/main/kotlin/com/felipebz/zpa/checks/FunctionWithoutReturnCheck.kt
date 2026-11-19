@@ -129,10 +129,10 @@ class FunctionWithoutReturnCheck : AbstractBaseCheck() {
 
         private fun target(exit: AstNode): AstNode? {
             val label = exit.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)?.tokenValue?.uppercase()
-            var current = exit.parent
+            var current = exit.parentOrNull
             while (current != null) {
                 if (current.typeIs(LOOPS) && (label == null || labeled(current, label))) return current
-                current = current.parent
+                current = current.parentOrNull
             }
             return null
         }
