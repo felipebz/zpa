@@ -1,12 +1,30 @@
 <p>
-Na maioria das vezes um bloco de código está vazio quando realmente falta alguma implementação. Então tal bloco deve ser preenchido ou removido.
+Um bloco, subprograma ou tratador de exceção cujo único comando é <code>NULL</code> não faz nada. Na maioria das vezes,
+o código que deveria estar ali está faltando: uma procedure deixada como esboço, ou um tratador escrito para calar um
+erro. Quando não fazer nada é intencional, o código não diz por quê.
+</p>
+
+<p>
+Esta regra reporta um comando <code>NULL</code> que é o único comando de um bloco, subprograma, trigger ou corpo de
+método. Um membro <code>OVERRIDING</code> de um tipo objeto não é reportado: ali, um corpo vazio pode substituir de
+propósito o comportamento do supertipo.
 </p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure refresh_rack(p_rack number) is
 begin
-  null;
+  null; -- Noncompliant
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure refresh_rack(p_rack number) is
+begin
+  update rack set refreshed_at = sysdate where id = p_rack;
 end;
 </pre>

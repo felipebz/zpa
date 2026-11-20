@@ -1,4 +1,13 @@
 <p>
-Quando o parser PL/SQL falha é possível registrar essa falha como uma violação no arquivo. Dessa forma, é possível registrar o número de arquivos que
-não foram processados pelo parser e também identificar facilmente porque eles não foram entendidos.
+Quando o analisador não consegue fazer o parse de uma parte de um arquivo, ele não consegue analisar essa parte: as
+outras regras não reportam nada nela, e as regras que precisam ver um escopo inteiro, como as de declarações não usadas
+ou escondidas, podem não reportar nada no resto do arquivo. Um arquivo que não passa pelo parse esconde, portanto, os
+seus problemas.
+</p>
+
+<p>
+Esta regra reporta onde o parser falhou, para que os arquivos que não passam pelo parse possam ser contados e
+corrigidos. Com a recuperação de erros, cada trecho de código que o parser pulou é reportado; sem ela, a linha onde o
+parse parou, com a mensagem do parser. A causa é código que o Oracle também rejeita, ou uma sintaxe que o analisador
+ainda não suporta, que vale a pena relatar ao projeto.
 </p>

@@ -1,60 +1,45 @@
 <p>
-In Oracle Forms, many procedures and functions need a reference to an object (blocks, itens, alerts...).
-Unfortunately, the only way to pass a reference to an object is using a VARCHAR2 variable and these references
-are not checked by the compiler. 
+In Oracle Forms, many built-ins take the name of a form object (an alert, a block, an item or a list of values) as a
+character value. The compiler does not check these names: a name that is misspelled, or that was renamed or removed
+from the form, compiles and fails only when the code runs.
 </p>
 
-<p>Currently this rule checks the following methods:</p>
+<p>
+This rule reports a name written as a string literal that the form does not have, compared case-insensitively. An item
+is named with its block, as <code>'block.item'</code>. Names built at run time are not checked. The rule runs only
+when Oracle Forms metadata is given: the <code>sonar.zpa.forms.metadata</code> property in SonarQube, or the
+<code>--forms-metadata</code> option of zpa-cli. The checked built-ins are:
+</p>
 
-<strong>Alert bultins:</strong>
 <ul>
-<li>FIND_ALERT</li>
-<li>SET_ALERT_BUTTON_PROPERTY</li>
-<li>SET_ALERT_PROPERTY</li>
-<li>SHOW_ALERT</li>
+<li>Alerts: <code>FIND_ALERT</code>, <code>SET_ALERT_BUTTON_PROPERTY</code>, <code>SET_ALERT_PROPERTY</code>,
+<code>SHOW_ALERT</code>.</li>
+<li>Blocks: <code>FIND_BLOCK</code>, <code>GET_BLOCK_PROPERTY</code>, <code>GO_BLOCK</code>,
+<code>SET_BLOCK_PROPERTY</code>.</li>
+<li>Items: <code>CHECKBOX_CHECKED</code>, <code>CONVERT_OTHER_VALUE</code>, <code>DISPLAY_ITEM</code>,
+<code>FIND_ITEM</code>, <code>GET_ITEM_INSTANCE_PROPERTY</code>, <code>GET_ITEM_PROPERTY</code>,
+<code>GET_RADIO_BUTTON_PROPERTY</code>, <code>GO_ITEM</code>, <code>IMAGE_SCROLL</code>, <code>IMAGE_ZOOM</code>,
+<code>PLAY_SOUND</code>, <code>READ_IMAGE_FILE</code>, <code>READ_SOUND_FILE</code>, <code>RECALCULATE</code>,
+<code>SET_ITEM_INSTANCE_PROPERTY</code>, <code>SET_ITEM_PROPERTY</code>, <code>SET_RADIO_BUTTON_PROPERTY</code>,
+<code>WRITE_IMAGE_FILE</code>, <code>WRITE_SOUND_FILE</code>.</li>
+<li>Lists of values: <code>FIND_LOV</code>, <code>GET_LOV_PROPERTY</code>, <code>SET_LOV_COLUMN_PROPERTY</code>,
+<code>SET_LOV_PROPERTY</code>, <code>SHOW_LOV</code>.</li>
 </ul>
 
-<strong>Block bultins:</strong>
-<ul>
-<li>FIND_BLOCK</li>
-<li>GET_BLOCK_PROPERTY</li>
-<li>GO_BLOCK</li>
-<li>SET_BLOCK_PROPERTY</li>
-</ul>
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
 
-<strong>Item bultins:</strong>
-<ul>
-<li>CHECKBOX_CHECKED</li>
-<li>CONVERT_OTHER_VALUE</li>
-<li>DISPLAY_ITEM</li>
-<li>FIND_ITEM</li>
-<li>GET_ITEM_INSTANCE_PROPERTY</li>
-<li>GET_ITEM_PROPERTY</li>
-<li>GET_RADIO_BUTTON_PROPERTY</li>
-<li>GO_ITEM</li>
-<li>IMAGE_SCROLL</li>
-<li>IMAGE_ZOOM</li>
-<li>IMAGE_ZOOM</li>
-<li>PLAY_SOUND</li>
-<li>READ_IMAGE_FILE</li>
-<li>READ_SOUND_FILE</li>
-<li>RECALCULATE</li>
-<li>SET_ITEM_INSTANCE_PROPERTY</li>
-<li>SET_ITEM_PROPERTY</li>
-<li>SET_ITEM_PROPERTY</li>
-<li>SET_RADIO_BUTTON_PROPERTY</li>
-<li>SET_RADIO_BUTTON_PROPERTY</li>
-<li>WRITE_IMAGE_FILE</li>
-<li>WRITE_SOUND_FILE</li>
-</ul>
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- The form has the block CRATE with the item CODE.
+begin
+  go_item('crate.crate_code'); -- Noncompliant
+end;
+</pre>
 
-<strong>LOV bultins:</strong>
-<ul>
-<li>FIND_LOV</li>
-<li>GET_LOV_PROPERTY</li>
-<li>SET_LOV_COLUMN_PROPERTY</li>
-<li>SET_LOV_PROPERTY</li>
-<li>SHOW_LOV</li>
-</ul>
+<h2>Compliant Solution</h2>
 
-<p><strong>Note</strong>: this rule is automatically disabled when the project's <code>sonar.plsql.forms.metadata</code> is not specified.</p>.
+<pre data-diff-id="1" data-diff-type="compliant">
+begin
+  go_item('crate.code');
+end;
+</pre>

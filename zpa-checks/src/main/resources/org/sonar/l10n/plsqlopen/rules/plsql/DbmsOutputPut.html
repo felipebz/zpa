@@ -1,4 +1,32 @@
 <p>
-The output of DBMS_OUTPUT.PUT/DBMS_OUTPUT.PUT_LINE will not be visible when SERVEROUTPUT is set to OFF.
-Moreover, unless this call is explicitly necessary, is better to use logging mechanism instead.
+<code>DBMS_OUTPUT</code> writes to a buffer of the session that only a client that enables it reads, such as SQL*Plus
+with <code>SET SERVEROUTPUT ON</code>. Called from an application, a job or a trigger, the text is discarded, or kept in
+the buffer until the session ends: whatever the code meant to report is lost. Diagnostics belong in the application's
+logging, and messages for the user in the values the code returns or the errors it raises.
 </p>
+
+<p>
+This rule reports calls to <code>DBMS_OUTPUT.PUT</code> and <code>DBMS_OUTPUT.PUT_LINE</code>, with or without the
+<code>SYS</code> schema, in main code. Test code is not checked.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure purge_bins(p_days number) is
+begin
+  delete from bin_history where moved_at &lt; sysdate - p_days;
+  dbms_output.put_line(sql%rowcount || ' rows purged'); -- Noncompliant
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure purge_bins(p_days number) is
+begin
+  delete from bin_history where moved_at &lt; sysdate - p_days;
+  log_pkg.info('purge_bins', sql%rowcount || ' rows purged');
+end;
+</pre>

@@ -15,18 +15,18 @@ Para funções de pacote, a declaração deve ser DETERMINISTIC na especificaç�
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE FUNCTION current_value RETURN DATE DETERMINISTIC IS
-BEGIN
-  RETURN SYSDATE;
-END;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function today_code return varchar2 deterministic is -- Noncompliant
+begin
+  return to_char(sysdate, 'YYYYMMDD');
+end;
 </pre>
 
 <h2>Solução conforme</h2>
 
-<pre>
-CREATE FUNCTION double_value(p_value NUMBER) RETURN NUMBER DETERMINISTIC IS
-BEGIN
-  RETURN p_value * 2;
-END;
+<pre data-diff-id="1" data-diff-type="compliant">
+create function today_code return varchar2 is
+begin
+  return to_char(sysdate, 'YYYYMMDD');
+end;
 </pre>

@@ -1,4 +1,40 @@
 <p>
-If a local variable is declared but not used, it is dead code and should be removed.
-Doing so will improve maintainability because developers will not wonder what the variable is used for.
+A variable, constant or exception that is declared and never used is dead code. It makes the reader look for a use
+that does not exist, and it often remains after a change removed the code that used it.
 </p>
+
+<p>
+This rule reports a local variable, constant or exception, or one of a package body, that no code of the file uses.
+Declarations of a package specification are not reported: other units may use them. A declaration is reported only
+when the analysis proves it unused: it is not reported when conditional compilation that may be compiled mentions its
+name, when a SQL name may read it unless a table has a column of that name, or when a syntax error, a substitution
+variable or code the analysis does not model is in its scope.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure ship_order(p_order number, p_ready boolean) is
+  l_weight number; -- Noncompliant
+  l_attempts pls_integer := 0;
+begin
+  while not p_ready and l_attempts &lt; 3 loop
+    l_attempts := l_attempts + 1;
+  end loop;
+  dispatch(p_order);
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure ship_order(p_order number, p_ready boolean) is
+  l_attempts pls_integer := 0;
+begin
+  while not p_ready and l_attempts &lt; 3 loop
+    l_attempts := l_attempts + 1;
+  end loop;
+  dispatch(p_order);
+end;
+</pre>

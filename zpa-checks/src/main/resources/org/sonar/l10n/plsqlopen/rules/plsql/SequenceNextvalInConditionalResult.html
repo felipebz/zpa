@@ -1,20 +1,36 @@
-<p>Do not use a sequence <code>NEXTVAL</code> in a conditional <code>CASE</code>
-or built-in <code>DECODE</code> result when the value appears to be consumed
-only by the selected branch.</p>
+<p>
+In a SQL statement, Oracle increments a sequence once for every row that references its <code>NEXTVAL</code>,
+whichever branch of a <code>CASE</code> or <code>DECODE</code> the row takes. A <code>NEXTVAL</code> written in a
+conditional result is therefore consumed for every row, also for those that get the other result: the sequence advances
+faster than expected and leaves gaps.
+</p>
 
-<p>Oracle sequences are special expressions in SQL. A conditional result can be
-correct while evaluating <code>NEXTVAL</code> still advances the sequence. Keep
-the sequence operation outside the conditional result when that side effect
-must be conditional.</p>
+<p>
+This rule reports <code>NEXTVAL</code> in a result of a <code>CASE</code> expression, or of the built-in
+<code>DECODE</code>, in a SQL statement of PL/SQL code, when the name is a sequence the project creates. Sequences outside the
+analyzed project are not recognized. Filter the rows that need a value in the <code>WHERE</code> clause instead.
+</p>
 
-<pre>
-select case when status = 'NEW' then order_seq.nextval else 0 end
-  from orders;
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure label_new_crates is
+begin
+  insert into crate_label (crate_id, label_no)
+  select c.id, case when c.status = 'NEW' then label_seq.nextval end -- Noncompliant
+    from crate c;
+end;
 </pre>
 
-<p>This rule reports only sequence references that ZPA can positively identify
-from project declarations. References to sequences outside the analyzed project
-may remain undetected. For <code>DECODE</code>, only an unqualified unquoted
-call (case-insensitive) or a quoted identifier spelled exactly
-<code>&quot;DECODE&quot;</code> call is treated as Oracle's built-in function. The
-main expression and search expressions are not conditional results.</p>
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure label_new_crates is
+begin
+  insert into crate_label (crate_id, label_no)
+  select c.id, label_seq.nextval
+    from crate c
+   where c.status = 'NEW';
+end;
+</pre>

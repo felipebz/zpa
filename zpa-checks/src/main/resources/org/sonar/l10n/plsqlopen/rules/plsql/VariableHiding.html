@@ -1,3 +1,45 @@
 <p>
-Redeclaring variables in inner scopes is allowed in PL/SQL, but it can cause confusion and should therefore be avoided.
+A variable or exception declared in an inner block or subprogram with the name of one declared around it hides the
+outer one: inside the inner scope every use of the name reads the inner declaration. PL/SQL accepts this, but a reader
+who sees the outer declaration expects it to be the one used, and an assignment meant for the outer variable silently
+changes the inner one.
 </p>
+
+<p>
+This rule reports a variable, constant or exception that hides a declaration of the same name visible where it is
+written: a variable, a parameter, a loop index or an exception of an enclosing block, subprogram or package body, or of
+the package specification, also when that specification is in another file of the project. Two declarations of one
+name in the same declarative part, or in a package specification and its body, are a duplicate, not hiding, and are
+not reported. Quoted names are compared as Oracle compares them.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure close_order(p_order number) is
+  l_total number := 0;
+begin
+  for r in (select amount from order_line where order_id = p_order) loop
+    declare
+      l_total number; -- Noncompliant
+    begin
+      l_total := l_total + r.amount;
+    end;
+  end loop;
+  update orders set total = l_total where id = p_order;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure close_order(p_order number) is
+  l_total number := 0;
+begin
+  for r in (select amount from order_line where order_id = p_order) loop
+    l_total := l_total + r.amount;
+  end loop;
+  update orders set total = l_total where id = p_order;
+end;
+</pre>

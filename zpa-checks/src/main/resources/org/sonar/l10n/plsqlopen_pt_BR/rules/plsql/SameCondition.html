@@ -1,11 +1,31 @@
 <p>
-Duplicar uma condição em uma comparação é quase sempre um equívoco.
-Pode ser um erro causado por copiar/colar e então ser um bug ou simplesmente ser código desnecessários que deve ser simplificado.
+Uma condição repetida na mesma cadeia de <code>AND</code> ou <code>OR</code> não acrescenta nada: <code>a AND a</code> é
+<code>a</code>. Quase sempre é um copiar e colar em que a segunda condição deveria testar outra coluna ou valor, e o
+filtro ou a decisão não é o pretendido.
+</p>
+
+<p>
+Esta regra reporta uma condição de uma cadeia de <code>AND</code> ou <code>OR</code> igual a uma anterior da mesma
+cadeia, ignorando parênteses.
 </p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-IF (x = 1) AND (x = 1) THEN ...
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select count(*)
+  into l_full
+  from rack
+ where capacity &lt;= used
+   and capacity &lt;= used; -- Noncompliant
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into l_full
+  from rack
+ where capacity &lt;= used
+   and active = 'Y';
 </pre>

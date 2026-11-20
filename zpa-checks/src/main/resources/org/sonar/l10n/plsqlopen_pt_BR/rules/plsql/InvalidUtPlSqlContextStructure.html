@@ -1,37 +1,40 @@
-<p>Corrija estruturas de contexto do utPLSQL que são ignoradas ou tratadas de forma inesperada
-durante a construção da suíte.</p>
+<p>
+O utPLSQL agrupa testes em contextos abertos por <code>%context</code> e fechados por <code>%endcontext</code>,
+opcionalmente nomeados por <code>%name</code>. Quando a estrutura está errada, o utPLSQL ignora a anotação ou dá ao
+contexto um nome automático, e a suíte não é montada como foi escrita, embora o pacote compile.
+</p>
+
+<p>
+Esta regra reporta um <code>%context</code> sem o seu <code>%endcontext</code>, um <code>%name</code> fora de um
+contexto, um nome inválido e um nome já usado por um contexto irmão. O utPLSQL usa o primeiro <code>%name</code> antes
+de um contexto aninhado e ignora os seguintes; um <code>%name</code> vazio gera um nome automático.
+</p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %suite
-  -- %context(Primeiro contexto)
-  -- %name(shared)
-  -- %endcontext
-  -- %context(Segundo contexto)
-  -- %name(shared)              -- Não conforme
-  -- %endcontext
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package crate_test as
+  --%suite
+  --%context(Open crates)
+  --%name(crates)
+  --%endcontext
+  --%context(Closed crates)
+  --%name(crates) -- Noncompliant
+  --%endcontext
+end;
 </pre>
-
-<p>Os nomes de contexto devem ser válidos e únicos entre contextos irmãos. A ausência de
-<code>%endcontext</code>, um nome fora de um contexto ou um nome duplicado pode fazer com que o
-utPLSQL ignore a anotação ou use um nome de contexto automático. O PL/SQL ainda pode ser
-compilado com sucesso. O utPLSQL usa o primeiro <code>%name</code> antes de um contexto aninhado;
-os nomes posteriores são ignorados. Um <code>%name</code> vazio usa um nome automático.</p>
 
 <h2>Solução conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %suite
-  -- %context(Primeiro contexto)
-  -- %name(first_context)
-  -- %endcontext
-  -- %context(Segundo contexto)
-  -- %name(second_context)
-  -- %endcontext
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%context(Open crates)
+  --%name(open_crates)
+  --%endcontext
+  --%context(Closed crates)
+  --%name(closed_crates)
+  --%endcontext
+end;
 </pre>

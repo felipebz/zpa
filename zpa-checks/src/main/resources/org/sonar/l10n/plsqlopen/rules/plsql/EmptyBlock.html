@@ -1,12 +1,30 @@
 <p>
-Most of the time a block of code is empty when a piece of code is really missing. So such empty block must be either filled or removed.
+A block, subprogram or exception handler whose only statement is <code>NULL</code> does nothing. Most of the time the
+code that belongs there is missing: a procedure left as a stub, or a handler written to silence an error. When doing
+nothing is intended, the code does not say why.
+</p>
+
+<p>
+This rule reports a <code>NULL</code> statement that is the only statement of a block, subprogram, trigger or method
+body. An overriding member of an object type is not reported: an empty body there may deliberately replace the
+supertype's behavior.
 </p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure refresh_rack(p_rack number) is
 begin
-  null;
+  null; -- Noncompliant
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure refresh_rack(p_rack number) is
+begin
+  update rack set refreshed_at = sysdate where id = p_rack;
 end;
 </pre>

@@ -1,3 +1,31 @@
 <p>
-Você não precisa adicionar a palavra-chave DECLARE em um bloco se não há nenhuma declaração. 
+A palavra-chave <code>DECLARE</code> de um bloco introduz as suas declarações. Um bloco que não declara nada não
+precisa dela: <code>BEGIN ... END</code> sozinho é o mesmo bloco, e a palavra-chave só sugere declarações que não
+existem.
 </p>
+
+<p>
+Esta regra reporta uma palavra-chave <code>DECLARE</code> seguida de nenhuma declaração.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+begin
+  declare -- Noncompliant
+  begin
+    archive_crates(sysdate - 30);
+  end;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+begin
+  begin
+    archive_crates(sysdate - 30);
+  end;
+end;
+</pre>

@@ -1,48 +1,41 @@
 <p>
-You should review all the RAISE statements that causes a predefined exception, because usually this is a sign of bad logic. Consider this example:
+Predefined exceptions such as <code>NO_DATA_FOUND</code> or <code>TOO_MANY_ROWS</code> tell that a specific operation
+failed. Raising one explicitly makes the code lie about what happened: a handler meant for a failed lookup catches a
+business condition, and it often means an exception is used as a jump to the handler instead of plain control flow.
 </p>
-
-<pre>
-CREATE OR REPLACE FUNCTION group_has_users(id IN NUMBER) RETURN BOOLEAN IS
-  has_users BOOLEAN;
-  user_id   user_group.user_id%TYPE;
-BEGIN
-  BEGIN
-    SELECT user_group.user_id
-      INTO user_id
-      FROM user_group
-     WHERE user_group.group_id = id;
-     
-    RAISE TOO_MANY_ROWS;
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-      has_users := FALSE;
-    WHEN TOO_MANY_ROWS THEN
-      has_users := TRUE;
-  END;
-  
-  RETURN has_users;
-END;
-</pre>
 
 <p>
-In this case, the TOO_MANY_ROWS exception is being used as a flow control mechanism. This function could be rewritten to avoid the RAISE statement:
+This rule reports a <code>RAISE</code> of a predefined exception of <code>STANDARD</code>
+(<code>NO_DATA_FOUND</code>, <code>TOO_MANY_ROWS</code>, <code>VALUE_ERROR</code>, <code>ZERO_DIVIDE</code>,
+<code>DUP_VAL_ON_INDEX</code>, <code>INVALID_NUMBER</code>...). Use control flow, or a user-defined exception or
+<code>RAISE_APPLICATION_ERROR</code> that names the condition.
 </p>
 
-<pre>
-CREATE OR REPLACE FUNCTION group_has_users(id IN NUMBER) RETURN BOOLEAN IS
-  number_of_users NUMBER;
-BEGIN
-  BEGIN
-    SELECT COUNT(*)
-      INTO number_of_users
-      FROM user_group
-     WHERE user_group.group_id = id;
-  EXCEPTION
-    WHEN OTHERS THEN
-      number_of_users := 0;
-  END;
-  
-  RETURN number_of_users > 0;
-END;
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function rack_is_full(p_rack in number) return boolean is
+  l_free number;
+begin
+  select capacity - used into l_free from rack where id = p_rack;
+  if l_free = 0 then
+    raise too_many_rows; -- Noncompliant
+  end if;
+  return false;
+exception
+  when too_many_rows then
+    return true;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create function rack_is_full(p_rack in number) return boolean is
+  l_free number;
+begin
+  select capacity - used into l_free from rack where id = p_rack;
+  return l_free = 0;
+end;
 </pre>

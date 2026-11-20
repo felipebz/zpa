@@ -1,11 +1,31 @@
 <p>
-Duplicate a condition in a comparison is almost always a mistake.
-It can be either a copy/paste error and therefore a bug, or it is simply wasted code, and should be simplified.
+A condition repeated in the same chain of <code>AND</code> or <code>OR</code> adds nothing: <code>a AND a</code> is
+<code>a</code>. It is almost always a copy and paste where the second condition should test another column or value, so
+the filter or the decision is not the one intended.
+</p>
+
+<p>
+This rule reports a condition of an <code>AND</code> or <code>OR</code> chain that is the same as an earlier one of
+that chain, parentheses aside.
 </p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-IF (x = 1) AND (x = 1) THEN ...
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select count(*)
+  into l_full
+  from rack
+ where capacity &lt;= used
+   and capacity &lt;= used; -- Noncompliant
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select count(*)
+  into l_full
+  from rack
+ where capacity &lt;= used
+   and active = 'Y';
 </pre>

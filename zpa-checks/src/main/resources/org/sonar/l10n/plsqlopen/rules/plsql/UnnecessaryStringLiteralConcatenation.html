@@ -1,20 +1,24 @@
-<p>Merge adjacent non-empty string literals joined by <code>||</code> when they are on the same
-line. This removes syntax that makes a short constant harder to read.</p>
+<p>
+Two string literals joined by <code>||</code> on the same line are one constant split for no reason: the reader has to
+join them to see the text, and a missing space at the junction is easy to overlook.
+</p>
 
-<pre>
-v := 'foo' || 'bar';
+<p>
+This rule reports adjacent non-empty string literals joined by <code>||</code> on the same line. A concatenation split
+across lines to keep long text readable is not reported, nor one with a comment between the literals, one that mixes
+national (<code>N'...'</code>) and database character literals, or one whose merged literal could exceed Oracle's limit
+for a literal.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+l_text := 'Rack is ' || 'full'; -- Noncompliant
 </pre>
 
-<p>Use the single literal instead:</p>
+<h2>Compliant Solution</h2>
 
-<pre>
-v := 'foobar';
-</pre>
-
-<p>Concatenation used to make longer or structured text easier to read is intentionally outside
-the scope of this rule:</p>
-
-<pre>
-v := 'foo ' ||
-     'bar';
+<pre data-diff-id="1" data-diff-type="compliant">
+l_text := 'Rack is full';
 </pre>

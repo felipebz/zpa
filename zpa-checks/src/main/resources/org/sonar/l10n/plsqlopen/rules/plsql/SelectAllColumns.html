@@ -1,19 +1,40 @@
 <p>
-SELECT * returns all the available columns. You should explicitly list the necessary columns.
-When considering using *, you should consider the possibility that more fields will be added to the table later.
+<code>SELECT *</code> returns whatever columns the tables have when the statement runs. Code that reads the result
+into variables or by position breaks, or reads the wrong column, when a column is added, removed or reordered. It also
+fetches columns nobody uses, and hides from the reader which data the code depends on.
+</p>
+
+<p>
+This rule reports <code>*</code> and <code>table.*</code> in a select list. It is not reported where the whole row is
+the point: in an <code>EXISTS</code> subquery, in a <code>SELECT ... INTO</code> whose target may be a record of the
+row, and in a cursor fetched into such a record.
 </p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  cursor c_racks is
+    select * -- Noncompliant
+      from rack;
 begin
-  select *
-    into var
-    from emp;
-  
-  select emp.*
-    into var
-    from emp;
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  cursor c_racks is
+    select id
+      from rack;
+begin
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
 end;
 </pre>

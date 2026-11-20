@@ -1,11 +1,27 @@
 <p>
-Using the same value on either side of an operator is almost always a mistake.
-It can be either a copy/paste error and therefore a bug, or it is simply wasted code, and should be simplified.
+A comparison with the same expression on both sides is almost always a mistake: usually a copy and paste where one side
+should name another column, variable or alias. When it is not, it is a hidden test for null: <code>x = x</code> is true
+for any value and unknown for null, which <code>x IS NOT NULL</code> says plainly.
+</p>
+
+<p>
+This rule reports a comparison (<code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>, <code>&gt;</code>,
+<code>&lt;=</code>, <code>&gt;=</code>...) whose two sides are the same expression, parentheses aside.
 </p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-if a = a then ...
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select c.code
+  from crate c, rack r
+ where c.rack_id = c.rack_id; -- Noncompliant
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code
+  from crate c, rack r
+ where c.rack_id = r.id;
 </pre>

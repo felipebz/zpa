@@ -1,18 +1,33 @@
 <p>
-Currently, the VARCHAR and VARCHAR2 data types are identical. But to accommodate emerging SQL standards, VARCHAR might become a separate data type in future.
+<code>VARCHAR</code> is today a synonym of <code>VARCHAR2</code>, but Oracle reserves it for a future type with
+different comparison semantics: code declared with it may change behavior. <code>CHAR</code> pads every value with
+spaces to its length, so a value read into a <code>VARCHAR2</code> or compared with one carries the padding, and
+comparisons and searches behave unexpectedly.
 </p>
 
 <p>
-The CHAR data type doesn't have any advantage over VARCHAR2 and makes searching more difficult because the right-padded values.
+This rule reports a declaration of type <code>CHAR</code> or <code>VARCHAR</code>. Use <code>VARCHAR2</code>.
 </p>
 
-<pre>
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
 declare
-  var1 varchar(10); -- Noncompliant
-  var2 char(10); -- Noncompliant
-  
-  var3 varchar2(10); -- Compliant
+  l_code char(10); -- Noncompliant
+  l_label varchar(30); -- Noncompliant
 begin
-  null;
+  select code, label into l_code, l_label from crate where id = 42;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  l_code varchar2(10);
+  l_label varchar2(30);
+begin
+  select code, label into l_code, l_label from crate where id = 42;
 end;
 </pre>

@@ -1,48 +1,42 @@
 <p>
-Você deve revisar todos os comandos RAISE que causam exceções pré-definidas, porque normalmente esse é um sinal de lógica ruim. Considere esse exemplo:
+Exceções predefinidas como <code>NO_DATA_FOUND</code> ou <code>TOO_MANY_ROWS</code> dizem que uma operação específica
+falhou. Lançar uma explicitamente faz o código mentir sobre o que aconteceu: um tratador feito para uma busca que falhou
+captura uma condição de negócio, e muitas vezes isso significa que uma exceção é usada como um salto para o tratador em
+vez de um fluxo de controle simples.
 </p>
-
-<pre>
-CREATE OR REPLACE FUNCTION grupo_tem_usuario(id IN NUMBER) RETURN BOOLEAN IS
-  tem_usuario BOOLEAN;
-  usuario_id  usuario_grupo.usuario_id%TYPE;
-BEGIN
-  BEGIN
-    SELECT usuario_grupo.usuario_id
-      INTO grupo_id
-      FROM usuario_grupo
-     WHERE usuario_grupo.grupo_id = id;
-     
-    RAISE TOO_MANY_ROWS;
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-      tem_usuario := FALSE;
-    WHEN TOO_MANY_ROWS THEN
-      tem_usuario := TRUE;
-  END;
-  
-  RETURN tem_usuario;
-END;
-</pre>
 
 <p>
-Nesse caso, a exceção TOO_MANY_ROWS está sendo usada como mecanismo de controle de fluxo. Essa função poderia ser reescrita para evitar o comando RAISE:
+Esta regra reporta um <code>RAISE</code> de uma exceção predefinida do <code>STANDARD</code>
+(<code>NO_DATA_FOUND</code>, <code>TOO_MANY_ROWS</code>, <code>VALUE_ERROR</code>, <code>ZERO_DIVIDE</code>,
+<code>DUP_VAL_ON_INDEX</code>, <code>INVALID_NUMBER</code>...). Use o fluxo de controle, ou uma exceção definida pelo
+usuário ou <code>RAISE_APPLICATION_ERROR</code> que nomeie a condição.
 </p>
 
-<pre>
-CREATE OR REPLACE FUNCTION grupo_tem_usuario(id IN NUMBER) RETURN BOOLEAN IS
-  numero_de_usuarios NUMBER;
-BEGIN
-  BEGIN
-    SELECT COUNT(*)
-      INTO numero_de_usuarios
-      FROM usuario_grupo
-     WHERE usuario_grupo.grupo_id = id;
-  EXCEPTION
-    WHEN OTHERS THEN
-      numero_de_usuarios := 0;
-  END;
-  
-  RETURN numero_de_usuarios > 0;
-END;
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function rack_is_full(p_rack in number) return boolean is
+  l_free number;
+begin
+  select capacity - used into l_free from rack where id = p_rack;
+  if l_free = 0 then
+    raise too_many_rows; -- Noncompliant
+  end if;
+  return false;
+exception
+  when too_many_rows then
+    return true;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create function rack_is_full(p_rack in number) return boolean is
+  l_free number;
+begin
+  select capacity - used into l_free from rack where id = p_rack;
+  return l_free = 0;
+end;
 </pre>

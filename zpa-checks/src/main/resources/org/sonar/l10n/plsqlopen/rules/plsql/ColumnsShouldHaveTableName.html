@@ -1,3 +1,33 @@
 <p>
-Specify the table name of the columns in a SELECT statement to improve readability and guarantee that the code won't stop working when the table changes.
+In a query over two or more tables, a column written without its table or alias depends on the columns of every table
+in the <code>FROM</code> clause. The query works while only one of them has a column of that name. Once a column of the
+same name is added to another of the tables, Oracle rejects the query with ORA-00918 ("column ambiguously defined"),
+and a PL/SQL unit that holds it becomes invalid. The reader also has to know every table's columns to tell where the
+value comes from.
 </p>
+
+<p>
+This rule reports a column of the select list written without a table or alias, in a query whose <code>FROM</code>
+clause lists two or more tables, views or subqueries separated by commas; queries written with <code>JOIN</code> are not
+checked. A name a PL/SQL variable or parameter takes, and pseudocolumns such as <code>ROWNUM</code>, <code>LEVEL</code>
+or <code>SYSDATE</code>, are not reported.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select code, -- Noncompliant
+       r.label
+  from crate c, rack r
+ where r.id = c.rack_id;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code,
+       r.label
+  from crate c, rack r
+ where r.id = c.rack_id;
+</pre>

@@ -1,15 +1,31 @@
 <p>
-Funções com parâmetros OUT são difíceis de entender.
-É impossível dizer se um parâmetro é de entrada ou saída apenas olhando para a chamada da função
-Além disso, funções com parâmetros OUT não podem ser chamadas por SQL.
+Espera-se que uma função calcule um valor a partir dos seus argumentos e o retorne. Um parâmetro <code>OUT</code> ou
+<code>IN OUT</code> lhe dá um segundo resultado, escondido: nada em <code>l_total := order_total(p_order, l_count)</code>
+diz que <code>l_count</code> muda. Uma função assim também não pode ser chamada em SQL (ORA-06572).
+</p>
+
+<p>
+Esta regra reporta um parâmetro <code>OUT</code> ou <code>IN OUT</code> de uma função. Retorne os valores juntos, como
+um record ou um objeto, ou transforme a função numa procedure com apenas parâmetros <code>OUT</code>.
 </p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE OR REPLACE FUNCTION get_product_info(id IN NUMBER, value OUT NUMBER) RETURN VARCHAR2 IS
-BEGIN
- ...
-END;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function order_total(p_order number, p_lines out number) return number is -- Noncompliant
+  l_total number;
+begin
+  select sum(amount), count(*) into l_total, p_lines from order_line where order_id = p_order;
+  return l_total;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure order_totals(p_order number, p_total out number, p_lines out number) is
+begin
+  select sum(amount), count(*) into p_total, p_lines from order_line where order_id = p_order;
+end;
 </pre>

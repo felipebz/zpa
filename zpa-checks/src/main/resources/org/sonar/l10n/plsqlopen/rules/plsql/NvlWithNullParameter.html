@@ -1,10 +1,23 @@
 <p>
-The NVL function lets you replace a null value with a valid value value. So, don't specify a NULL literal or an empty string as a parameter of a NVL call.
+<code>NVL(a, b)</code> returns <code>b</code> when <code>a</code> is null, and <code>a</code> otherwise. With
+<code>NULL</code> as the second argument it returns <code>a</code> in every case; with <code>NULL</code> as the first it
+always returns <code>b</code>. Oracle treats <code>''</code> as null, so <code>''</code> does the same. The call does
+nothing, and usually a default value was meant.
+</p>
+
+<p>
+This rule reports a call to <code>NVL</code> with <code>NULL</code> or <code>''</code> as one of its two arguments.
 </p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-var := nvl(x, '');
+<pre data-diff-id="1" data-diff-type="noncompliant">
+l_label := nvl(r_crate.label, ''); -- Noncompliant
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+l_label := nvl(r_crate.label, 'unlabeled');
 </pre>

@@ -1,17 +1,31 @@
 <p>
-This rule checks that all variable names match a provided regular expression.
+A naming convention lets a reader tell a variable from a column, a parameter or a constant at a glance. Names that
+follow it are easier to search and harder to confuse.
+</p>
+
+<p>
+This rule reports a variable whose name does not match the regular expression of the <code>regexp</code> parameter. By
+default it is <code>[a-zA-Z]([a-zA-Z0-9_]*[a-zA-Z0-9])?</code>: a name that starts with a letter and does not end with
+an underscore.
 </p>
 
 <!-- section: fix -->
-<h2>Example</h2>
+<h2>Noncompliant Code Example</h2>
 
-<p>Considering the default expression:</p>
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  rack_label_ rack.label%type; -- Noncompliant
+begin
+  select label into rack_label_ from rack where id = 42;
+end;
+</pre>
 
-<pre>
-DECLARE
-  dept_name dept.name%type; -- Compliant
-  dept_name_ dept.name%type; -- Noncompliant
-BEGIN
-  ...
-END;
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  rack_label rack.label%type;
+begin
+  select label into rack_label from rack where id = 42;
+end;
 </pre>

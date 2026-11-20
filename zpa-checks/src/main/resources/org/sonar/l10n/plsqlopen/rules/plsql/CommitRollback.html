@@ -1,12 +1,33 @@
 <p>
-Usually, the control of the transaction should be handled by the its "owner".
-If the transaction was started by some Java code, the commit and rollback of this should be done in the Java code.
+A transaction belongs to whoever starts it: the application, the job or the client that calls the subprogram. A
+<code>COMMIT</code> or <code>ROLLBACK</code> inside a stored subprogram or trigger ends the caller's transaction too,
+so the caller can no longer undo its own work, or loses it, and the subprogram cannot be reused inside a larger
+transaction.
 </p>
 
 <p>
-So, in this situation, calling a COMMIT or ROLLBACK from a database object is a bad pratice and should be avoided. 
+This rule reports <code>COMMIT</code> and <code>ROLLBACK</code> in stored code. It does not report
+<code>ROLLBACK TO SAVEPOINT</code>, which undoes only the subprogram's own work, code in anonymous blocks and scripts,
+nor code in a subprogram or trigger declared with <code>PRAGMA AUTONOMOUS_TRANSACTION</code>, whose transaction is its
+own.
 </p>
 
-<p>
-This rule ignores procedures and functions with <code>PRAGMA AUTONOMOUS_TRANSACTION</code>.
-</p>
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure move_crate(p_crate in number, p_rack in number) is
+begin
+  update crate set rack_id = p_rack where id = p_crate;
+  commit; -- Noncompliant
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure move_crate(p_crate in number, p_rack in number) is
+begin
+  update crate set rack_id = p_rack where id = p_crate;
+end;
+</pre>

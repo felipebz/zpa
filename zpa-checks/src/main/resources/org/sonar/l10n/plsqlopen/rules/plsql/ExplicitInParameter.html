@@ -1,15 +1,28 @@
 <p>
-If not set, the parameter mode is IN. However, defining it explicitly does make the code easier to read.
+A parameter written without a mode is <code>IN</code>. Writing the mode for every parameter makes the direction of
+each one visible in the heading, and makes an <code>IN</code> parameter look deliberate rather than forgotten next to
+<code>OUT</code> ones.
 </p>
 
-<pre>
-CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- Noncompliant
-BEGIN
-  NULL;
-END;
+<p>
+This rule reports a parameter declared without <code>IN</code>, <code>OUT</code> or <code>IN OUT</code>.
+</p>
 
-CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- Compliant; the parameter mode is defined
-BEGIN
-  NULL;
-END;
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure move_crate(p_crate number, p_rack out number) is -- Noncompliant
+begin
+  select rack_id into p_rack from crate where id = p_crate;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure move_crate(p_crate in number, p_rack out number) is
+begin
+  select rack_id into p_rack from crate where id = p_crate;
+end;
 </pre>

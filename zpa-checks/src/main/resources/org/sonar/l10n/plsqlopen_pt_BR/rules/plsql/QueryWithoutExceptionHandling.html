@@ -1,6 +1,45 @@
 <p>
-Comandos <code>SELECT ... INTO</code> comuns podem lançar <code>NO_DATA_FOUND</code> ou <code>TOO_MANY_ROWS</code> quando a cardinalidade do resultado não é tratada.
+Um <code>SELECT ... INTO</code> precisa retornar exatamente uma linha: sem nenhuma linha ele lança
+<code>NO_DATA_FOUND</code>, e com mais de uma, <code>TOO_MANY_ROWS</code>. Quando nada as trata, a exceção encerra o
+trabalho de quem chamou com um erro que não diz qual busca falhou, muitas vezes longe da consulta que o causou.
 </p>
+
 <p>
-Consultas de agregação de grupo único sem <code>GROUP BY</code>, <code>HAVING</code>, operadores de conjunto, cláusulas de limitação de linhas ou <code>MODEL</code> sempre produzem uma linha de resultado e são ignoradas por esta regra. Essa garantia trata apenas da cardinalidade; consultas de agregação ainda podem lançar outras exceções em tempo de execução.
+Esta regra reporta um <code>SELECT ... INTO</code> cujo bloco não tem tratador de exceção. Uma consulta escrita num
+tratador de exceção não é coberta pelos tratadores ao lado dela: só um bloco em volta conta. Um <code>BULK COLLECT
+INTO</code> não é reportado, nem uma consulta que sempre retorna uma linha: uma única agregação (<code>COUNT</code>,
+<code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>) sem <code>GROUP BY</code>,
+<code>HAVING</code>, operadores de conjunto, cláusula de limitação de linhas ou <code>MODEL</code>. A regra não
+verifica quais exceções o tratador nomeia.
 </p>
+
+<p>
+Com o parâmetro <code>strict</code> igual a false, um tratador de qualquer bloco ou subprograma em volta cobre a
+consulta.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function rack_label(p_rack number) return varchar2 is
+  l_label rack.label%type;
+begin
+  select label into l_label from rack where id = p_rack; -- Noncompliant
+  return l_label;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create function rack_label(p_rack number) return varchar2 is
+  l_label rack.label%type;
+begin
+  select label into l_label from rack where id = p_rack;
+  return l_label;
+exception
+  when no_data_found then
+    return null;
+end;
+</pre>

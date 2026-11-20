@@ -1,15 +1,28 @@
 <p>
-Se não for informado, o modo padrão dos parâmetros é IN. Porém, definir ele explicitamente faz com que o código seja mais fácil de ler.
+Um parâmetro escrito sem modo é <code>IN</code>. Escrever o modo de todo parâmetro torna visível no cabeçalho a direção
+de cada um, e faz um parâmetro <code>IN</code> parecer intencional, e não esquecido, ao lado de parâmetros
+<code>OUT</code>.
 </p>
 
-<pre>
-CREATE OR REPLACE PROCEDURE myproc(value VARCHAR2) IS -- Não conforme
-BEGIN
-  NULL;
-END;
+<p>
+Esta regra reporta um parâmetro declarado sem <code>IN</code>, <code>OUT</code> ou <code>IN OUT</code>.
+</p>
 
-CREATE OR REPLACE PROCEDURE myproc(value IN VARCHAR2) IS -- Conforme; o modo do parâmetro está definido
-BEGIN
-  NULL;
-END;
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure move_crate(p_crate number, p_rack out number) is -- Noncompliant
+begin
+  select rack_id into p_rack from crate where id = p_crate;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure move_crate(p_crate in number, p_rack out number) is
+begin
+  select rack_id into p_rack from crate where id = p_crate;
+end;
 </pre>

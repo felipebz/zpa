@@ -1,23 +1,32 @@
-<p>utPLSQL reads test annotations from a package specification. An annotation in a package body may be accepted by the PL/SQL compiler, but utPLSQL will ignore it.</p>
+<p>
+utPLSQL reads annotations from package specifications only. An annotation written in a package body is a comment the
+compiler accepts and utPLSQL never sees: the procedure is not run as a test, or the setting is not applied.
+</p>
+
+<p>
+This rule reports a utPLSQL annotation written in a package body. Move it to the procedure's declaration in the
+specification.
+</p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE PACKAGE BODY test_pkg AS
-  -- %test
-  PROCEDURE does_something IS
-  BEGIN
-    NULL;
-  END;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package body crate_test as
+  --%test(Creates a crate) -- Noncompliant
+  procedure creates_crate is
+  begin
+    ut.expect(crate_count).to_equal(1);
+  end;
+end;
 </pre>
 
 <h2>Compliant Solution</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %test(Does something)
-  PROCEDURE does_something;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%test(Creates a crate)
+  procedure creates_crate;
+end;
 </pre>

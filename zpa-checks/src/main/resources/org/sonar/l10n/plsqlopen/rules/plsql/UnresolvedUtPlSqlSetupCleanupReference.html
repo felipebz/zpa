@@ -1,31 +1,37 @@
-<p>utPLSQL executes setup and cleanup references as package procedure calls without arguments. A missing, private, non-callable, or ambiguous target can prevent test setup or cleanup from running even when the PL/SQL itself compiles successfully.</p>
+<p>
+utPLSQL runs the procedures named in setup and cleanup annotations (<code>%beforeall(proc)</code>,
+<code>%aftereach(proc)</code>...) as package procedure calls without arguments. When the name does not resolve to such
+a procedure, the setup or cleanup does not run, though the package compiles.
+</p>
+
+<p>
+This rule reports a setup or cleanup reference that resolves to no public procedure of the analyzed package
+specifications, or to one that cannot be called without arguments, or to more than one. A package that is not in the
+analyzed project may exist in the database: a reference to it is not reported.
+</p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %suite
-  -- %beforeall(missing_setup)
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package crate_test as
+  --%suite
+  --%beforeall(load_crates) -- Noncompliant
 
-  -- %test
-  PROCEDURE some_test;
-END test_pkg;
+  --%test(Creates a crate)
+  procedure creates_crate;
+end;
 </pre>
 
 <h2>Compliant Solution</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %suite
-  -- %beforeall(setup)
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%beforeall(load_crates)
 
-  -- %test
-  PROCEDURE some_test;
-  PROCEDURE setup;
-END test_pkg;
+  --%test(Creates a crate)
+  procedure creates_crate;
+  procedure load_crates;
+end;
 </pre>
-
-<p>ZPA resolves only public procedures represented by the analyzed package specifications. A
-package that is not part of the analyzed project may be a valid database dependency and is not
-reported solely because its source is unavailable.</p>

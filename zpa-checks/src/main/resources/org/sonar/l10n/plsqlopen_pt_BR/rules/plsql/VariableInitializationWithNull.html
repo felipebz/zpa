@@ -1,3 +1,33 @@
 <p>
-Por padrão, novas variáveis e campos de um RECORD são inicializados com NULL. Então você não precisa inicializá-las com NULL.
+Uma variável ou campo de record declarado sem valor padrão começa nulo. Inicializá-lo com <code>NULL</code>, ou com
+<code>''</code>, que o Oracle trata como nulo, repete o padrão e faz o leitor procurar um motivo que não existe.
 </p>
+
+<p>
+Esta regra reporta uma variável ou campo de record inicializado com <code>NULL</code> ou <code>''</code>, por
+<code>:=</code> ou <code>DEFAULT</code>. O valor padrão de um parâmetro não é reportado: ali, <code>DEFAULT NULL</code>
+torna o parâmetro opcional.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  l_label varchar2(30) := null; -- Noncompliant
+  type t_slot is record (code varchar2(10) default ''); -- Noncompliant
+begin
+  l_label := slot_label(42);
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  l_label varchar2(30);
+  type t_slot is record (code varchar2(10));
+begin
+  l_label := slot_label(42);
+end;
+</pre>

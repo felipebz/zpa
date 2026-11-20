@@ -1,23 +1,32 @@
-<p>O utPLSQL lê as anotações de testes a partir da especificação do pacote. Uma anotação no corpo do pacote pode ser aceita pelo compilador PL/SQL, mas será ignorada pelo utPLSQL.</p>
+<p>
+O utPLSQL lê anotações só das especificações de pacote. Uma anotação escrita num package body é um comentário que o
+compilador aceita e o utPLSQL nunca vê: a procedure não é executada como teste, ou a configuração não é aplicada.
+</p>
+
+<p>
+Esta regra reporta uma anotação do utPLSQL escrita num package body. Mova-a para a declaração da procedure na
+especificação.
+</p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE PACKAGE BODY test_pkg AS
-  -- %test
-  PROCEDURE does_something IS
-  BEGIN
-    NULL;
-  END;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package body crate_test as
+  --%test(Creates a crate) -- Noncompliant
+  procedure creates_crate is
+  begin
+    ut.expect(crate_count).to_equal(1);
+  end;
+end;
 </pre>
 
 <h2>Solução conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %test(Does something)
-  PROCEDURE does_something;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%test(Creates a crate)
+  procedure creates_crate;
+end;
 </pre>

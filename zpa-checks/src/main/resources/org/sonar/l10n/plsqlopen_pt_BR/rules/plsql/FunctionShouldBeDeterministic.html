@@ -19,28 +19,24 @@ portanto adicionar <code>DETERMINISTIC</code> não oferece o benefício de uma f
 </p>
 
 <!-- section: fix -->
-<h2>Código elegível para a recomendação</h2>
+<h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE FUNCTION double_value(p_value NUMBER)
-  RETURN NUMBER
-IS
-BEGIN
-  RETURN p_value * 2;
-END;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function double_value(p_value in number) return number is -- Noncompliant
+begin
+  return p_value * 2;
+end;
 </pre>
 
-<h2>Código não elegível para a recomendação</h2>
+<h2>Solução conforme</h2>
 
-<pre>
-CREATE FUNCTION current_value
-  RETURN DATE
-IS
-BEGIN
-  RETURN SYSDATE;
-END;
+<pre data-diff-id="1" data-diff-type="compliant">
+create function double_value(p_value in number) return number deterministic is
+begin
+  return p_value * 2;
+end;
 </pre>
 
 <p>
-Esta função não é sugerida como candidata a determinística porque seu resultado depende do horário atual.
+Uma função cujo resultado depende do horário atual, como <code>RETURN SYSDATE</code>, nunca é recomendada.
 </p>

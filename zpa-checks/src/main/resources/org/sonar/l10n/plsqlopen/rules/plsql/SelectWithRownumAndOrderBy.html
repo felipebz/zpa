@@ -1,33 +1,30 @@
 <p>
-In a SELECT expression, the WHERE clause is executed before the ORDER BY clause. Consider this example:
+In a query, the <code>WHERE</code> clause is applied before the <code>ORDER BY</code>. A condition on
+<code>ROWNUM</code> in the same query therefore keeps the first rows Oracle happens to read, and only those are
+sorted: <code>WHERE ROWNUM &lt;= 5 ORDER BY created_at DESC</code> does not return the five newest rows.
 </p>
-
-<pre>
-DECLARE
-  CURSOR recent_users IS
-    SELECT user.name,
-           user.creation_date
-      FROM user
-     WHERE ROWNUM <= 5
-     ORDER BY user.creation_date DESC;
-BEGIN
-  ...
-</pre>
 
 <p>
-This query won't return the last 5 created users. The database will filter the users without any ordering and after, apply the ORDER BY clause. The corrected query is:
+This rule reports a comparison with <code>ROWNUM</code> in the <code>WHERE</code> clause of a query that has an
+<code>ORDER BY</code>. Sort in a subquery and filter on <code>ROWNUM</code> outside it, or use
+<code>FETCH FIRST n ROWS ONLY</code>.
 </p>
 
-<pre>
-DECLARE
-  CURSOR recent_users IS
-    SELECT name,
-           creation_date
-      FROM (SELECT user.name,
-                   user.creation_date
-              FROM user
-             ORDER BY user.creation_date DESC)
-     WHERE ROWNUM <= 5;
-BEGIN
-  ...
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select c.code, c.created_at
+  from crate c
+ where rownum &lt;= 5 -- Noncompliant
+ order by c.created_at desc;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code, c.created_at
+  from crate c
+ order by c.created_at desc
+ fetch first 5 rows only;
 </pre>

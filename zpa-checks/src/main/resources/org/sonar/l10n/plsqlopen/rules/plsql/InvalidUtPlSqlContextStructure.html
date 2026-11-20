@@ -1,36 +1,40 @@
-<p>Fix utPLSQL context structures that are ignored or handled unexpectedly when the suite is built.</p>
+<p>
+utPLSQL groups tests in contexts opened by <code>%context</code> and closed by <code>%endcontext</code>, optionally
+named by <code>%name</code>. When the structure is wrong, utPLSQL ignores the annotation or gives the context an
+automatic name, and the suite is not built as written, though the package compiles.
+</p>
+
+<p>
+This rule reports a <code>%context</code> without its <code>%endcontext</code>, a <code>%name</code> outside a context,
+an invalid name, and a name already used by a sibling context. utPLSQL uses the first <code>%name</code> before a
+nested context and ignores later ones; an empty <code>%name</code> gives an automatic name.
+</p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %suite
-  -- %context(First context)
-  -- %name(shared)
-  -- %endcontext
-  -- %context(Second context)
-  -- %name(shared)              -- Noncompliant
-  -- %endcontext
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package crate_test as
+  --%suite
+  --%context(Open crates)
+  --%name(crates)
+  --%endcontext
+  --%context(Closed crates)
+  --%name(crates) -- Noncompliant
+  --%endcontext
+end;
 </pre>
-
-<p>Context names must be valid and unique among sibling contexts. A missing
-<code>%endcontext</code>, a name outside a context, or a duplicate name can make utPLSQL
-ignore the annotation or use an automatic context name instead. The PL/SQL can still compile
-successfully. utPLSQL uses the first <code>%name</code> before a nested context; later names are
-ignored. An empty <code>%name</code> uses an automatic name.</p>
 
 <h2>Compliant Solution</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %suite
-  -- %context(First context)
-  -- %name(first_context)
-  -- %endcontext
-  -- %context(Second context)
-  -- %name(second_context)
-  -- %endcontext
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%context(Open crates)
+  --%name(open_crates)
+  --%endcontext
+  --%context(Closed crates)
+  --%name(closed_crates)
+  --%endcontext
+end;
 </pre>

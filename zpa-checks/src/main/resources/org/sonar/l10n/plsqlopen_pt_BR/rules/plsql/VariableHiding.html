@@ -1,3 +1,45 @@
 <p>
-Redeclarar variáveis em um escopo mais interno é permitido no PL/SQL, mas pode causar confusão e por isso deve ser evitado.
+Uma variável ou exceção declarada num bloco ou subprograma interno com o nome de uma declarada em volta dele esconde a
+externa: dentro do escopo interno, todo uso do nome lê a declaração interna. O PL/SQL aceita isso, mas quem lê o código
+e vê a declaração externa espera que ela seja a usada, e uma atribuição feita para a variável externa altera a interna
+sem aviso.
 </p>
+
+<p>
+Esta regra reporta uma variável, constante ou exceção que esconde uma declaração do mesmo nome visível onde ela é
+escrita: uma variável, um parâmetro, um índice de laço ou uma exceção de um bloco, subprograma ou package body em volta,
+ou da especificação do pacote, também quando essa especificação está em outro arquivo do projeto. Duas declarações do
+mesmo nome na mesma parte declarativa, ou numa especificação de pacote e no seu body, são uma duplicação, não um
+escondimento, e não são reportadas. Nomes entre aspas são comparados como o Oracle os compara.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure close_order(p_order number) is
+  l_total number := 0;
+begin
+  for r in (select amount from order_line where order_id = p_order) loop
+    declare
+      l_total number; -- Noncompliant
+    begin
+      l_total := l_total + r.amount;
+    end;
+  end loop;
+  update orders set total = l_total where id = p_order;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure close_order(p_order number) is
+  l_total number := 0;
+begin
+  for r in (select amount from order_line where order_id = p_order) loop
+    l_total := l_total + r.amount;
+  end loop;
+  update orders set total = l_total where id = p_order;
+end;
+</pre>

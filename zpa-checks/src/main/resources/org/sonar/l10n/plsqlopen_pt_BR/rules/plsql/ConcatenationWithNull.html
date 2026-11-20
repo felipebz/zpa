@@ -1,14 +1,23 @@
-<p>Concatenar um valor VARCHAR2 com NULL não causa efeito nenhum. Sendo assim, o valor NULL deve ser removido.</p>
+<p>
+O Oracle trata <code>NULL</code> e <code>''</code> como string vazia numa concatenação, então concatená-los não
+acrescenta nada. O operando é sobra de uma edição, ou foi escrito para converter um valor em texto implicitamente
+(<code>'' || id</code>), o que esconde a conversão e o seu formato.
+</p>
 
-<p>Uma concatenação de qualquer outro tipo de dado com NULL causará uma conversão implícita para VARCHAR2. Se esse for o
-comportamento desejado, substitua a concatenação por uma chamada para TO_CHAR para tornar isso explícito. Veja esse exemplo:</p>
+<p>
+Esta regra reporta <code>NULL</code> ou <code>''</code> escrito como operando de <code>||</code>. Remova-o, ou escreva
+a conversão com <code>TO_CHAR</code>.
+</p>
 
-<pre>
-var := NVL(''||id, 'Vazio');
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+l_text := nvl('' || r_crate.id, 'none'); -- Noncompliant
 </pre>
 
-<p>Você deveria usar:</p>
+<h2>Solução conforme</h2>
 
-<pre>
-var := NVL(TO_CHAR(id), 'Vazio');
+<pre data-diff-id="1" data-diff-type="compliant">
+l_text := nvl(to_char(r_crate.id), 'none');
 </pre>

@@ -1,15 +1,31 @@
 <p>
-Functions with OUT parameters are complex to understand.
-It is impossible to tell whether an argument is a input or output just by looking at the function call.
-Also, functions with OUT parameters cannot be called from SQL.
+A function is expected to compute a value from its arguments and return it. An <code>OUT</code> or <code>IN OUT</code>
+parameter gives it a second, hidden result: nothing in <code>l_total := order_total(p_order, l_count)</code> says that
+<code>l_count</code> changes. Such a function also cannot be called from SQL (ORA-06572).
+</p>
+
+<p>
+This rule reports an <code>OUT</code> or <code>IN OUT</code> parameter of a function. Return the values together, as a
+record or an object, or turn the function into a procedure with only <code>OUT</code> parameters.
 </p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE OR REPLACE FUNCTION get_product_info(id IN NUMBER, value OUT NUMBER) RETURN VARCHAR2 IS
-BEGIN
- ...
-END;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function order_total(p_order number, p_lines out number) return number is -- Noncompliant
+  l_total number;
+begin
+  select sum(amount), count(*) into l_total, p_lines from order_line where order_id = p_order;
+  return l_total;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure order_totals(p_order number, p_total out number, p_lines out number) is
+begin
+  select sum(amount), count(*) into p_total, p_lines from order_line where order_id = p_order;
+end;
 </pre>

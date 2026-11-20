@@ -41,7 +41,7 @@ class PlSqlRuleRepositoryTest {
 
     @Test
     fun aDescriptionWithoutExamplesHasNoSections() {
-        assertThat(repository.rule("UnusedVariable")!!.ruleDescriptionSections()).isEmpty()
+        assertThat(repository.rule("ParsingError")!!.ruleDescriptionSections()).isEmpty()
     }
 
     @Test

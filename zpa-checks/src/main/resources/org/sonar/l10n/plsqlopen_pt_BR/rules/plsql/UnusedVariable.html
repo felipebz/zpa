@@ -1,4 +1,40 @@
 <p>
-Se uma variável local é declarada mas não é usada, é código inútil e deve ser removida.
-Fazer isso melhorará a manutenibilidade porque os desenvolvedores não terão que se preocupar com qual seria a utilidade da variável.
+Uma variável, constante ou exceção declarada e nunca usada é código morto. Ela faz o leitor procurar um uso que não
+existe, e muitas vezes sobra depois de uma alteração que removeu o código que a usava.
 </p>
+
+<p>
+Esta regra reporta uma variável, constante ou exceção local, ou de um package body, que nenhum código do arquivo usa.
+Declarações de uma especificação de pacote não são reportadas: outras unidades podem usá-las. Uma declaração só é
+reportada quando a análise prova que ela não é usada: não é reportada quando uma compilação condicional que pode ser
+compilada menciona o seu nome, quando um nome em SQL pode lê-la a menos que uma tabela tenha uma coluna com esse nome,
+ou quando um erro de sintaxe, uma variável de substituição ou código que a análise não modela está no seu escopo.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure ship_order(p_order number, p_ready boolean) is
+  l_weight number; -- Noncompliant
+  l_attempts pls_integer := 0;
+begin
+  while not p_ready and l_attempts &lt; 3 loop
+    l_attempts := l_attempts + 1;
+  end loop;
+  dispatch(p_order);
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure ship_order(p_order number, p_ready boolean) is
+  l_attempts pls_integer := 0;
+begin
+  while not p_ready and l_attempts &lt; 3 loop
+    l_attempts := l_attempts + 1;
+  end loop;
+  dispatch(p_order);
+end;
+</pre>

@@ -1,38 +1,30 @@
 <p>
-An AND condition has a higher precedence than an OR condition, so you should wrap the AND condition in parentheses 
-for clarity and to ensure that the operators are evaluated in the order that you intend.
+<code>AND</code> binds tighter than <code>OR</code>: <code>a AND b OR c</code> means <code>(a AND b) OR c</code>. Read
+without that rule in mind, the condition looks like <code>a AND (b OR c)</code>, and a query or a decision that seems to
+require <code>a</code> silently accepts every row where <code>c</code> holds.
 </p>
 
 <p>
-Consider this example: 
+This rule reports an <code>AND</code> written directly as an operand of an <code>OR</code>, without parentheses.
+Parentheses keep the meaning and make it visible; when the other reading was meant, they fix the condition.
 </p>
 
-<pre>
-SELECT dogs.name
-  FROM dogs
- WHERE dogs.sex = 'male'
-   and dogs.color = 'white'
-    or dogs.size = 'big';
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select c.code
+  from crate c
+ where c.status = 'OPEN'
+   and c.weight &gt; 100 -- Noncompliant
+    or c.fragile = 'Y';
 </pre>
 
-<p>
-Without parentheses, one would think that it is equivalent to:
-</p>
+<h2>Compliant Solution</h2>
 
-<pre>
-SELECT dogs.name
-  FROM dogs
- WHERE dogs.sex = 'male'
-   and (dogs.color = 'white' or dogs.size = 'big');
-</pre>
-
-<p>
-But the original query is parsed as:
-</p>
-
-<pre>
-SELECT dogs.name
-  FROM dogs
- WHERE (dogs.sex = 'male' and dogs.color = 'white')
-    or dogs.size = 'big';
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code
+  from crate c
+ where c.status = 'OPEN'
+   and (c.weight &gt; 100 or c.fragile = 'Y');
 </pre>

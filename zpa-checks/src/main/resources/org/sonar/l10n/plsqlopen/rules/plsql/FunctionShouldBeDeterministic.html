@@ -19,28 +19,24 @@ This rule is not applied when Oracle Forms metadata is available. In that contex
 </p>
 
 <!-- section: fix -->
-<h2>Code eligible for the recommendation</h2>
+<h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE FUNCTION double_value(p_value NUMBER)
-  RETURN NUMBER
-IS
-BEGIN
-  RETURN p_value * 2;
-END;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function double_value(p_value in number) return number is -- Noncompliant
+begin
+  return p_value * 2;
+end;
 </pre>
 
-<h2>Code not eligible for the recommendation</h2>
+<h2>Compliant Solution</h2>
 
-<pre>
-CREATE FUNCTION current_value
-  RETURN DATE
-IS
-BEGIN
-  RETURN SYSDATE;
-END;
+<pre data-diff-id="1" data-diff-type="compliant">
+create function double_value(p_value in number) return number deterministic is
+begin
+  return p_value * 2;
+end;
 </pre>
 
 <p>
-This function is not suggested as a deterministic candidate because its result depends on the current time.
+A function whose result depends on the current time, such as <code>RETURN SYSDATE</code>, is never recommended.
 </p>

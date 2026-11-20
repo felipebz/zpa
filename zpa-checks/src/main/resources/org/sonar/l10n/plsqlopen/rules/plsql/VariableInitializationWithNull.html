@@ -1,3 +1,34 @@
 <p>
-By default, new variables and RECORD fields are initialized with NULL. So, you don't need to initialize them with NULL.
+A variable or record field declared without a default value starts as null. Initializing it with <code>NULL</code>,
+or with <code>''</code>, which Oracle treats as null, repeats the default and makes the reader look for a reason that
+does not exist.
 </p>
+
+<p>
+This rule reports a variable or record field initialized with <code>NULL</code> or <code>''</code>, through
+<code>:=</code> or <code>DEFAULT</code>. A parameter's default is not reported: <code>DEFAULT NULL</code> there makes
+the parameter optional.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  l_label varchar2(30) := null; -- Noncompliant
+  type t_slot is record (code varchar2(10) default ''); -- Noncompliant
+begin
+  l_label := slot_label(42);
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  l_label varchar2(30);
+  type t_slot is record (code varchar2(10));
+begin
+  l_label := slot_label(42);
+end;
+</pre>

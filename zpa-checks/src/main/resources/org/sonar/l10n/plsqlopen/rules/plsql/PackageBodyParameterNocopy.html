@@ -1,28 +1,35 @@
-<p>Make the <code>NOCOPY</code> qualification of a package body parameter match the corresponding package specification parameter.</p>
+<p>
+<code>NOCOPY</code> asks Oracle to pass an <code>OUT</code> or <code>IN OUT</code> parameter by reference. Oracle
+accepts a body whose parameter differs from the specification's in this, without an error or a warning. The two
+headings then disagree: a reader of the specification and a reader of the body see different promises about how the
+argument is passed, and what happens to it when the subprogram raises an error.
+</p>
+
+<p>
+This rule reports a parameter of a package body subprogram whose <code>NOCOPY</code> differs from the same parameter in
+the package specification, when the project resolves that specification.
+</p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE PACKAGE p AS
-  PROCEDURE work(value IN OUT NOCOPY CLOB);
-END p;
-
-CREATE PACKAGE BODY p AS
-  PROCEDURE work(value IN OUT CLOB) IS
-  BEGIN
-    NULL;
-  END work;
-END p;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package body label_pkg as
+  -- the specification declares p_text in out nocopy clob
+  procedure append_footer(p_text in out clob) is -- Noncompliant
+  begin
+    p_text := p_text || chr(10) || 'end of label';
+  end;
+end;
 </pre>
 
 <h2>Compliant Solution</h2>
 
-<pre>
-CREATE PACKAGE BODY p AS
-  PROCEDURE work(value IN OUT NOCOPY CLOB) IS
-  BEGIN
-    NULL;
-  END work;
-END p;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package body label_pkg as
+  procedure append_footer(p_text in out nocopy clob) is
+  begin
+    p_text := p_text || chr(10) || 'end of label';
+  end;
+end;
 </pre>

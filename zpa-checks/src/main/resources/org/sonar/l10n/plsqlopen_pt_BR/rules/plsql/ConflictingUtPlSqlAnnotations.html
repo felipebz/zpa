@@ -1,25 +1,35 @@
-<p>Para anotações únicas repetidas, o utPLSQL mantém a primeira anotação e emite um aviso para as ocorrências posteriores dentro do mesmo escopo de suíte ou contexto. Um <code>%test</code> de procedimento é incompatível com <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code> e <code>%aftereach</code>; o utPLSQL emite um aviso para a anotação de configuração ou limpeza. O PL/SQL pode ser compilado normalmente, mas a anotação conflitante não tem efeito no utPLSQL.</p>
+<p>
+O utPLSQL aceita algumas anotações só uma vez por suíte, contexto ou procedure. Para uma repetida, ele mantém a
+primeira e avisa sobre as outras, e uma procedure anotada com <code>%test</code> não pode ser também uma procedure de
+preparação ou limpeza: o utPLSQL ignora o <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code> ou
+<code>%aftereach</code> nela. O pacote compila, mas a anotação ignorada não faz nada.
+</p>
+
+<p>
+Esta regra reporta uma anotação repetida que o utPLSQL aceita só uma vez no seu escopo, e uma anotação de preparação
+ou limpeza numa procedure <code>%test</code>. Várias procedures distintas anotadas com <code>%beforeall</code>,
+<code>%afterall</code>, <code>%beforeeach</code>, <code>%aftereach</code>, <code>%beforetest</code> ou
+<code>%aftertest</code> são válidas e não são reportadas.
+</p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %test
-  -- %test(Descrição de teste duplicada)
-  PROCEDURE some_test;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package crate_test as
+  --%suite
+  --%test(Creates a crate)
+  --%test(Creates a crate with a label) -- Noncompliant
+  procedure creates_crate;
+end;
 </pre>
 
 <h2>Solução conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %test(Descrição de teste)
-  PROCEDURE some_test;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%test(Creates a crate)
+  procedure creates_crate;
+end;
 </pre>
-
-<p>Vários procedimentos distintos com <code>%beforeall</code>, <code>%afterall</code>,
-<code>%beforeeach</code>, <code>%aftereach</code>, <code>%beforetest</code> e
-<code>%aftertest</code> são válidos e não são reportados por esta regra.</p>

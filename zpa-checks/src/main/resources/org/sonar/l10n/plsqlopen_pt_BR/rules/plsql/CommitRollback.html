@@ -1,12 +1,33 @@
 <p>
-Geralmente, o contole de uma transação deve ser responsabilidade do "proprietário" dela.
-Se a transação foi iniciada por um código Java, o commit e rollback devem ser feitos no código Java.
+Uma transação pertence a quem a inicia: a aplicação, o job ou o cliente que chama o subprograma. Um
+<code>COMMIT</code> ou <code>ROLLBACK</code> dentro de um subprograma armazenado ou trigger encerra também a transação
+de quem chamou, que não pode mais desfazer o próprio trabalho, ou o perde, e o subprograma não pode ser reutilizado
+dentro de uma transação maior.
 </p>
 
 <p>
-Assim, nessa situação, chamar um COMMIT ou ROLLBACK a partir de um objeto de banco de dados é uma prática ruim e deve ser evitada.
+Esta regra reporta <code>COMMIT</code> e <code>ROLLBACK</code> em código armazenado. Não reporta
+<code>ROLLBACK TO SAVEPOINT</code>, que desfaz só o trabalho do próprio subprograma, código em blocos anônimos e
+scripts, nem código num subprograma ou trigger declarado com <code>PRAGMA AUTONOMOUS_TRANSACTION</code>, cuja transação
+é só dele.
 </p>
 
-<p>
-Essa regra ignora procedimentos e funções com <code>PRAGMA AUTONOMOUS_TRANSACTION</code>.
-</p>
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure move_crate(p_crate in number, p_rack in number) is
+begin
+  update crate set rack_id = p_rack where id = p_crate;
+  commit; -- Noncompliant
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure move_crate(p_crate in number, p_rack in number) is
+begin
+  update crate set rack_id = p_rack where id = p_crate;
+end;
+</pre>

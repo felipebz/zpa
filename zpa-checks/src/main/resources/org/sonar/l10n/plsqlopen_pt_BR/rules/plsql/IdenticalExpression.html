@@ -1,11 +1,27 @@
 <p>
-Usar o mesmo valor nos dois lados de um operador é quase sempre um equívoco.
-Pode ser um erro causado por copiar/colar e então ser um bug ou simplesmente ser código desnecessários que deve ser simplificado.
+Uma comparação com a mesma expressão nos dois lados quase sempre é um erro: em geral, um copiar e colar em que um lado
+deveria nomear outra coluna, variável ou alias. Quando não é, é um teste de nulo disfarçado: <code>x = x</code> é
+verdadeiro para qualquer valor e desconhecido para nulo, o que <code>x IS NOT NULL</code> diz claramente.
+</p>
+
+<p>
+Esta regra reporta uma comparação (<code>=</code>, <code>&lt;&gt;</code>, <code>&lt;</code>, <code>&gt;</code>,
+<code>&lt;=</code>, <code>&gt;=</code>...) cujos dois lados são a mesma expressão, ignorando parênteses.
 </p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-if a = a then ...
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select c.code
+  from crate c, rack r
+ where c.rack_id = c.rack_id; -- Noncompliant
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code
+  from crate c, rack r
+ where c.rack_id = r.id;
 </pre>

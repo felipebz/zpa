@@ -1,4 +1,38 @@
 <p>
-Se um cursor é declarado mas não é usado, é código inútil e deve ser removido.
-Fazer isso melhorará a manutenibilidade porque os desenvolvedores não terão que se preocupar com qual seria a utilidade do cursor.
+Um cursor declarado e nunca usado é código morto. A sua consulta continua sendo lida, revisada e mantida em sincronia
+com as tabelas por quem mantém o código, sem nenhum proveito.
 </p>
+
+<p>
+Esta regra reporta um cursor local, ou de um package body, que nenhum código do arquivo usa: não é aberto, lido com
+fetch, fechado nem percorrido por um laço <code>FOR</code> de cursor, e não é nomeado por um atributo
+(<code>%ISOPEN</code>, <code>%ROWTYPE</code>...). Cursores de uma especificação de pacote não são reportados, nem um
+cursor de package body declarado com <code>RETURN</code>, que pode implementar um cursor da especificação. Como nas
+variáveis, um cursor só é reportado quando a análise prova que ele não é usado.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  cursor c_racks is select id from rack where active = 'Y';
+  cursor c_bins is select id from bin; -- Noncompliant
+begin
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  cursor c_racks is select id from rack where active = 'Y';
+begin
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
+end;
+</pre>

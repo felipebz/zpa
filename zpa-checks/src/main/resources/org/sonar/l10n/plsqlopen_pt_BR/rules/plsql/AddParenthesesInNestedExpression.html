@@ -1,38 +1,30 @@
 <p>
-Uma condição AND tem uma precedência maior que uma condição OR, então você deve envolver a condição AND em parênteses
-por questão de clareza e para garantir que os operadores sejam avaliados na ordem que você deseja.
+O <code>AND</code> tem precedência maior que o <code>OR</code>: <code>a AND b OR c</code> significa
+<code>(a AND b) OR c</code>. Lida sem essa regra em mente, a condição parece <code>a AND (b OR c)</code>, e uma
+consulta ou decisão que parece exigir <code>a</code> aceita sem aviso toda linha em que <code>c</code> vale.
 </p>
 
 <p>
-Considere esse exemplo:
+Esta regra reporta um <code>AND</code> escrito diretamente como operando de um <code>OR</code>, sem parênteses. Os
+parênteses mantêm o significado e o tornam visível; quando a intenção era a outra leitura, eles corrigem a condição.
 </p>
 
-<pre>
-SELECT cachorros.nome
-  FROM cachorros
- WHERE cachorros.sexo = 'macho'
-   and cachorros.cor = 'branco'
-    or cachorros.tamanho = 'grande';
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select c.code
+  from crate c
+ where c.status = 'OPEN'
+   and c.weight &gt; 100 -- Noncompliant
+    or c.fragile = 'Y';
 </pre>
 
-<p>
-Sem parênteses, alguém poderia pensar que ela equivale a:
-</p>
+<h2>Solução conforme</h2>
 
-<pre>
-SELECT cachorros.nome
-  FROM cachorros
- WHERE cachorros.sexo = 'macho'
-   and (cachorros.tamanho = 'branco' or cachorros.size = 'grande');
-</pre>
-
-<p>
-Mas a consulta original é processada como:
-</p>
-
-<pre>
-SELECT cachorros.nome
-  FROM cachorros
- WHERE (cachorros.sexo = 'macho' and cachorros.cor = 'branco')
-    or cachorros.tamanho = 'grande';
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code
+  from crate c
+ where c.status = 'OPEN'
+   and (c.weight &gt; 100 or c.fragile = 'Y');
 </pre>

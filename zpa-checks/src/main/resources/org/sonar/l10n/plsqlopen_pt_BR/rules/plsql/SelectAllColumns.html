@@ -1,19 +1,40 @@
 <p>
-SELECT * retorna todas as colunas disponíveis. Você deve listar explicitamente as colunas necessárias.
-Ao usar *, você deve considerar a possibilidade de novas colunas serem adicionadas à tabela no futuro.
+<code>SELECT *</code> retorna as colunas que as tabelas tiverem quando o comando for executado. Código que lê o
+resultado em variáveis ou por posição quebra, ou lê a coluna errada, quando uma coluna é acrescentada, removida ou
+reordenada. Ele também busca colunas que ninguém usa, e esconde do leitor de quais dados o código depende.
+</p>
+
+<p>
+Esta regra reporta <code>*</code> e <code>tabela.*</code> numa lista de <code>SELECT</code>. Não é reportado onde a
+linha inteira é o objetivo: numa subconsulta de <code>EXISTS</code>, num <code>SELECT ... INTO</code> cujo destino pode
+ser um record da linha, e num cursor lido com fetch para um record assim.
 </p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  cursor c_racks is
+    select * -- Noncompliant
+      from rack;
 begin
-  select *
-    into var
-    from emp;
-  
-  select emp.*
-    into var
-    from emp;
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  cursor c_racks is
+    select id
+      from rack;
+begin
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
 end;
 </pre>

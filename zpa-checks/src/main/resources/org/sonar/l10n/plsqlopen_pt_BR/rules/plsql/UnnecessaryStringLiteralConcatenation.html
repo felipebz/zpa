@@ -1,20 +1,24 @@
-<p>Una literais de string não vazios unidos por <code>||</code> quando estiverem na mesma linha.
-Isso remove uma sintaxe que torna uma constante curta mais difícil de ler.</p>
+<p>
+Dois literais de string unidos por <code>||</code> na mesma linha são uma constante dividida sem motivo: o leitor
+precisa juntá-los para ver o texto, e a falta de um espaço na junção passa despercebida com facilidade.
+</p>
 
-<pre>
-v := 'foo' || 'bar';
+<p>
+Esta regra reporta literais de string não vazios adjacentes unidos por <code>||</code> na mesma linha. Uma concatenação
+dividida em linhas para manter um texto longo legível não é reportada, nem uma com um comentário entre os literais, uma
+que mistura literais nacionais (<code>N'...'</code>) e do banco, ou uma cujo literal unido poderia passar do limite do
+Oracle para um literal.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+l_text := 'Rack is ' || 'full'; -- Noncompliant
 </pre>
 
-<p>Use um único literal:</p>
+<h2>Solução conforme</h2>
 
-<pre>
-v := 'foobar';
-</pre>
-
-<p>A concatenação usada para tornar textos longos ou estruturados mais fáceis de ler fica fora do
-escopo desta regra:</p>
-
-<pre>
-v := 'foo ' ||
-     'bar';
+<pre data-diff-id="1" data-diff-type="compliant">
+l_text := 'Rack is full';
 </pre>

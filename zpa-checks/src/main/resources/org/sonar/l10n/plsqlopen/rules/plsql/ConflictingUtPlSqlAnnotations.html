@@ -1,25 +1,35 @@
-<p>For repeated singleton annotations, utPLSQL keeps the first annotation and warns about later occurrences within the same suite or context scope. A procedure-level <code>%test</code> is incompatible with <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code>, and <code>%aftereach</code>; utPLSQL warns about the setup or cleanup annotation. The PL/SQL can compile successfully, but the conflicting annotation is ineffective in utPLSQL.</p>
+<p>
+utPLSQL accepts some annotations only once per suite, context or procedure. For a repeated one it keeps the first and
+warns about the others, and a procedure annotated with <code>%test</code> cannot also be a setup or cleanup procedure:
+utPLSQL ignores the <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code> or
+<code>%aftereach</code> on it. The package compiles, but the ignored annotation does nothing.
+</p>
+
+<p>
+This rule reports a repeated annotation that utPLSQL accepts only once in its scope, and a setup or cleanup annotation
+on a <code>%test</code> procedure. Several distinct procedures annotated with <code>%beforeall</code>,
+<code>%afterall</code>, <code>%beforeeach</code>, <code>%aftereach</code>, <code>%beforetest</code> or
+<code>%aftertest</code> are valid and are not reported.
+</p>
 
 <!-- section: fix -->
 <h2>Noncompliant Code Example</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %test
-  -- %test(Duplicate test description)
-  PROCEDURE some_test;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package crate_test as
+  --%suite
+  --%test(Creates a crate)
+  --%test(Creates a crate with a label) -- Noncompliant
+  procedure creates_crate;
+end;
 </pre>
 
 <h2>Compliant Solution</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
-  -- %test(Some test description)
-  PROCEDURE some_test;
-END test_pkg;
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
+  --%suite
+  --%test(Creates a crate)
+  procedure creates_crate;
+end;
 </pre>
-
-<p>Multiple distinct <code>%beforeall</code>, <code>%afterall</code>, <code>%beforeeach</code>,
-<code>%aftereach</code>, <code>%beforetest</code>, and <code>%aftertest</code> procedures are
-valid and are not reported by this rule.</p>

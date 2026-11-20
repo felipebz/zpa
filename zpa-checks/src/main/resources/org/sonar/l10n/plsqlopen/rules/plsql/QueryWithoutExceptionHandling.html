@@ -1,6 +1,44 @@
 <p>
-Ordinary <code>SELECT ... INTO</code> statements can raise <code>NO_DATA_FOUND</code> or <code>TOO_MANY_ROWS</code> when their result cardinality is not handled.
+A <code>SELECT ... INTO</code> must return exactly one row: with no row it raises <code>NO_DATA_FOUND</code>, and with
+more than one <code>TOO_MANY_ROWS</code>. When nothing handles them, the exception ends the caller's work with an error
+that does not say which lookup failed, often far from the query that caused it.
 </p>
+
 <p>
-Single-group aggregate queries without <code>GROUP BY</code>, <code>HAVING</code>, set operators, row-limiting clauses, or <code>MODEL</code> always produce one result row and are ignored by this rule. This guarantee concerns result cardinality only; aggregate queries can still raise other runtime exceptions.
+This rule reports a <code>SELECT ... INTO</code> whose block has no exception handler. A query written in an exception
+handler is not covered by the handlers next to it: only a block around it counts. A <code>BULK COLLECT INTO</code> is not
+reported, and neither is a query that always returns one row: a single aggregate (<code>COUNT</code>,
+<code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>) without <code>GROUP BY</code>,
+<code>HAVING</code>, set operators, a row-limiting clause or <code>MODEL</code>. The rule does not check which exceptions
+the handler names.
 </p>
+
+<p>
+With the <code>strict</code> parameter set to false, a handler of any enclosing block or subprogram covers the query.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create function rack_label(p_rack number) return varchar2 is
+  l_label rack.label%type;
+begin
+  select label into l_label from rack where id = p_rack; -- Noncompliant
+  return l_label;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create function rack_label(p_rack number) return varchar2 is
+  l_label rack.label%type;
+begin
+  select label into l_label from rack where id = p_rack;
+  return l_label;
+exception
+  when no_data_found then
+    return null;
+end;
+</pre>

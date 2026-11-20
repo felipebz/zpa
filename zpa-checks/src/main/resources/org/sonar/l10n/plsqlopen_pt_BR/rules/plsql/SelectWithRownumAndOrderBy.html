@@ -1,33 +1,30 @@
 <p>
-Em uma expressão SELECT, a cláusula WHERE é executada antes da cláusula ORDER BY. Considere esse exemplo:
+Numa consulta, a cláusula <code>WHERE</code> é aplicada antes do <code>ORDER BY</code>. Uma condição sobre
+<code>ROWNUM</code> na mesma consulta mantém, portanto, as primeiras linhas que o Oracle por acaso lê, e só essas são
+ordenadas: <code>WHERE ROWNUM &lt;= 5 ORDER BY created_at DESC</code> não retorna as cinco linhas mais novas.
 </p>
-
-<pre>
-DECLARE
-  CURSOR usuarios_recentes IS
-    SELECT usuario.nome,
-           usuario.data_de_criacao
-      FROM usuario
-     WHERE ROWNUM <= 5
-     ORDER BY usuario.data_de_criacao DESC;
-BEGIN
-  ...
-</pre>
 
 <p>
-Essa consulta não retornará os últimos 5 usuários criados. O banco de dados filtrará os usuários sem nenhuma ordenação e só então aplicará a cláusula ORDER BY. A consulta corrigida é:
+Esta regra reporta uma comparação com <code>ROWNUM</code> na cláusula <code>WHERE</code> de uma consulta que tem
+<code>ORDER BY</code>. Ordene numa subconsulta e filtre por <code>ROWNUM</code> fora dela, ou use
+<code>FETCH FIRST n ROWS ONLY</code>.
 </p>
 
-<pre>
-DECLARE
-  CURSOR usuarios_recentes IS
-    SELECT nome,
-           data_de_criacao
-      FROM (SELECT usuario.nome,
-                   usuario.data_de_criacao
-              FROM usuario
-             ORDER BY user.data_de_criacao DESC)
-     WHERE ROWNUM <= 5;
-BEGIN
-  ...
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select c.code, c.created_at
+  from crate c
+ where rownum &lt;= 5 -- Noncompliant
+ order by c.created_at desc;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code, c.created_at
+  from crate c
+ order by c.created_at desc
+ fetch first 5 rows only;
 </pre>

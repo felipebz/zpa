@@ -1,21 +1,39 @@
-<p>From the <a href="http://utplsql.org/utPLSQL/latest/userguide/expectations.html">utPLSQL documentation</a>:</p>
-
-<blockquote>
-  Validation of the code under test (the tested logic of procedure/function etc.) is performed by comparing
-  the actual data against the expected data. utPLSQL uses a combination of expectation and matcher to
-  perform the check on the data.
-</blockquote>
-
 <p>
-  Some validations are written in the form of <code>ut.expect(actual_value).matcher(expected_value)</code>.
-  This rules checks if the <code>actual_value</code> and the <code>expected_value</code> are the same thing. Example:
+A utPLSQL expectation compares the actual value with the expected one:
+<code>ut.expect(actual).to_equal(expected)</code>. When both arguments are the same expression, the expectation
+compares a value with itself and always passes: the test checks nothing, usually because of a copy and paste.
 </p>
 
-<pre>
-...
-begin
-  v_expected := '2345';
-  v_actual := betwnstr('1234567', 2, 5);
-  ut.expect(v_actual).to_equal(v_actual); -- This expectation is wrong, it's always true
+<p>
+This rule reports a <code>ut.expect(...)</code> whose actual value is the same expression as the first argument of its
+matcher, in test code.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package body crate_label_test is
+  procedure formats_the_code is
+    l_expected varchar2(20) := 'CR-0042';
+    l_actual varchar2(20);
+  begin
+    l_actual := crate_label(42);
+    ut.expect(l_actual).to_equal(l_actual); -- Noncompliant
+  end;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create package body crate_label_test is
+  procedure formats_the_code is
+    l_expected varchar2(20) := 'CR-0042';
+    l_actual varchar2(20);
+  begin
+    l_actual := crate_label(42);
+    ut.expect(l_actual).to_equal(l_expected);
+  end;
 end;
 </pre>

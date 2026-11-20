@@ -1,3 +1,30 @@
 <p>
-You don't need to add the DECLARE keyword in a block if it doesn't contains any declaration. 
+The <code>DECLARE</code> keyword of a block introduces its declarations. A block that declares nothing does not need
+it: <code>BEGIN ... END</code> alone is the same block, and the keyword only suggests declarations that are not there.
 </p>
+
+<p>
+This rule reports a <code>DECLARE</code> keyword followed by no declaration.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+begin
+  declare -- Noncompliant
+  begin
+    archive_crates(sysdate - 30);
+  end;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+begin
+  begin
+    archive_crates(sysdate - 30);
+  end;
+end;
+</pre>

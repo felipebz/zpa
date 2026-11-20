@@ -1,14 +1,23 @@
-<p>Concatenating a VARCHAR2 value with NULL is no-op. So, the NULL value should be removed.</p>
+<p>
+Oracle treats <code>NULL</code> and <code>''</code> as an empty string in a concatenation, so concatenating them adds
+nothing. The operand is either left over from an edit, or written to convert a value to text implicitly
+(<code>'' || id</code>), which hides the conversion and its format.
+</p>
 
-<p>A concatenation of any other datatype with NULL will cause a implicit cast to VARCHAR2. If this is the desired behavior,
-replace the concatenation by a TO_CHAR call to make the intention explicit. See this example:</p>
+<p>
+This rule reports <code>NULL</code> or <code>''</code> written as an operand of <code>||</code>. Remove it, or write the
+conversion with <code>TO_CHAR</code>.
+</p>
 
-<pre>
-var := NVL(''||id, 'Empty');
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+l_text := nvl('' || r_crate.id, 'none'); -- Noncompliant
 </pre>
 
-<p>You should use this:</p>
+<h2>Compliant Solution</h2>
 
-<pre>
-var := NVL(TO_CHAR(id), 'Empty');
+<pre data-diff-id="1" data-diff-type="compliant">
+l_text := nvl(to_char(r_crate.id), 'none');
 </pre>

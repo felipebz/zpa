@@ -1,1 +1,31 @@
-<p>Use cursor%NOTFOUND instead of NOT cursor%FOUND.</p>
+<p>
+<code>cursor%NOTFOUND</code> is the negation of <code>cursor%FOUND</code>, null included: both are null before the first
+fetch, and both raise <code>INVALID_CURSOR</code> on an explicit cursor that is not open. Writing
+<code>NOT cursor%FOUND</code> adds an operator the reader has to undo to see the condition.
+</p>
+
+<p>
+This rule reports <code>NOT cursor%FOUND</code>, for explicit cursors and for the implicit cursor
+(<code>NOT SQL%FOUND</code>).
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+loop
+  fetch c_crates into r_crate;
+  exit when not c_crates%found; -- Noncompliant
+  process_crate(r_crate);
+end loop;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+loop
+  fetch c_crates into r_crate;
+  exit when c_crates%notfound;
+  process_crate(r_crate);
+end loop;
+</pre>

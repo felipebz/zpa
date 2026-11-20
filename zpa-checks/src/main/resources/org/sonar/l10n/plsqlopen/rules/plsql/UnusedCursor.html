@@ -1,4 +1,38 @@
 <p>
-If a local cursor is declared but not used, it is dead code and should be removed.
-Doing so will improve maintainability because developers will not wonder what the cursor is used for.
+A cursor that is declared and never used is dead code. Its query is still read, reviewed and kept in sync with the
+tables by whoever maintains the code, for nothing.
 </p>
+
+<p>
+This rule reports a local cursor, or one of a package body, that no code of the file uses: not opened, fetched, closed
+or iterated by a cursor <code>FOR</code> loop, and not named by an attribute (<code>%ISOPEN</code>, <code>%ROWTYPE</code>...).
+Cursors of a package specification are not reported, and neither is a cursor of a package body declared with
+<code>RETURN</code>, which may implement a cursor of the specification. As for variables, a cursor is reported only when
+the analysis proves it unused.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+declare
+  cursor c_racks is select id from rack where active = 'Y';
+  cursor c_bins is select id from bin; -- Noncompliant
+begin
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  cursor c_racks is select id from rack where active = 'Y';
+begin
+  for r in c_racks loop
+    refresh_rack(r.id);
+  end loop;
+end;
+</pre>

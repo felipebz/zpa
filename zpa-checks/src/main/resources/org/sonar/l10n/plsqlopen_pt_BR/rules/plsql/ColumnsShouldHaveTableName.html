@@ -1,3 +1,33 @@
 <p>
-Especifique o nome da tabela nas colunas de um comando SELECT para melhorar a legibilidade e evitar que o código pare de funcionar quando a tabela for alterada.
+Numa consulta sobre duas ou mais tabelas, uma coluna escrita sem a sua tabela ou alias depende das colunas de todas as
+tabelas da cláusula <code>FROM</code>. A consulta funciona enquanto só uma delas tem uma coluna com esse nome. Quando
+uma coluna com o mesmo nome é acrescentada a outra das tabelas, o Oracle rejeita a consulta com o ORA-00918 ("column
+ambiguously defined"), e uma unidade PL/SQL que a contém fica inválida. O leitor também precisa conhecer as colunas de
+todas as tabelas para saber de onde vem o valor.
 </p>
+
+<p>
+Esta regra reporta uma coluna da lista do <code>SELECT</code> escrita sem tabela ou alias, numa consulta cuja cláusula
+<code>FROM</code> lista duas ou mais tabelas, views ou subconsultas separadas por vírgulas; consultas escritas com
+<code>JOIN</code> não são verificadas. Um nome que uma variável ou parâmetro PL/SQL assume, e pseudocolunas como
+<code>ROWNUM</code>, <code>LEVEL</code> ou <code>SYSDATE</code>, não são reportados.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+select code, -- Noncompliant
+       r.label
+  from crate c, rack r
+ where r.id = c.rack_id;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+select c.code,
+       r.label
+  from crate c, rack r
+ where r.id = c.rack_id;
+</pre>

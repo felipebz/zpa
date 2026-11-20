@@ -1,24 +1,30 @@
-<p>O utPLSQL permite testes sem descrição e exibe o nome do procedimento no relatório. Esta regra impõe uma convenção de legibilidade: todo teste efetivo deve ter uma descrição compreensível.</p>
+<p>
+O utPLSQL aceita um teste sem descrição e mostra o nome da procedure no seu relatório. Uma descrição diz em palavras
+simples o que o teste verifica, e o relatório e quem o lê dependem disso.
+</p>
+
+<p>
+Esta regra reporta um <code>%test</code> sem descrição. Um <code>%displayname(descrição)</code> no teste também conta,
+mas <code>%test(descrição)</code> é preferível: o utPLSQL documenta o <code>%displayname</code> como redundante.
+</p>
 
 <!-- section: fix -->
 <h2>Exemplo de código não conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create package crate_test as
   --%suite
-  --%test
-  PROCEDURE creates_customer;
-END test_pkg;
+  --%test -- Noncompliant
+  procedure creates_crate;
+end;
 </pre>
 
 <h2>Solução conforme</h2>
 
-<pre>
-CREATE PACKAGE test_pkg AS
+<pre data-diff-id="1" data-diff-type="compliant">
+create package crate_test as
   --%suite
-  --%test(Retorna o cliente quando ele existe)
-  PROCEDURE creates_customer;
-END test_pkg;
+  --%test(Creates a crate with the next free code)
+  procedure creates_crate;
+end;
 </pre>
-
-<p>Um <code>%displayname(descrição)</code> efetivo também fornece a descrição do teste, mas prefira <code>%test(descrição)</code>, pois o utPLSQL documenta <code>%displayname</code> como redundante e possivelmente removível.</p>
