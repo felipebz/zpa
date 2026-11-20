@@ -6,11 +6,7 @@
 package com.felipebz.zpa.checks
 
 import com.felipebz.flr.api.AstNode
-import com.felipebz.zpa.api.ConditionsGrammar
-import com.felipebz.zpa.api.DmlGrammar
-import com.felipebz.zpa.api.PlSqlGrammar
-import com.felipebz.zpa.api.PlSqlKeyword
-import com.felipebz.zpa.api.PlSqlPunctuator
+import com.felipebz.zpa.api.*
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.semantics.ColumnBinding
 
@@ -56,10 +52,10 @@ class NotInWithNullCheck : AbstractBaseCheck() {
 
     /** Whether a `NOT` applies to [node]: `NOT (x NOT IN (1, NULL))` is true for `x = 1`. */
     private fun negated(node: AstNode): Boolean {
-        var current = node.parent
+        var current = node.parentOrNull
         while (current != null && current.type in CONNECTIVES) {
             if (current.type === PlSqlGrammar.NOT_EXPRESSION && current.hasDirectChildren(PlSqlKeyword.NOT)) return true
-            current = current.parent
+            current = current.parentOrNull
         }
         return false
     }
