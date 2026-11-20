@@ -14,6 +14,7 @@ begin
 exception
   when others then
     audit_pkg.note(sqlerrm);
+    l_qty := null;
 end;
 /
 
@@ -136,16 +137,23 @@ begin
 end;
 /
 
-create or replace function external_call_falls return number is -- Noncompliant
+create or replace function external_call_then_null return number is -- Noncompliant
 begin
   audit_pkg.fail('x');
+  null;
+end;
+/
+
+create or replace package bin_api as
+  function handler_calls_note return number;
+  function outer_fn return number;
 end;
 /
 
 create or replace package body bin_api as
   procedure only_note(p varchar2) is
   begin
-    audit_pkg.note(p);
+    null;
   end;
 
   function handler_calls_note return number is -- Noncompliant
@@ -362,5 +370,27 @@ begin
   loop
     exit bin_nowhere;
   end loop;
+end;
+/
+
+-- A call to a procedure this does not see into may not return: as the last statement, the end is unknown.
+create or replace function ends_in_unknown_call(p_id number) return varchar2 is
+  v varchar2(10);
+begin
+  select code into v from bin_crate where id = p_id;
+  return v;
+exception
+  when others then
+    bin_missing_pkg.raise_error('crate not found');
+end;
+/
+
+create or replace function if_ends_in_unknown_call(p number) return number is
+begin
+  if p > 0 then
+    return p;
+  else
+    bin_missing_pkg.raise_error('negative');
+  end if;
 end;
 /

@@ -39,8 +39,8 @@ class FunctionWithoutReturnCheck : AbstractBaseCheck() {
         if (headerTokens(node).any { it.type === PlSqlKeyword.PIPELINED }) return
         if (!analyzable(node, section)) return
         val ends = ArrayList<AstNode>()
-        if (walk.completes(section.getFirstChild(PlSqlGrammar.STATEMENTS))) ends += section.getFirstChild(PlSqlKeyword.END)
-        handlers(section).filter { walk.completes(it.getFirstChild(PlSqlGrammar.STATEMENTS)) }
+        if (walk.completes(section.getFirstChild(PlSqlGrammar.STATEMENTS)) == Flow.CONTINUES) ends += section.getFirstChild(PlSqlKeyword.END)
+        handlers(section).filter { walk.completes(it.getFirstChild(PlSqlGrammar.STATEMENTS)) == Flow.CONTINUES }
             .forEach { ends += it.getFirstChild(PlSqlKeyword.WHEN) }
         if (ends.isEmpty()) return
         val issue = addIssue(nameNode(node), getLocalizedMessage())
@@ -67,7 +67,7 @@ class FunctionWithoutReturnCheck : AbstractBaseCheck() {
 
     /** The "can complete normally" analysis of one file, with the local procedures its functions asked about. */
     private inner class Walk {
-        private val procedures = HashMap<AstNode, Boolean>()
+        private val procedures = HashMap<AstNode, Flow>()
         private val visiting = HashSet<AstNode>()
         private val declarations: Map<Pair<Int, Int>, AstNode> by lazy(LazyThreadSafetyMode.NONE) {
             val root = context.rootTree() ?: return@lazy emptyMap()
@@ -82,27 +82,40 @@ class FunctionWithoutReturnCheck : AbstractBaseCheck() {
 
         /**
          * Whether execution can go on after the statement list [statements]: every statement can. After one that
-         * cannot, the rest is unreachable, and execution does not reach the end of the list through it.
+         * cannot, the rest is unreachable, and execution does not reach the end of the list through it. A call this
+         * does not see into may not return: as the last statement, it leaves the end of the list unknown; followed by
+         * other statements, it is taken to return, since nobody writes code after a call that always raises.
          */
-        fun completes(statements: AstNode): Boolean =
-            statements.getChildren(PlSqlGrammar.STATEMENT).all { statement(it.firstChild) }
+        fun completes(statements: AstNode): Flow {
+            val list = statements.getChildren(PlSqlGrammar.STATEMENT)
+            for ((index, statement) in list.withIndex()) {
+                when (statement(statement.firstChild)) {
+                    Flow.STOPS -> return Flow.STOPS
+                    Flow.UNKNOWN -> if (index == list.lastIndex) return Flow.UNKNOWN
+                    Flow.CONTINUES -> Unit
+                }
+            }
+            return Flow.CONTINUES
+        }
 
-        private fun statement(node: AstNode): Boolean = when (node.type) {
-            PlSqlGrammar.RETURN_STATEMENT, PlSqlGrammar.RAISE_STATEMENT -> false
+        private fun statement(node: AstNode): Flow = when (node.type) {
+            PlSqlGrammar.RETURN_STATEMENT, PlSqlGrammar.RAISE_STATEMENT -> Flow.STOPS
             // Execution goes on after the loop, or to the next iteration: not to the next statement.
-            PlSqlGrammar.EXIT_STATEMENT, PlSqlGrammar.CONTINUE_STATEMENT -> node.hasDirectChildren(PlSqlKeyword.WHEN)
-            PlSqlGrammar.IF_STATEMENT -> !node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE) || branches(node).any(::completes)
+            PlSqlGrammar.EXIT_STATEMENT, PlSqlGrammar.CONTINUE_STATEMENT -> Flow.of(node.hasDirectChildren(PlSqlKeyword.WHEN))
+            PlSqlGrammar.IF_STATEMENT ->
+                if (node.hasDirectChildren(PlSqlGrammar.ELSE_CLAUSE)) any(branches(node)) else Flow.CONTINUES
             // Without ELSE, Oracle raises CASE_NOT_FOUND when no branch is taken.
-            PlSqlGrammar.CASE_STATEMENT -> node.getChildren(PlSqlGrammar.STATEMENTS).any(::completes)
-            PlSqlGrammar.LOOP_STATEMENT -> exits(node)
-            PlSqlGrammar.WHILE_STATEMENT -> !alwaysTrue(node.children[node.children.indexOfFirst { it.type === PlSqlKeyword.WHILE } + 1]) || exits(
-                node
-            )
-
+            PlSqlGrammar.CASE_STATEMENT -> any(node.getChildren(PlSqlGrammar.STATEMENTS))
+            PlSqlGrammar.LOOP_STATEMENT -> Flow.of(exits(node))
+            PlSqlGrammar.WHILE_STATEMENT ->
+                Flow.of(!alwaysTrue(node.children[node.children.indexOfFirst { it.type === PlSqlKeyword.WHILE } + 1]) || exits(node))
             PlSqlGrammar.BLOCK_STATEMENT -> section(node.getFirstChild(PlSqlGrammar.STATEMENTS_SECTION))
             PlSqlGrammar.CALL_STATEMENT -> call(node)
-            else -> true
+            else -> Flow.CONTINUES
         }
+
+        /** The flow after one of several paths: on if any path goes on, else unknown if any path is unknown. */
+        private fun any(paths: List<AstNode>): Flow = Flow.join(paths.map(::completes))
 
         private fun branches(node: AstNode): List<AstNode> =
             listOf(node.getFirstChild(PlSqlGrammar.STATEMENTS)) + node.getChildren(
@@ -110,14 +123,8 @@ class FunctionWithoutReturnCheck : AbstractBaseCheck() {
                 PlSqlGrammar.ELSE_CLAUSE
             ).map { it.getFirstChild(PlSqlGrammar.STATEMENTS) }
 
-        private fun section(section: AstNode): Boolean =
-            completes(section.getFirstChild(PlSqlGrammar.STATEMENTS)) || handlers(section).any {
-                completes(
-                    it.getFirstChild(
-                        PlSqlGrammar.STATEMENTS
-                    )
-                )
-            }
+        private fun section(section: AstNode): Flow =
+            any(listOf(section.getFirstChild(PlSqlGrammar.STATEMENTS)) + handlers(section).map { it.getFirstChild(PlSqlGrammar.STATEMENTS) })
 
         private fun alwaysTrue(condition: AstNode): Boolean =
             condition.tokens.singleOrNull()?.value?.equals("TRUE", ignoreCase = true) == true
@@ -140,28 +147,46 @@ class FunctionWithoutReturnCheck : AbstractBaseCheck() {
         private fun labeled(loop: AstNode, label: String): Boolean =
             loop.getChildren(PlSqlGrammar.LABEL).any { it.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue.uppercase() == label }
 
-        /** A call completes normally unless it raises itself, or binds a procedure of this file whose body cannot complete. */
-        private fun call(statement: AstNode): Boolean {
-            if (CheckUtils.isTerminationStatement(statement)) return false
-            val target = statement.children.firstOrNull { it.type !== PlSqlGrammar.LABEL } ?: return true
-            if (target.type === PlSqlGrammar.METHOD_CALL && CheckUtils.isTerminationStatement(target)) return false
+        /**
+         * A call that raises itself stops; one bound to a procedure of this file has the flow of that body. Any other
+         * call is one this does not see into, and whether it returns is unknown.
+         */
+        private fun call(statement: AstNode): Flow {
+            if (CheckUtils.isTerminationStatement(statement)) return Flow.STOPS
+            val target = statement.children.firstOrNull { it.type !== PlSqlGrammar.LABEL } ?: return Flow.UNKNOWN
+            if (target.type === PlSqlGrammar.METHOD_CALL && CheckUtils.isTerminationStatement(target)) return Flow.STOPS
             val name = if (target.type === PlSqlGrammar.METHOD_CALL) target.firstChild else target
-            val binding = context.callBinding(name) as? CallBinding.Local ?: return true
-            if (binding.status != LocalCallStatus.RESOLVED) return true
-            val declaration = binding.selected ?: return true
-            if (declaration.fileId != null) return true
-            val procedure = declarations[declaration.line to declaration.column] ?: return true
+            val binding = context.callBinding(name) as? CallBinding.Local ?: return Flow.UNKNOWN
+            if (binding.status != LocalCallStatus.RESOLVED) return Flow.UNKNOWN
+            val declaration = binding.selected ?: return Flow.UNKNOWN
+            if (declaration.fileId != null) return Flow.UNKNOWN
+            val procedure = declarations[declaration.line to declaration.column] ?: return Flow.UNKNOWN
             return procedure(procedure)
         }
 
-        private fun procedure(procedure: AstNode): Boolean = procedures[procedure] ?: run {
+        private fun procedure(procedure: AstNode): Flow = procedures[procedure] ?: run {
             val section = procedure.getFirstChildOrNull(PlSqlGrammar.STATEMENTS_SECTION)
             // A recursive call is taken to complete normally.
-            if (section == null || !analyzable(procedure, section) || !visiting.add(procedure)) return true
-            val completes = section(section)
+            if (section == null || !analyzable(procedure, section) || !visiting.add(procedure)) return Flow.CONTINUES
+            val flow = section(section)
             visiting.remove(procedure)
-            procedures[procedure] = completes
-            completes
+            procedures[procedure] = flow
+            flow
+        }
+    }
+
+    /** Whether execution reaches the point after a statement: it does, it does not, or a call it depends on is unseen. */
+    private enum class Flow {
+        CONTINUES, STOPS, UNKNOWN;
+
+        companion object {
+            fun of(continues: Boolean) = if (continues) CONTINUES else STOPS
+
+            fun join(flows: List<Flow>): Flow = when {
+                CONTINUES in flows -> CONTINUES
+                UNKNOWN in flows -> UNKNOWN
+                else -> STOPS
+            }
         }
     }
 
