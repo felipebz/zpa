@@ -7,8 +7,8 @@ resultado: a sequence avança mais rápido do que o esperado e deixa lacunas.
 
 <p>
 Esta regra reporta <code>NEXTVAL</code> num resultado de uma expressão <code>CASE</code>, ou do <code>DECODE</code>
-nativo, num comando SQL de código PL/SQL, quando o nome é uma sequence que o projeto cria. Sequences fora do projeto analisado não são
-reconhecidas. Em vez disso, filtre na cláusula <code>WHERE</code> as linhas que precisam de um valor.
+nativo, num comando SQL, dentro de PL/SQL ou solto num script, quando o nome é uma sequence que o projeto cria. Um <code>CASE</code> numa expressão PL/SQL não é reportado: o PL/SQL avalia só o ramo que segue.
+Sequences fora do projeto analisado não são reconhecidas. Em vez disso, filtre na cláusula <code>WHERE</code> as linhas que precisam de um valor.
 </p>
 
 <!-- section: fix -->

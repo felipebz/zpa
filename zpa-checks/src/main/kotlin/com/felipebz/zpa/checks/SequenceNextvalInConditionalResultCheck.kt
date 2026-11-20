@@ -42,12 +42,16 @@ class SequenceNextvalInConditionalResultCheck : AbstractBaseCheck() {
     }
 
     private fun isSqlExpression(node: AstNode): Boolean {
-        return node.hasAncestor(
+        val owner = node.getFirstAncestorOrNull(
             PlSqlGrammar.SELECT_STATEMENT,
             PlSqlGrammar.INSERT_STATEMENT,
             PlSqlGrammar.UPDATE_STATEMENT,
-            PlSqlGrammar.MERGE_STATEMENT
-        )
+            PlSqlGrammar.MERGE_STATEMENT,
+            DmlGrammar.DML_COMMAND,
+            PlSqlGrammar.FUNCTION_DECLARATION,
+            PlSqlGrammar.PROCEDURE_DECLARATION
+        ) ?: return false
+        return owner.type !== PlSqlGrammar.FUNCTION_DECLARATION && owner.type !== PlSqlGrammar.PROCEDURE_DECLARATION
     }
 
     private fun checkCaseResults(caseExpression: AstNode) {

@@ -85,6 +85,56 @@ class SequenceNextvalInConditionalResultCheckTest : BaseCheckTest() {
     }
 
     @Test
+    fun reportsStandaloneStatementsOfAScriptButNotPlSqlExpressions() {
+        ProjectPlSqlCheckVerifier.verify(
+            listOf(
+                ProjectTestSource("bin_sequences.sql", "create sequence bin_seq;"),
+                ProjectTestSource(
+                    "bin_script.sql",
+                    """
+                    insert into bin_crate (id, label)
+                    select case when x.keep = 'Y' then bin_seq.nextval end, x.label -- Noncompliant
+                      from bin_import x;
+
+                    select decode(x.keep, 'Y', bin_seq.nextval), x.label -- Noncompliant
+                      from bin_import x;
+
+                    declare
+                      v number;
+                      b boolean := false;
+                    begin
+                      -- PL/SQL evaluates only the branch it takes.
+                      v := case when b then bin_seq.nextval end;
+                    end;
+                    /
+
+                    -- The body of a function of the WITH clause is PL/SQL.
+                    with
+                      function pick(b number) return number is
+                      begin
+                        return case when b = 1 then bin_seq.nextval end;
+                      end;
+                    select pick(0) from dual
+                    /
+
+                    -- A SQL statement in that body is SQL again.
+                    with
+                      function pick_row(b number) return number is
+                        v number;
+                      begin
+                        select case when b = 1 then bin_seq.nextval end into v from dual; -- Noncompliant
+                        return v;
+                      end;
+                    select pick_row(0) from dual
+                    /
+                    """.trimIndent()
+                )
+            ),
+            SequenceNextvalInConditionalResultCheck()
+        )
+    }
+
+    @Test
     fun reportsSequenceNextvalOnlyInConditionalResults() {
         val source = File(getPath("sequence_nextval_in_conditional_result.sql")).readText()
         ProjectPlSqlCheckVerifier.verify(

@@ -7,8 +7,8 @@ faster than expected and leaves gaps.
 
 <p>
 This rule reports <code>NEXTVAL</code> in a result of a <code>CASE</code> expression, or of the built-in
-<code>DECODE</code>, in a SQL statement of PL/SQL code, when the name is a sequence the project creates. Sequences outside the
-analyzed project are not recognized. Filter the rows that need a value in the <code>WHERE</code> clause instead.
+<code>DECODE</code>, in a SQL statement, inside PL/SQL or standalone in a script, when the name is a sequence the project creates. A <code>CASE</code> in a PL/SQL expression is not reported: PL/SQL evaluates only the branch it takes.
+Sequences outside the analyzed project are not recognized. Filter the rows that need a value in the <code>WHERE</code> clause instead.
 </p>
 
 <!-- section: fix -->
