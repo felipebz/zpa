@@ -8,8 +8,10 @@ todas as tabelas para saber de onde vem o valor.
 
 <p>
 Esta regra reporta uma coluna da lista do <code>SELECT</code> escrita sem tabela ou alias, numa consulta cuja cláusula
-<code>FROM</code> lista duas ou mais tabelas, views ou subconsultas separadas por vírgulas; consultas escritas com
-<code>JOIN</code> não são verificadas. Um nome que uma variável ou parâmetro PL/SQL assume, e pseudocolunas como
+<code>FROM</code> lê duas ou mais tabelas, views ou subconsultas, separadas por vírgulas ou unidas por qualquer
+<code>JOIN</code> ou <code>APPLY</code>. Uma coluna da lista de um <code>JOIN … USING</code> não é reportada: o Oracle
+rejeita um qualificador nela (ORA-25154). Uma consulta com <code>NATURAL JOIN</code> não é verificada: o Oracle rejeita
+um qualificador nas colunas que ele compartilha (ORA-25155), e quais são depende das colunas das duas origens. Um nome que uma variável ou parâmetro PL/SQL assume, e pseudocolunas como
 <code>ROWNUM</code>, <code>LEVEL</code> ou <code>SYSDATE</code>, não são reportados.
 </p>
 

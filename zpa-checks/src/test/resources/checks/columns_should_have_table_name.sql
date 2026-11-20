@@ -59,3 +59,55 @@ begin
     from tab, tab2;
 end;
 /
+
+-- Every join form reads more than one source.
+select a.id, label -- Noncompliant
+  from bin_crate a
+  join bin_kind b on b.id = a.kind_id;
+
+select a.id, label -- Noncompliant
+  from bin_crate a
+ inner join bin_kind b on b.id = a.kind_id;
+
+select a.id, label -- Noncompliant
+  from bin_crate a
+ cross join bin_kind b;
+
+select a.id, label -- Noncompliant
+  from bin_crate a
+  left outer join bin_kind b on b.id = a.kind_id;
+
+select a.id, label -- Noncompliant
+  from bin_crate a
+  full join bin_kind b on b.id = a.kind_id;
+
+select a.id, label -- Noncompliant
+  from bin_crate a
+ cross apply (select k.name from bin_kind k where k.id = a.kind_id) b;
+
+select a.id, label -- Noncompliant
+  from bin_crate a
+ outer apply (select k.name from bin_kind k where k.id = a.kind_id) b;
+
+select a.id, label -- Noncompliant
+  from (bin_crate a join bin_kind b on b.id = a.kind_id);
+
+-- Oracle rejects a qualifier on a column of the USING list (ORA-25154).
+select id, label -- Noncompliant
+  from bin_crate
+  join bin_kind using (id);
+
+-- Oracle rejects a qualifier on a column a natural join shares (ORA-25155), and which they are is not known.
+select id, label
+  from bin_crate
+natural join bin_kind;
+
+-- One source, and a subquery with its own FROM.
+select label
+  from bin_crate a;
+
+select label
+  from (select c.label from bin_crate c join bin_kind k on k.id = c.kind_id);
+
+select label
+  from (bin_crate);

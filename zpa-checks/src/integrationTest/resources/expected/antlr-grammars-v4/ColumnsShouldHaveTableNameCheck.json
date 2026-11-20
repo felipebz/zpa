@@ -1,9 +1,12 @@
 {
-  "more-examples/analytic_query.sql" : [ 76 ],
+  "examples/table_ref03.sql" : [ 1 ],
+  "examples/table_ref04.sql" : [ 1 ],
+  "more-examples/analytic_query.sql" : [ 4, 4, 11, 11, 76 ],
   "more-examples/bindvar05.sql" : [ 1, 1, 4 ],
   "more-examples/condition11.sql" : [ 1 ],
   "more-examples/dblink01.sql" : [ 1, 1 ],
   "more-examples/groupby06.sql" : [ 2, 2, 2, 2 ],
+  "more-examples/join05.sql" : [ 1, 1 ],
   "more-examples/query_factoring01.sql" : [ 12, 12, 12, 12 ],
   "more-examples/query_factoring06.sql" : [ 3 ],
   "more-examples/query_factoring09.sql" : [ 5 ],

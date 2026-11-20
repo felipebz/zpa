@@ -25,6 +25,8 @@
   "sqlrf/SELECT-64.sql" : [ 3, 4, 5 ],
   "sqlrf/SELECT-77.sql" : [ 2, 2, 2 ],
   "sqlrf/SELECT-79.sql" : [ 2, 2, 2 ],
+  "sqlrf/SELECT-90.sql" : [ 9, 9 ],
+  "sqlrf/SELECT-91.sql" : [ 4, 4 ],
   "sqlrf/STATS_ONE_WAY_ANOVA-0.sql" : [ 2 ],
   "sqlrf/XMLTABLE-2.sql" : [ 2 ]
 }

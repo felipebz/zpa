@@ -8,9 +8,11 @@ value comes from.
 
 <p>
 This rule reports a column of the select list written without a table or alias, in a query whose <code>FROM</code>
-clause lists two or more tables, views or subqueries separated by commas; queries written with <code>JOIN</code> are not
-checked. A name a PL/SQL variable or parameter takes, and pseudocolumns such as <code>ROWNUM</code>, <code>LEVEL</code>
-or <code>SYSDATE</code>, are not reported.
+clause reads two or more tables, views or subqueries, separated by commas or joined with any <code>JOIN</code> or
+<code>APPLY</code>. A column of a <code>JOIN … USING</code> list is not reported: Oracle rejects a qualifier on it
+(ORA-25154). A query with a <code>NATURAL JOIN</code> is not checked: Oracle rejects a qualifier on the columns it shares
+(ORA-25155), and which they are depends on the columns of both sources. A name a PL/SQL variable or parameter takes, and
+pseudocolumns such as <code>ROWNUM</code>, <code>LEVEL</code> or <code>SYSDATE</code>, are not reported.
 </p>
 
 <!-- section: fix -->
