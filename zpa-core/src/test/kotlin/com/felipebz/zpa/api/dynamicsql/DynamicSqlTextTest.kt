@@ -12,6 +12,7 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.zpa.api.PlSqlFile
 import com.felipebz.zpa.api.PlSqlGrammar
+import com.felipebz.zpa.api.PlSqlTokenType
 import com.felipebz.zpa.api.annotations.ZpaExperimentalApi
 import com.felipebz.zpa.api.checks.PlSqlCheck
 import com.felipebz.zpa.api.project.SequenceReferenceResolution
@@ -122,6 +123,23 @@ class DynamicSqlTextTest {
         assertThat(built("'select 1 from t where c = ''' || v || ''''")).isEqualTo("select 1 from t where c = 'ZPA$1'")
         // Two holes side by side stay two names.
         assertThat(built("'insert into ' || a || b || ' values (1)'")).isEqualTo("insert into ZPA$1 ZPA$2 values (1)")
+    }
+
+    @Test
+    fun aHoleInsideADateOrTimestampLiteralParses() {
+        for (literal in listOf("date ''' || v || ''''", "timestamp ''' || v || ''''", "date ''2020-' || v || ''''")) {
+            val text = text("'select 1 from t where c > $literal")
+            assertThat(text).describedAs(literal).isNotNull
+            assertThat(text!!.holesDropped).describedAs(literal).isFalse()
+            val hole = text.holes.single()
+            val holders = text.root.descendants().filter { !it.hasChildren() && hole in text.holesIn(it) }.map { it.token.type }
+            assertThat(holders).describedAs("$literal ${text.root.tokens.map { it.type to it.value }}")
+                .singleElement().isIn(PlSqlTokenType.DATE_LITERAL, PlSqlTokenType.TIMESTAMP_LITERAL)
+        }
+        // The shapes that parsed before keep their literal kind.
+        assertThat(text("'select 1 from t where c > date ''2020-01-01'' and d = ''' || v || ''''")!!.root.tokens.map { it.type })
+            .contains(PlSqlTokenType.DATE_LITERAL, PlSqlTokenType.STRING_LITERAL)
+        assertThat(text("'select 1 from t where c > interval ''' || v || ''' day'")).isNotNull
     }
 
     @Test

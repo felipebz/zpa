@@ -391,7 +391,7 @@ enum class DmlGrammar : GrammarRuleKey {
 
             // Oracle parses VERSIONS and AS OF items together, in either order and repeated, and rejects repeats
             // only afterwards (ORA-08187).
-            val flashbackKind = b.firstOf(SCN, TIMESTAMP)
+            val flashbackKind = pointInTimeKind(b)
             val flashbackOperand = CONCATENATION_EXPRESSION
             b.rule(FLASHBACK_QUERY_CLAUSE).define(
                 b.oneOrMore(b.firstOf(

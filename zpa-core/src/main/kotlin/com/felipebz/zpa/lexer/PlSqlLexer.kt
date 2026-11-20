@@ -25,13 +25,13 @@ object PlSqlLexer {
         """\d++(?:e[+-]?\d++)""" // number literal in scientific notation
     ) + ")"
 
-    // Oracle tolerates padding inside the literal.
-    private const val DATE_LITERAL = """(?i)(?:DATE\s*?'\s*\d{1,4}-\d{1,2}-\d{1,2}\s*')"""
+    // Oracle parses DATE, TIME and TIMESTAMP followed by any string literal, and checks the value afterwards
+    // (PLS-00166 in PL/SQL, an ORA- error in SQL).
+    private val DATE_LITERAL = "(?i)DATE\\s*?${StringLiteralSyntax.PATTERN}"
 
-    // Undocumented, but Oracle 26 parses TIME followed by any string literal and validates the value afterwards.
     private val TIME_LITERAL = "(?i)TIME\\s*?${StringLiteralSyntax.PATTERN}"
 
-    private const val TIMESTAMP_LITERAL = """(?i)TIMESTAMP\s*?'\d{4}-\d{2}-\d{2}\s++\d{1,2}:\d{2}:\d{2}(?:.\d{1,9})?(?:\s++[A-Z0-9_/+-:]++(?:\s++[A-Z0-9_/+-]{1,5})?)?'"""
+    private val TIMESTAMP_LITERAL = "(?i)TIMESTAMP\\s*?${StringLiteralSyntax.PATTERN}"
 
     private val SIMPLE_IDENTIFIER = and("""[\w\p{L}]""", o2n("""[\w\p{L}#$]"""))
 

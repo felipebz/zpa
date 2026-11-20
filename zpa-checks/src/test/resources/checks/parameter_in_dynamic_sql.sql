@@ -73,3 +73,11 @@ begin
   execute immediate v_out into n;
 end;
 /
+create procedure find_old(p_code varchar2, p_day varchar2) is
+  rec varchar2(100);
+begin
+  -- Inside a DATE literal the placeholder is still between quotes: a value.
+  execute immediate 'select val from crate where code = ''' || p_code || -- Noncompliant {{Parameter "p_code" is concatenated into the SQL text as a value: bind it with USING.}}
+                    ''' and created > date ''' || p_day || '''' into rec; -- Noncompliant {{Parameter "p_day" is concatenated into the SQL text as a value: bind it with USING.}}
+end;
+/

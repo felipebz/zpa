@@ -48,7 +48,7 @@ enum class GraphTableGrammar : GrammarRuleKey {
                 b.optional(
                     AS, OF,
                     b.firstOf(
-                        b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                        b.sequence(pointInTimeKind(b), EXPRESSION),
                         b.sequence(PERIOD, FOR, IDENTIFIER_NAME, EXPRESSION)
                     )
                 )

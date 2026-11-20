@@ -80,12 +80,19 @@ class ParameterInDynamicSqlCheck : AbstractBaseCheck() {
         addIssue(name, getLocalizedMessage(if (valueOnly) "valueMessage" else "message"), name.tokenOriginalValue)
     }
 
-    /** Whether every token of the text that holds [hole]'s placeholder is a string literal: the hole writes only a value. */
+    /**
+     * Whether every token of the text that holds [hole]'s placeholder is a quoted literal (a string, or a `DATE`, `TIME`
+     * or `TIMESTAMP` literal, still between quotes): the hole writes only a value.
+     */
     private fun writesOnlyValue(text: DynamicSqlText, hole: DynamicSqlHole): Boolean {
         if (text.holesDropped) return false
         val holders = text.root.descendants().filter { !it.hasChildren() && hole in text.holesIn(it) }.toList()
-        return holders.isNotEmpty() && holders.all { it.token.type === PlSqlTokenType.STRING_LITERAL }
+        return holders.isNotEmpty() && holders.all { it.token.type in QUOTED_LITERALS }
     }
+
+    private val QUOTED_LITERALS = setOf(
+        PlSqlTokenType.STRING_LITERAL, PlSqlTokenType.DATE_LITERAL, PlSqlTokenType.TIME_LITERAL, PlSqlTokenType.TIMESTAMP_LITERAL
+    )
 
     private fun AstNode.descendants(): Sequence<AstNode> = sequence {
         val pending = ArrayDeque<AstNode>().apply { add(this@descendants) }

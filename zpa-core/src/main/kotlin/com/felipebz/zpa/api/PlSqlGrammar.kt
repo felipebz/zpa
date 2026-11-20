@@ -1674,7 +1674,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PROCEDURE-statement.html
             b.rule(CREATE_PROCEDURE).define(
                     CREATE, createUnitHeader(b, PROCEDURE),
-                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    UNIT_NAME, b.optional(TIMESTAMP_LITERAL),
                     sharingClause,
                     b.firstOf(
                             WRAPPED_SOURCE_CLAUSE,
@@ -1690,7 +1690,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-FUNCTION-statement.html
             b.rule(CREATE_FUNCTION).define(
                     CREATE, createUnitHeader(b, FUNCTION),
-                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    UNIT_NAME, b.optional(TIMESTAMP_LITERAL),
                     sharingClause,
                     b.firstOf(
                             WRAPPED_SOURCE_CLAUSE,
@@ -1714,7 +1714,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // SHARING must come first (PLS-00103); a second RESETTABLE fails at compile time (PLS-00371).
             b.rule(CREATE_PACKAGE).define(
                     b.optional(CREATE), createUnitHeader(b, PACKAGE),
-                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    UNIT_NAME, b.optional(TIMESTAMP_LITERAL),
                     sharingClause,
                     b.firstOf(
                             WRAPPED_SOURCE_CLAUSE,
@@ -1732,7 +1732,7 @@ enum class PlSqlGrammar : GrammarRuleKey {
             // A body accepts only SHARING and then a single RESETTABLE (PLS-00103 otherwise).
             b.rule(CREATE_PACKAGE_BODY).define(
                     b.optional(CREATE), createUnitHeader(b, b.sequence(PACKAGE, BODY)),
-                    UNIT_NAME, b.optional(TIMESTAMP, STRING_LITERAL),
+                    UNIT_NAME, b.optional(TIMESTAMP_LITERAL),
                     sharingClause,
                     b.firstOf(
                             WRAPPED_SOURCE_CLAUSE,

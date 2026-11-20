@@ -3942,9 +3942,7 @@ enum class DdlGrammar : GrammarRuleKey {
                 b.sequence(MODIFY, RETENTION, INTEGER_LITERAL, b.firstOf(YEAR, MONTH, DAY)),
                 b.sequence(PURGE, b.firstOf(
                     ALL,
-                    b.sequence(BEFORE, b.firstOf(
-                        b.sequence(SCN, EXPRESSION),
-                        b.sequence(TIMESTAMP, EXPRESSION))))),
+                    b.sequence(BEFORE, pointInTimeKind(b), EXPRESSION))),
                 optimizeClause)
             b.rule(ALTER_FLASHBACK_ARCHIVE).define(
                 ALTER, FLASHBACK, ARCHIVE, IDENTIFIER_NAME,
@@ -3995,7 +3993,7 @@ enum class DdlGrammar : GrammarRuleKey {
             b.rule(CREATE_RESTORE_POINT).define(
                 CREATE, b.optional(CLEAN), RESTORE, POINT, IDENTIFIER_NAME,
                 b.optional(FOR, PLUGGABLE, DATABASE, IDENTIFIER_NAME),
-                b.optional(AS, OF, b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                b.optional(AS, OF, pointInTimeKind(b), EXPRESSION),
                 b.optional(b.firstOf(PRESERVE, b.sequence(GUARANTEE, FLASHBACK, DATABASE))),
                 b.optional(SEMICOLON))
         }
@@ -4017,7 +4015,7 @@ enum class DdlGrammar : GrammarRuleKey {
                         DmlGrammar.TABLE_REFERENCE, b.zeroOrMore(COMMA, DmlGrammar.TABLE_REFERENCE),
                         TO,
                         b.firstOf(
-                            b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                            b.sequence(pointInTimeKind(b), EXPRESSION),
                             b.sequence(RESTORE, POINT, IDENTIFIER_NAME)),
                         b.optional(triggersClause))),
                 b.optional(SEMICOLON))
@@ -4031,8 +4029,8 @@ enum class DdlGrammar : GrammarRuleKey {
                 FLASHBACK, b.optional(STANDBY), b.optional(PLUGGABLE), DATABASE, b.optional(IDENTIFIER_NAME),
                 TO,
                 b.firstOf(
-                    b.sequence(BEFORE, b.firstOf(b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION), RESETLOGS, restorePoint)),
-                    b.sequence(b.firstOf(SCN, TIMESTAMP), EXPRESSION),
+                    b.sequence(BEFORE, b.firstOf(b.sequence(pointInTimeKind(b), EXPRESSION), RESETLOGS, restorePoint)),
+                    b.sequence(pointInTimeKind(b), EXPRESSION),
                     RESETLOGS,
                     restorePoint),
                 b.optional(SEMICOLON))

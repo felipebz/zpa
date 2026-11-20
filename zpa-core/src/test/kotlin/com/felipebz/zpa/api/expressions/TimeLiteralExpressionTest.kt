@@ -66,4 +66,38 @@ class TimeLiteralExpressionTest : RuleTest() {
         assertThatAst(tree.getDescendants(PlSqlKeyword.TIME)).isEmpty()
         assertThatAst(tree.getDescendants(PlSqlGrammar.INTERVAL_LITERAL)).hasSize(6)
     }
+
+    @Test
+    fun parsesDateAndTimestampWithAnyStringBecauseOracleValidatesThemLater() {
+        mapOf(
+            "DATE 'x'" to PlSqlTokenType.DATE_LITERAL, "DATE '01/02/2020'" to PlSqlTokenType.DATE_LITERAL,
+            "DATE '2020-01-01 10:00:00'" to PlSqlTokenType.DATE_LITERAL, "DATE q'[x]'" to PlSqlTokenType.DATE_LITERAL,
+            "TIMESTAMP 'x'" to PlSqlTokenType.TIMESTAMP_LITERAL, "TIMESTAMP '2020-01-01'" to PlSqlTokenType.TIMESTAMP_LITERAL,
+            "TIMESTAMP 'x' + INTERVAL '1' DAY" to PlSqlTokenType.TIMESTAMP_LITERAL,
+        ).forEach { (source, type) ->
+            assertThat(p).describedAs(source).matches(source)
+            assertThatAst(p.parse(source).getDescendants(type)).describedAs(source).hasSize(1)
+        }
+    }
+
+    @Test
+    fun aTimestampOperandAfterAsOfOrInAUnitHeaderStillParses() {
+        setRootRule(PlSqlGrammar.FILE_INPUT)
+        listOf(
+            "select 1 from bin as of timestamp '2020-01-01 00:00:00';",
+            "select 1 from bin as of timestamp 'x' - 1;",
+            "select 1 from bin versions between timestamp 'x' and maxvalue;",
+            "create procedure bin_p timestamp '2020-01-01:00:00:00' is begin null; end;\n/\n",
+        ).forEach { assertThat(p).describedAs(it).matches(it) }
+        for (value in listOf("'01-JAN-20'", "'2020-01-01 00:00:00'")) {
+            listOf(
+                "create restore point bin_rp as of timestamp $value;",
+                "flashback table bin to timestamp $value;",
+                "flashback database to timestamp $value;",
+                "flashback database to before timestamp $value;",
+                "alter flashback archive bin_fa purge before timestamp $value;",
+                "select * from graph_table(bin_g as of timestamp $value match (a) columns (a.id as id));",
+            ).forEach { assertThat(p).describedAs(it).matches(it) }
+        }
+    }
 }

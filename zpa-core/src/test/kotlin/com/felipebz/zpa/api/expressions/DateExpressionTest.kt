@@ -42,7 +42,7 @@ class DateExpressionTest : RuleTest() {
     }
 
     @Test
-    fun doesNotMatchDateLiteralWithPaddingInsideTheValue() {
-        assertThat(p).notMatches("date '2023- 12-31'")
+    fun matchesDateLiteralWithAMalformedValueBecauseOracleValidatesItLater() {
+        assertThat(p).matches("date '2023- 12-31'")
     }
 }
