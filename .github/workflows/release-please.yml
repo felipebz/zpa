@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - '[0-9]+.[0-9]+.x'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable release tag (X.Y.Z) whose GitHub release is still a draft
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -18,18 +24,65 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
-      sha: ${{ steps.release.outputs.sha }}
+      release_created: ${{ steps.release.outputs.release_created || steps.dispatched.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name || steps.dispatched.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version || steps.dispatched.outputs.version }}
+      sha: ${{ steps.release.outputs.sha || steps.dispatched.outputs.sha }}
     steps:
       - id: release
+        if: github.event_name == 'push'
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           target-branch: ${{ github.ref_name }}
           token: ${{ github.token }}
+
+      - name: Checkout for the dispatched release
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: dispatched
+        name: Resolve the dispatched release
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          [[ ${TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            printf 'Release tag must be an unprefixed stable X.Y.Z: %s\n' "${TAG}" >&2
+            exit 1
+          }
+          sha=$(git rev-parse --verify --quiet "refs/tags/${TAG}^{commit}") || {
+            printf 'Tag %s does not exist\n' "${TAG}" >&2
+            exit 1
+          }
+          git merge-base --is-ancestor "${sha}" HEAD || {
+            printf 'Tag %s is not on %s\n' "${TAG}" "${GITHUB_REF_NAME}" >&2
+            exit 1
+          }
+          # A published release was already deployed: resuming it would publish its artifacts twice.
+          is_draft=$(gh release view "${TAG}" --json isDraft --jq .isDraft) || {
+            printf 'There is no GitHub release for tag %s\n' "${TAG}" >&2
+            exit 1
+          }
+          [[ ${is_draft} == true ]] || {
+            printf 'The GitHub release of %s is already published\n' "${TAG}" >&2
+            exit 1
+          }
+
+          {
+            printf 'release_created=true\n'
+            printf 'tag_name=%s\n' "${TAG}"
+            printf 'version=%s\n' "${TAG}"
+            printf 'sha=%s\n' "${sha}"
+          } >> "${GITHUB_OUTPUT}"
 
   prepare_release:
     name: Prepare and verify stable release
