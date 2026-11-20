@@ -14,6 +14,7 @@ import com.felipebz.zpa.api.semantics.ColumnBinding
 import com.felipebz.zpa.api.semantics.ColumnSource
 import com.felipebz.zpa.api.semantics.HighlightingPair
 import com.felipebz.zpa.api.semantics.HighlightingRange
+import com.felipebz.zpa.lexer.ByteOrderMark
 import com.felipebz.zpa.project.*
 import com.felipebz.zpa.utils.log.Loggers
 
@@ -204,12 +205,12 @@ internal class LocalHighlighting(
 
         private val LOG = Loggers.getLogger(LocalHighlighting::class.java)
 
-        /** The lengths of the lines of [text], split as the lexer counts lines. */
+        /** The lengths of the lines of [text], split as the lexer counts lines; a leading byte-order mark is not counted. */
         fun lineLengths(text: String): IntArray {
             var lengths = IntArray(16)
             var line = 0
-            var start = 0
-            var i = 0
+            var start = ByteOrderMark.length(text)
+            var i = start
             while (i < text.length) {
                 val next = afterLineBreak(text, i)
                 if (next == i) {

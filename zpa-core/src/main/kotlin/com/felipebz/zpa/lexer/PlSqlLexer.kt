@@ -41,6 +41,7 @@ object PlSqlLexer {
         Lexer.builder()
             .withCharset(conf.charset)
             .withFailIfNoChannelToConsumeOneCharacter(true)
+            .withChannel(ByteOrderMark.LeadingChannel())
             .withChannel(DiscardWhitespaceChannel())
             .withChannel(MleInlineSourceChannel())
             .withChannel(CommentChannel())

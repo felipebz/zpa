@@ -9,6 +9,7 @@ import com.felipebz.flr.api.GenericTokenType
 import com.felipebz.flr.api.Token
 import com.felipebz.flr.api.Trivia
 import com.felipebz.zpa.api.PlSqlTokenType
+import com.felipebz.zpa.lexer.ByteOrderMark
 import com.felipebz.zpa.project.CallableCoverageGap
 import com.felipebz.zpa.symbols.local.ConditionalText
 
@@ -20,9 +21,12 @@ import com.felipebz.zpa.symbols.local.ConditionalText
  * character offsets (tab width 1, the lexer default). Used only during one extraction; nothing retains it.
  */
 internal class DiscardedSourceText(private val source: String) {
+    /** Where line 1 starts: after a leading byte-order mark, which the lexer does not count. */
+    private val origin = ByteOrderMark.length(source)
+
     private val lineStarts: IntArray by lazy(LazyThreadSafetyMode.NONE) {
         val starts = ArrayList<Int>()
-        starts += 0
+        starts += origin
         var index = 0
         while (index < source.length) {
             val c = source[index]
@@ -116,7 +120,7 @@ internal class DiscardedSourceText(private val source: String) {
         val segments = ArrayList<Segment>()
         val last = tokens.indexOfLast { it.type !== GenericTokenType.EOF }
         if (last < 0) {
-            edgeSegment(0, tokens.flatMap { it.trivia }, source.length, maxOf(0, tokens.size - 1), segments)
+            edgeSegment(origin, tokens.flatMap { it.trivia }, source.length, maxOf(0, tokens.size - 1), segments)
             return segments
         }
         val first = start(tokens[0])
@@ -124,7 +128,7 @@ internal class DiscardedSourceText(private val source: String) {
             segments += Segment(CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS, 0)
             return segments
         }
-        if (!edgeSegment(0, tokens[0].trivia, first, 0, segments)) return segments
+        if (!edgeSegment(origin, tokens[0].trivia, first, 0, segments)) return segments
         var verified = true
         visitGaps(tokens, 0, last) { kind, before, _, trivia ->
             if (kind == CallableCoverageGap.UNVERIFIED_SOURCE_POSITIONS) verified = false
