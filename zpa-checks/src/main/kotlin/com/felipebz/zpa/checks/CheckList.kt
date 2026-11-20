@@ -81,6 +81,7 @@ object CheckList {
                 OuterJoinDiscardedByConditionCheck::class.java,
                 ColumnHidesPlSqlNameCheck::class.java,
                 NotInWithNullCheck::class.java,
-                ImplicitColumnConversionCheck::class.java)
+                ImplicitColumnConversionCheck::class.java,
+                ColumnIntoSmallerVariableCheck::class.java)
 
 }

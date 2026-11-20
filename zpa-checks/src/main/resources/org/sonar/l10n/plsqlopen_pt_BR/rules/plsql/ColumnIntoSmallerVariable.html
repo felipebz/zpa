@@ -1,0 +1,36 @@
+<p>
+Uma coluna lida com <code>SELECT … INTO</code>, <code>FETCH … INTO</code> ou <code>RETURNING … INTO</code> numa
+variável declarada menor que a coluna compila, e causa ORA-06502 no dia em que chega um valor mais longo que a
+variável. Declarar a variável com o <code>%TYPE</code> da coluna mantém os dois tamanhos iguais, também quando a coluna
+muda.
+</p>
+
+<p>
+Esta regra usa os metadados de tabelas e views lidos do banco de dados, e não reporta nada sem eles. Uma variável de
+texto ou <code>RAW</code> é reportada quando seu tamanho é menor que o da coluna, qualquer que seja a unidade de cada
+uma. Um número é reportado quando tem menos dígitos antes da vírgula que a coluna: uma escala menor apenas arredonda o
+valor. Uma variável cujo tamanho não está escrito, ou está escrito como uma expressão que a análise não avalia, não é
+reportada.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- crate.code é VARCHAR2(10)
+declare
+  v_code varchar2(5);
+begin
+  select code into v_code from crate where id = 1; -- Não conforme
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  v_code crate.code%type;
+begin
+  select code into v_code from crate where id = 1;
+end;
+</pre>

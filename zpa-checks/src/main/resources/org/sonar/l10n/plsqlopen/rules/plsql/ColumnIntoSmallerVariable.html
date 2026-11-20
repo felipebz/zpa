@@ -1,0 +1,35 @@
+<p>
+A column read with <code>SELECT … INTO</code>, <code>FETCH … INTO</code> or <code>RETURNING … INTO</code> into a
+variable declared smaller than the column compiles, and raises ORA-06502 on the day a value longer than the variable
+arrives. Declaring the variable with the column's <code>%TYPE</code> keeps both sizes the same, also when the column
+changes.
+</p>
+
+<p>
+This rule uses the table and view metadata read from the database, and reports nothing without it. A text or
+<code>RAW</code> variable is reported when its length is less than the column's, whatever unit each counts in. A number
+is reported when it has fewer digits before the point than the column: a smaller scale only rounds the value. A
+variable whose size is not written, or is written as an expression the analysis does not evaluate, is not reported.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+-- crate.code is VARCHAR2(10)
+declare
+  v_code varchar2(5);
+begin
+  select code into v_code from crate where id = 1; -- Noncompliant
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+declare
+  v_code crate.code%type;
+begin
+  select code into v_code from crate where id = 1;
+end;
+</pre>
