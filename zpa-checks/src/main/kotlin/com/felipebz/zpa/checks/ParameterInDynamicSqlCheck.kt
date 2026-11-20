@@ -10,6 +10,8 @@ import com.felipebz.zpa.api.*
 import com.felipebz.zpa.api.annotations.*
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlHole
 import com.felipebz.zpa.api.dynamicsql.DynamicSqlText
+import com.felipebz.zpa.api.project.ProjectParameterMode
+import com.felipebz.zpa.api.project.ProjectTypedCallResolution
 import com.felipebz.zpa.api.semantics.*
 import java.util.Collections
 import java.util.IdentityHashMap
@@ -27,6 +29,9 @@ class ParameterInDynamicSqlCheck : AbstractBaseCheck() {
     /** The variable and parameter declarations of the file by the position of their name, built on first use. */
     private var declarations: Map<Long, AstNode>? = null
 
+    /** The subprograms of the file by the position of their name, built the first time a local call needs one. */
+    private var subprograms: Map<Long, AstNode>? = null
+
     override fun init() {
         subscribeTo(PlSqlGrammar.EXECUTE_IMMEDIATE_STATEMENT, PlSqlGrammar.OPEN_FOR_STATEMENT, PlSqlGrammar.METHOD_CALL)
     }
@@ -34,6 +39,7 @@ class ParameterInDynamicSqlCheck : AbstractBaseCheck() {
     override fun visitFile(node: AstNode) {
         reported.clear()
         declarations = null
+        subprograms = null
     }
 
     override fun visitNode(node: AstNode) {
@@ -178,10 +184,50 @@ class ParameterInDynamicSqlCheck : AbstractBaseCheck() {
             DmlGrammar.INTO_CLAUSE -> Write.Unseen
             PlSqlGrammar.ARGUMENT, PlSqlGrammar.UNNAMED_ACTUAL_PAMETER -> {
                 val runsText = target === text || statement.type === PlSqlGrammar.METHOD_CALL && statement.isAncestorOf(target)
-                Write.Unseen.takeIf { parent.lastChild === target && !runsText }
+                // An IN formal cannot be assigned (PLS-00363): the call leaves the variable as it is.
+                Write.Unseen.takeIf { parent.lastChild === target && !runsText && !(target === name && bindsToInFormal(parent)) }
             }
             else -> null
         }
+    }
+
+    /** Whether the call answer proves that the actual [argument] binds to an `IN` formal of the one subprogram called. */
+    private fun bindsToInFormal(argument: AstNode): Boolean {
+        if (argument.type !== PlSqlGrammar.ARGUMENT) return false
+        val call = argument.parent.takeIf { it.type === PlSqlGrammar.ARGUMENTS }?.parent?.takeIf { it.type === PlSqlGrammar.METHOD_CALL } ?: return false
+        val arguments = argument.parent.getChildren(PlSqlGrammar.ARGUMENT)
+        val label = argument.tokens.takeIf { it.size > 2 && it[1].value == "=>" }?.first()?.value
+        return when (val binding = context.callBinding(call.firstChild)) {
+            is CallBinding.Project -> {
+                val resolution = binding.resolution
+                val selected = resolution.selected.orElse(null)?.takeIf { resolution.status == ProjectTypedCallResolution.Status.RESOLVED } ?: return false
+                val ordinal = arguments.indexOf(argument) + 1
+                selected.bindings.singleOrNull { it.argumentOrdinal == ordinal }?.parameter?.mode == ProjectParameterMode.IN
+            }
+            is CallBinding.Local -> {
+                val selected = binding.selected?.takeIf { binding.status == LocalCallStatus.RESOLVED && it.fileId == null } ?: return false
+                val formal = localFormal(call, selected, label, arguments.indexOf(argument)) ?: return false
+                !formal.hasDirectChildren(PlSqlKeyword.OUT)
+            }
+            else -> false
+        }
+    }
+
+    /** The formal of the subprogram [selected] declares that the actual named [label], else at [position], binds to. */
+    private fun localFormal(from: AstNode, selected: NameDeclaration, label: String?, position: Int): AstNode? {
+        val byPosition = subprograms ?: HashMap<Long, AstNode>().also { map ->
+            val root = generateSequence(from) { it.parentOrNull }.last()
+            for (node in root.getDescendants(*SUBPROGRAMS)) {
+                val name = node.getFirstChildOrNull(PlSqlGrammar.UNIT_NAME)?.lastChild ?: node.getFirstChildOrNull(PlSqlGrammar.IDENTIFIER_NAME)
+                val token = name?.token ?: continue
+                map.putIfAbsent(position(token.line, token.column), node)
+            }
+            subprograms = map
+        }
+        val subprogram = byPosition[position(selected.line, selected.column)] ?: return null
+        val formals = subprogram.getFirstChildOrNull(PlSqlGrammar.PARAMETER_DECLARATIONS)?.getChildren(PlSqlGrammar.PARAMETER_DECLARATION).orEmpty()
+        return if (label != null) formals.singleOrNull { it.getFirstChild(PlSqlGrammar.IDENTIFIER_NAME).tokenValue.equals(label, ignoreCase = true) }
+        else formals.getOrNull(position)
     }
 
     private fun AstNode.isAncestorOf(node: AstNode) = generateSequence(node.parentOrNull) { it.parentOrNull }.any { it === this }
@@ -236,5 +282,8 @@ class ParameterInDynamicSqlCheck : AbstractBaseCheck() {
             PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.CREATE_FUNCTION
         )
         val COMPOSITES = setOf(PlSqlGrammar.MEMBER_EXPRESSION, PlSqlGrammar.METHOD_CALL, PlSqlGrammar.OBJECT_REFERENCE)
+        val SUBPROGRAMS = arrayOf(
+            PlSqlGrammar.PROCEDURE_DECLARATION, PlSqlGrammar.FUNCTION_DECLARATION, PlSqlGrammar.CREATE_PROCEDURE, PlSqlGrammar.CREATE_FUNCTION
+        )
     }
 }

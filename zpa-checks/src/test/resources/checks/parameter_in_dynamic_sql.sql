@@ -52,3 +52,24 @@ begin
   execute immediate v_prefix || 'code = ''' || p_code || '''' into n; -- Noncompliant {{Parameter "p_code" is concatenated into the SQL text: bind a value with USING, or check a name with DBMS_ASSERT.}}
 end;
 /
+create procedure find_logged(p_code varchar2) is
+  n number;
+  v_pos varchar2(200) := 'select count(*) from crate where code = ''' || p_code || ''''; -- Noncompliant
+  v_named varchar2(200) := 'select count(*) from crate where code = ''' || p_code || ''''; -- Noncompliant
+  v_inout varchar2(200) := 'select count(*) from crate where code = ''' || p_code || '''';
+  v_out varchar2(200) := 'select count(*) from crate where code = ''' || p_code || '''';
+  procedure note(p_level number, p_text varchar2) is begin null; end;
+  procedure keep(p_text in out varchar2) is begin null; end;
+  procedure fill(p_text out varchar2) is begin p_text := null; end;
+begin
+  -- An IN formal cannot be assigned: the variable keeps its one value.
+  note(1, v_pos);
+  execute immediate v_pos into n;
+  note(p_text => v_named, p_level => 1);
+  execute immediate v_named into n;
+  keep(v_inout);
+  execute immediate v_inout into n;
+  fill(v_out);
+  execute immediate v_out into n;
+end;
+/
