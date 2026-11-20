@@ -1,13 +1,19 @@
 <p>
-In a <code>SELECT DISTINCT</code>, every expression of the <code>ORDER BY</code> must be one of the selected
-expressions, or the alias of one: the rows are made distinct before they are sorted, so a value that is not selected
-has no single value per row. Oracle rejects such a query with ORA-01791 ("not a SELECTed expression"). Older releases
-accepted some of these queries, which then fail after an upgrade.
+In a <code>SELECT DISTINCT</code>, the rows are made distinct before they are sorted, so the <code>ORDER BY</code> can
+use only what each distinct row has: the selected expressions, their aliases, and expressions made of them. A column
+that is not selected has no single value per row, also when a selected expression uses it: with
+<code>SELECT DISTINCT UPPER(r.label)</code>, <code>ORDER BY r.label</code> is rejected. Oracle rejects such a query
+with ORA-01791 ("not a SELECTed expression"). Older releases accepted some of these queries, which then fail after an
+upgrade.
 </p>
 
 <p>
-This rule reports an <code>ORDER BY</code> expression of a <code>SELECT DISTINCT</code> that is neither a selected
-expression nor its alias. A position (<code>ORDER BY 1</code>) is not reported.
+This rule reports an <code>ORDER BY</code> expression of a <code>SELECT DISTINCT</code> that uses a column of the query
+that is not selected. A selected expression is recognized as Oracle compares it: unquoted names without regard to
+case, a column with or without the name of its table or alias, and parentheses, spacing and comments aside. An
+expression made of selected expressions, aliases, literals, functions, PL/SQL names and values such as
+<code>SYSDATE</code> is accepted (<code>ORDER BY LOWER(alias)</code>), and so is a position (<code>ORDER BY 1</code>).
+A query that selects <code>*</code> is not checked.
 </p>
 
 <!-- section: fix -->

@@ -1,13 +1,19 @@
 <p>
-Num <code>SELECT DISTINCT</code>, toda expressão do <code>ORDER BY</code> precisa ser uma das expressões selecionadas,
-ou o alias de uma: as linhas são tornadas distintas antes de serem ordenadas, então um valor que não é selecionado não
-tem um único valor por linha. O Oracle rejeita uma consulta assim com o ORA-01791 ("not a SELECTed expression").
-Versões antigas aceitavam algumas dessas consultas, que passam a falhar depois de uma atualização.
+Num <code>SELECT DISTINCT</code>, as linhas são tornadas distintas antes de serem ordenadas, então o
+<code>ORDER BY</code> só pode usar o que cada linha distinta tem: as expressões selecionadas, os seus aliases e
+expressões feitas delas. Uma coluna que não é selecionada não tem um único valor por linha, também quando uma expressão
+selecionada a usa: com <code>SELECT DISTINCT UPPER(r.label)</code>, <code>ORDER BY r.label</code> é rejeitado. O Oracle
+rejeita uma consulta assim com o ORA-01791 ("not a SELECTed expression"). Versões antigas aceitavam algumas dessas
+consultas, que passam a falhar depois de uma atualização.
 </p>
 
 <p>
-Esta regra reporta uma expressão do <code>ORDER BY</code> de um <code>SELECT DISTINCT</code> que não é uma expressão
-selecionada nem o seu alias. Uma posição (<code>ORDER BY 1</code>) não é reportada.
+Esta regra reporta uma expressão do <code>ORDER BY</code> de um <code>SELECT DISTINCT</code> que usa uma coluna da
+consulta que não é selecionada. Uma expressão selecionada é reconhecida como o Oracle a compara: nomes sem aspas sem
+diferenciar maiúsculas de minúsculas, uma coluna com ou sem o nome da sua tabela ou alias, e sem considerar parênteses,
+espaços e comentários. Uma expressão feita de expressões selecionadas, aliases, literais, funções, nomes PL/SQL e
+valores como <code>SYSDATE</code> é aceita (<code>ORDER BY LOWER(alias)</code>), assim como uma posição
+(<code>ORDER BY 1</code>). Uma consulta que seleciona <code>*</code> não é verificada.
 </p>
 
 <!-- section: fix -->
