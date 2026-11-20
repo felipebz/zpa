@@ -14,17 +14,11 @@ Do you want to use this analyzer in a project hosted on [SonarCloud](https://son
 
 ## Installation
 
+- Check which SonarQube versions your ZPA version supports in the [compatibility matrix](https://zpa.felipebz.com/docs/sonarqube-plugin/compatibility/);
 - Download the [latest sonar-zpa-plugin release](https://github.com/felipebz/zpa/releases/latest) and copy to the SONARQUBE_HOME/extensions/plugins directory;
 - Restart your SonarQube server;
 - Navigate to the Marketplace (SONARQUBE_URL/marketplace?filter=installed). It should list "ZPA" on the tab "Installed Plugins";
 - Run an analysis with [SonarScanner](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/overview/).
-
-## Compatibility matrix
-
-| ZPA version            | SonarQube version (min/max) |
-|------------------------|-----------------------------|
-| 4.2.1                  | 26.2 / 26.10                |
-| 4.3.0 (in development) | 26.7 / 26.11                |
 
 ## ZPA Toolkit
 
