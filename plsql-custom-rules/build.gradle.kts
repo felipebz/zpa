@@ -24,7 +24,7 @@ val minSonarQubeVersion = "26.7.0.124771"
 val minSonarQubeApiVersion = "13.8.0.4399"
 val junitVersion = "6.1.3"
 // x-release-please-start-version
-val zpaVersion = "4.2.2-SNAPSHOT"
+val zpaVersion = "4.3.0"
 // x-release-please-end
 
 dependencies {
