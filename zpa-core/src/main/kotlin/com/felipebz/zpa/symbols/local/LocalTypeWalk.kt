@@ -512,16 +512,49 @@ internal class LocalTypeWalk(
     /** The select item of this file's tree whose range holds [item]'s (the field's name, or the whole item). */
     private fun selectColumn(item: SelectItem): AstNode? {
         if (item.range.fileId != model.fileId) return null
-        return selectItemNodes.firstOrNull { node ->
-            val range = LocalSyntax.range(model.fileId, node)
-            !before(item.range.startLine, item.range.startColumn, range.startLine, range.startColumn) &&
-                !before(range.endLine, range.endColumn, item.range.endLine, item.range.endColumn)
-        }
+        return selectItems.first(item.range)
     }
 
-    private fun before(line: Int, column: Int, otherLine: Int, otherColumn: Int) = line < otherLine || line == otherLine && column < otherColumn
+    private val selectItems: SelectItemRanges by lazy(LazyThreadSafetyMode.NONE) {
+        SelectItemRanges(root?.getDescendants(DmlGrammar.SELECT_COLUMN).orEmpty())
+    }
 
-    private val selectItemNodes: List<AstNode> by lazy(LazyThreadSafetyMode.NONE) { root?.getDescendants(DmlGrammar.SELECT_COLUMN).orEmpty() }
+    /** The select items of the tree in document order, with their ranges read once. */
+    private class SelectItemRanges(private val nodes: List<AstNode>) {
+        private val starts = LongArray(nodes.size)
+        private val ends = LongArray(nodes.size)
+        /** Whether the starts never decrease: a node starting after a range then cannot hold it, nor can any later one. */
+        private val ordered: Boolean
+
+        init {
+            var ordered = true
+            for (i in nodes.indices) {
+                val node = nodes[i]
+                val last = node.lastToken
+                starts[i] = position(node.token.line, node.token.column)
+                ends[i] = position(last.endLine, last.endColumn)
+                if (i > 0 && starts[i] < starts[i - 1]) ordered = false
+            }
+            this.ordered = ordered
+        }
+
+        /** The first node whose range holds [range]. */
+        fun first(range: SourceRange): AstNode? {
+            val start = position(range.startLine, range.startColumn)
+            val end = position(range.endLine, range.endColumn)
+            for (i in nodes.indices) {
+                if (starts[i] > start) {
+                    if (ordered) return null
+                    continue
+                }
+                if (ends[i] >= end) return nodes[i]
+            }
+            return null
+        }
+
+        /** Longs that compare as (line, column) pairs do, for any column. */
+        private fun position(line: Int, column: Int): Long = (line.toLong() shl 32) + column
+    }
 
     /**
      * The columns the select items read, as `columnBinding` decides them. Only a column a relation has is used, which
@@ -660,10 +693,21 @@ internal class LocalTypeWalk(
     fun projectDeclarationOf(declaration: LocalDeclarationId): ProjectDeclarationView? {
         if (!prepared) return null
         val range = model.declaration(declaration).range
-        return snapshot!!.declarationsFor(model.fileId.value).declarations.singleOrNull {
+        return projectDeclarations[(range.startLine.toLong() shl 32) + range.startColumn]?.singleOrNull {
             val r = it.sourceRange
-            r.startLine == range.startLine && r.startColumn == range.startColumn && r.endLine == range.endLine && r.endColumn == range.endColumn
+            r.endLine == range.endLine && r.endColumn == range.endColumn
         }
+    }
+
+    /** The project's facts for this file, by the start of their ranges; read once. */
+    private val projectDeclarations: Map<Long, List<ProjectDeclarationView>> by lazy(LazyThreadSafetyMode.NONE) {
+        val declarations = snapshot!!.declarationsFor(model.fileId.value).declarations
+        val byStart = HashMap<Long, MutableList<ProjectDeclarationView>>(declarations.size * 2)
+        for (view in declarations) {
+            val r = view.sourceRange
+            byStart.getOrPut((r.startLine.toLong() shl 32) + r.startColumn) { ArrayList(1) } += view
+        }
+        byStart
     }
 
     /**

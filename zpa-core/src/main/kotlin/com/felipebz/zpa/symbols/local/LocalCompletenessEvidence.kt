@@ -385,29 +385,53 @@ internal class LocalCompletenessEvidence private constructor(
          * of `CREATE JAVA`), which [DiscardedSourceText] then reports as discarded text.
          */
         private fun parserTokens(root: AstNode, recovery: MutableList<AstNode>): List<Token> {
-            val tokens = ArrayList<Token>()
-            val seen = Collections.newSetFromMap(IdentityHashMap<Token, Boolean>())
+            val tokens = DistinctTokens()
             // The root is not one of its own descendants: only the nodes below it are recovery candidates.
-            if (!root.hasChildren()) root.tokenOrNull?.let { if (seen.add(it)) tokens += it }
+            if (!root.hasChildren()) root.tokenOrNull?.let(tokens::add)
             else {
                 val children = root.children
-                for (i in 0 until children.size) leafTokens(children[i], seen, tokens, recovery)
+                for (i in 0 until children.size) leafTokens(children[i], tokens, recovery)
             }
-            return tokens
+            return tokens.list
         }
 
         /**
          * The tokens of the leaves under [node], in order, as `AstNode.tokens` lists them, each once; the same walk
          * collects the `RECOVERY` nodes in document order.
          */
-        private fun leafTokens(node: AstNode, seen: MutableSet<Token>, tokens: MutableList<Token>, recovery: MutableList<AstNode>) {
+        private fun leafTokens(node: AstNode, tokens: DistinctTokens, recovery: MutableList<AstNode>) {
             if (node.type === PlSqlGrammar.RECOVERY) recovery += node
             if (!node.hasChildren()) {
-                val token = node.tokenOrNull
-                if (token != null && seen.add(token)) tokens += token
+                node.tokenOrNull?.let(tokens::add)
             } else {
                 val children = node.children
-                for (i in 0 until children.size) leafTokens(children[i], seen, tokens, recovery)
+                for (i in 0 until children.size) leafTokens(children[i], tokens, recovery)
+            }
+        }
+
+        /**
+         * Tokens in the order they are added, each once. A token starting after every token kept so far cannot be one of
+         * them, so it is kept without a lookup; only a token that does not ([AstNode.tokens] repeats, or an unordered
+         * tree) is looked up among the kept ones by identity.
+         */
+        private class DistinctTokens {
+            val list = ArrayList<Token>()
+            private var last = Long.MIN_VALUE
+            private var kept: MutableSet<Token>? = null
+
+            fun add(token: Token) {
+                val position = (token.line.toLong() shl 32) + token.column
+                if (position > last) {
+                    last = position
+                    kept?.add(token)
+                    list += token
+                    return
+                }
+                val seen = kept ?: Collections.newSetFromMap(IdentityHashMap<Token, Boolean>(list.size * 2)).also {
+                    it.addAll(list)
+                    kept = it
+                }
+                if (seen.add(token)) list += token
             }
         }
 
