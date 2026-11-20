@@ -1,0 +1,41 @@
+<p>
+A parameter concatenated into the text of a dynamic SQL statement (<code>EXECUTE IMMEDIATE</code>, <code>OPEN … FOR</code>,
+<code>DBMS_SQL.PARSE</code>) lets whoever calls the subprogram write part of the statement. A value with a quote changes
+it: <code>x' or '1'='1</code> turns a lookup of one row into a lookup of all rows (SQL injection).
+</p>
+
+<p>
+Pass a value as a bind variable with <code>USING</code>: Oracle never reads it as part of the statement. A name, such as
+a table or a column, cannot be bound: check it with <code>DBMS_ASSERT</code> (<code>SIMPLE_SQL_NAME</code>,
+<code>ENQUOTE_NAME</code>), which raises an error for anything that is not a name. <code>DBMS_ASSERT.NOOP</code> checks
+nothing.
+</p>
+
+<p>
+This rule reports a character parameter written directly into the text: in the statement's expression, in a local
+variable that is assigned once and then run, or as the whole statement. A parameter inside another function or
+expression is not reported.
+</p>
+
+<!-- section: fix -->
+<h2>Noncompliant Code Example</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure find_crate(p_code varchar2, p_table varchar2) is
+  n number;
+begin
+  execute immediate 'select count(*) from crate where code = ''' || p_code || '''' into n; -- Noncompliant
+  execute immediate 'select count(*) from ' || p_table into n; -- Noncompliant
+end;
+</pre>
+
+<h2>Compliant Solution</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure find_crate(p_code varchar2, p_table varchar2) is
+  n number;
+begin
+  execute immediate 'select count(*) from crate where code = :c' into n using p_code;
+  execute immediate 'select count(*) from ' || dbms_assert.simple_sql_name(p_table) into n;
+end;
+</pre>

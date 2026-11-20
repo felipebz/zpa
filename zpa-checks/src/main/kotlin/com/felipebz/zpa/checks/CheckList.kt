@@ -82,6 +82,7 @@ object CheckList {
                 ColumnHidesPlSqlNameCheck::class.java,
                 NotInWithNullCheck::class.java,
                 ImplicitColumnConversionCheck::class.java,
-                ColumnIntoSmallerVariableCheck::class.java)
+                ColumnIntoSmallerVariableCheck::class.java,
+                ParameterInDynamicSqlCheck::class.java)
 
 }

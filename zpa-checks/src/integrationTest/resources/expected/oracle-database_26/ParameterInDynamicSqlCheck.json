@@ -1,0 +1,8 @@
+{
+  "lnpls/dbms_sql-package-6.sql" : [ 25 ],
+  "lnpls/dbms_sql-package-7.sql" : [ 19 ],
+  "lnpls/sql-injection-1.sql" : [ 13, 15 ],
+  "lnpls/sql-injection-18.sql" : [ 15, 17 ],
+  "lnpls/sql-injection-30.sql" : [ 14, 16 ],
+  "lnpls/sql-injection-6.sql" : [ 13, 14 ]
+}

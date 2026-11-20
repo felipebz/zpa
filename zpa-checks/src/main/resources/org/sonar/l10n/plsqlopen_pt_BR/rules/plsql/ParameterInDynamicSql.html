@@ -1,0 +1,41 @@
+<p>
+Um parâmetro concatenado ao texto de um comando SQL dinâmico (<code>EXECUTE IMMEDIATE</code>, <code>OPEN … FOR</code>,
+<code>DBMS_SQL.PARSE</code>) permite que quem chama o subprograma escreva parte do comando. Um valor com aspas o
+altera: <code>x' or '1'='1</code> transforma a busca de uma linha na busca de todas as linhas (SQL injection).
+</p>
+
+<p>
+Passe um valor como variável de ligação com <code>USING</code>: o Oracle nunca o lê como parte do comando. Um nome,
+como uma tabela ou uma coluna, não pode ser passado assim: verifique-o com <code>DBMS_ASSERT</code>
+(<code>SIMPLE_SQL_NAME</code>, <code>ENQUOTE_NAME</code>), que causa um erro para qualquer coisa que não seja um nome.
+<code>DBMS_ASSERT.NOOP</code> não verifica nada.
+</p>
+
+<p>
+Esta regra reporta um parâmetro de caracteres escrito diretamente no texto: na expressão do comando, numa variável
+local atribuída uma vez e depois executada, ou como o comando inteiro. Um parâmetro dentro de outra função ou
+expressão não é reportado.
+</p>
+
+<!-- section: fix -->
+<h2>Exemplo de código não conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="noncompliant">
+create procedure find_crate(p_code varchar2, p_table varchar2) is
+  n number;
+begin
+  execute immediate 'select count(*) from crate where code = ''' || p_code || '''' into n; -- Não conforme
+  execute immediate 'select count(*) from ' || p_table into n; -- Não conforme
+end;
+</pre>
+
+<h2>Solução conforme</h2>
+
+<pre data-diff-id="1" data-diff-type="compliant">
+create procedure find_crate(p_code varchar2, p_table varchar2) is
+  n number;
+begin
+  execute immediate 'select count(*) from crate where code = :c' into n using p_code;
+  execute immediate 'select count(*) from ' || dbms_assert.simple_sql_name(p_table) into n;
+end;
+</pre>

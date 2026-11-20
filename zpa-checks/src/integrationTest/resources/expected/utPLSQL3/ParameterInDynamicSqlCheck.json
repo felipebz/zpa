@@ -1,0 +1,12 @@
+{
+  "source/core/types/ut_executable_test.tpb" : [ 73, 82 ],
+  "source/expectations/data_values/ut_compound_data_helper.pkb" : [ 632 ],
+  "source/uninstall_objects.sql" : [ 13, 13 ],
+  "test/ut3_tester/core/annotations/test_annotation_manager.pkb" : [ 6 ],
+  "test/ut3_tester/core/test_ut_test.pkb" : [ 300 ],
+  "test/ut3_tester/core/test_ut_utils.pkb" : [ 39, 40 ],
+  "test/ut3_tester_helper/annotation_cache_helper.pkb" : [ 125, 133, 139, 165 ],
+  "test/ut3_tester_helper/coverage_helper.pkb" : [ 179, 183, 193, 204 ],
+  "test/ut3_tester_helper/main_helper.pkb" : [ 26, 41 ],
+  "test/ut3_user/expectations/test_matchers.pkb" : [ 13, 13, 14, 14, 16, 16, 32, 32, 33, 33, 34, 34, 52, 52, 53, 53, 54, 54, 56, 71, 71, 76, 92, 92, 97 ]
+}
