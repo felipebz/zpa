@@ -46,19 +46,19 @@ jobs:
       RELEASE_SHA: ${{ needs.release_please.outputs.sha }}
     steps:
       - name: Checkout exact release commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.release_please.outputs.sha }}
           fetch-depth: 0
           submodules: true
 
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           distribution: temurin
           java-version: 25
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
 
       - name: Verify exact release commit and versions
         id: release
@@ -121,12 +121,6 @@ jobs:
 
       - name: Build custom rules example
         run: ./gradlew build -p plsql-custom-rules --refresh-dependencies
-
-      - name: Run SonarQube Scanner
-        run: ./gradlew sonar --info
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Generate custom rules archive
         run: git archive --format=zip -o build/plsql-custom-rules.zip HEAD:plsql-custom-rules
@@ -279,84 +273,43 @@ jobs:
             exit 1
           }
 
-      - name: Upload integration-test artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - name: Upload SonarQube integration-test plugins
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: stable-integration-artifacts-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
+          name: sonarqube-it-plugins
           path: |
-            **/build/
-            zpa-checks/tools/
+            sonar-zpa-plugin/build/libs/sonar-zpa-plugin-*.jar
+            !sonar-zpa-plugin/build/libs/*-sources.jar
+            !sonar-zpa-plugin/build/libs/*-javadoc.jar
+            plsql-custom-rules/build/libs/plsql-custom-rules-*.jar
           retention-days: 1
           if-no-files-found: error
 
       - name: Upload validated Maven staging
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: maven-staging-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
           path: build/staging-deploy
           if-no-files-found: error
 
       - name: Upload GitHub release payload
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: github-release-payload-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
           path: build/github-release-payload
           if-no-files-found: error
 
+  # The same SonarQube and Oracle integration tests as the build, on the release commit.
   integration_tests:
-    name: Plugin integration test (${{ matrix.sqVersion }})
+    name: Integration tests
     if: needs.prepare_release.result == 'success'
     needs: prepare_release
-    runs-on: ubuntu-26.04
-    strategy:
-      fail-fast: false
-      matrix:
-        sqVersion:
-          - 26.2.0.119303
-          - 26.3.0.120487
-          - 26.10.0.133078
-          - 26.11.0.134175
-    env:
-      RELEASE_SHA: ${{ needs.prepare_release.outputs.release_sha }}
-      RELEASE_VERSION: ${{ needs.prepare_release.outputs.release_version }}
-    steps:
-      - name: Checkout exact release commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ needs.prepare_release.outputs.release_sha }}
-          fetch-depth: 0
-          submodules: true
-
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
-        with:
-          distribution: temurin
-          java-version: 25
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
-
-      - name: Download integration-test artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: stable-integration-artifacts-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
-
-      - name: Run plugin integration test
-        run: |
-          if [[ "$SQ_VERSION" == *"SNAPSHOT"* ]]; then
-            FOLDER="snapshots"
-          else
-            FOLDER="releases"
-          fi
-
-          FILE_NAME="sonar-application-${SQ_VERSION}.zip"
-          DOWNLOAD_URL="https://$OCI_NAMESPACE.objectstorage.sa-saopaulo-1.oci.customer-oci.com/p/$OCI_PAR/n/$OCI_NAMESPACE/b/build-artifacts/o/${FOLDER}/${FILE_NAME}"
-
-          curl -s -L -f -o "sonar-zpa-plugin/${FILE_NAME}" "$DOWNLOAD_URL"
-          ./gradlew :sonar-zpa-plugin:integrationTest -Dsonar.zipFile=$FILE_NAME --rerun --info
-        env:
-          SQ_VERSION: ${{ matrix.sqVersion }}
-          OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
-          OCI_PAR: ${{ secrets.OCI_PAR }}
+    uses: ./.github/workflows/integration-tests.yml
+    with:
+      ref: ${{ needs.prepare_release.outputs.release_sha }}
+    secrets:
+      OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
+      OCI_PAR: ${{ secrets.OCI_PAR }}
 
   deploy_maven:
     name: Deploy stable Maven artifacts
@@ -378,22 +331,22 @@ jobs:
       RELEASE_SHA: ${{ needs.prepare_release.outputs.release_sha }}
     steps:
       - name: Checkout exact release commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.prepare_release.outputs.release_sha }}
           fetch-depth: 0
           submodules: true
 
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6
         with:
           distribution: temurin
           java-version: 25
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
 
       - name: Download validated Maven staging
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: maven-staging-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
           path: build/staging-deploy
@@ -420,7 +373,7 @@ jobs:
       RELEASE_SHA: ${{ needs.deploy_maven.outputs.release_sha }}
     steps:
       - name: Download final GitHub release payload
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: github-release-payload-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_SHA }}
           path: build/github-release-payload
