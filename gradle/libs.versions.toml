@@ -6,7 +6,7 @@ jreleaser = "1.27.0"
 # The JGit version JReleaser depends on; see build-logic/build.gradle.kts.
 jgit = "5.13.5.202508271544-r"
 shadow = "9.6.1"
-spotless = "8.11.0"
+spotless = "8.12.0"
 sonarscanner = "7.6.0.18749"
 
 # libs
